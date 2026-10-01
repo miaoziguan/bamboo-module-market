@@ -9,9 +9,9 @@
       "id": "blog",
       "name": "本地博客",
       "author": "羽鳞君",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "url": "https://raw.githubusercontent.com/miaoziguan/bamboo-module-market/main/modules/blog.js",
-      "description": "在画中卷侧栏加载本地博客阅读器，支持作者资料卡、分类/时间线浏览、文章卡片（相对日期/字数/已读）、搜索与未读过滤。v0.5 新增「一键应用竹杖芒鞋排版」：写入 CSS 片段并给文章注入 cssclasses，点文章在中央打开即套用竹青排版。"
+      "description": "在画中卷侧栏加载本地博客阅读器，支持作者资料卡、分类/时间线浏览、文章卡片（相对日期/字数/已读）、搜索与未读过滤。v0.6 改为模块内置阅读，完整继承竹杖芒鞋排版与增强：竹青排版、中英混排窄空格、代码块(语言/复制/行号)、图片 lightbox、目录 TOC 滚动高亮、上/下篇、相关阅读、字号缩放、专注模式、阅读进度恢复。"
     }
   ]
 }

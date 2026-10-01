@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.5.0","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.6.0","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客阅读器 v0.4
  *
@@ -41,6 +41,13 @@ var __bamboo_module_blog = (function () {
     _searchTimer: null,
     _contentCache: {},
     _avatarUrl: '',
+    view: 'list',
+    current: null,
+    loadingReader: false,
+    readerError: '',
+    fontSize: 15,
+    focusMode: false,
+    readerProgress: {},
   };
 
   var api = null;
@@ -191,6 +198,70 @@ var __bamboo_module_blog = (function () {
       '.bm-modal .bm-actions{margin-top:14px;}',
       '.bm-hint{font-size:11px;line-height:1.6;color:var(--text-muted,#888);opacity:.85;margin:2px 0 8px;}',
       '.bm-toast{max-width:300px;line-height:1.7;}',
+      // ── 内置阅读视图（继承竹杖芒鞋排版 + 增强） ──
+      '.bm-reader{height:100%;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;}',
+      '.bm-reader-bar{display:flex;align-items:center;gap:6px;padding:7px 9px;border-bottom:1px solid var(--background-modifier-border,#eee);flex:0 0 auto;}',
+      '.bm-rbtn{border:1px solid var(--background-modifier-border,#e0ddd2);background:var(--background-primary,#fff);border-radius:8px;padding:4px 9px;cursor:pointer;font:inherit;font-size:12px;color:var(--text-muted,#777);transition:.12s;line-height:1;}',
+      '.bm-rbtn:hover{color:' + BAMBOO_DEEP + ';border-color:' + BAMBOO + ';}',
+      '.bm-rbtn.primary{background:' + BAMBOO_DEEP + ';color:#fff;border-color:' + BAMBOO_DEEP + ';}',
+      '.bm-reader-scroll{flex:1 1 auto;overflow:auto;padding:2px 4px 30px;}',
+      '.bm-article-head{padding:12px 12px 4px;}',
+      '.bm-ah-title{font-size:17px;font-weight:700;line-height:1.4;letter-spacing:.02em;color:var(--bw-ink,var(--text-normal));}',
+      '.bm-ah-meta{font-size:11px;color:var(--text-muted,#9a9a9a);margin-top:6px;display:flex;gap:5px;flex-wrap:wrap;align-items:center;}',
+      '.bm-ah-sep{opacity:.45;}',
+      '.bm-ah-badge{font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(74,124,89,.12);color:' + BAMBOO_DEEP + ';}',
+      '.bm-toc{margin:8px 12px;padding:8px 10px;border-radius:8px;background:var(--background-secondary,#eef2e8);}',
+      '.bm-toc-title{font-size:11px;font-weight:600;color:var(--text-muted,#888);margin-bottom:4px;}',
+      '.bm-toc-list{display:flex;flex-direction:column;gap:1px;}',
+      '.bm-toc-item{font-size:12px;color:var(--text-muted,#777);cursor:pointer;padding:2px 0 2px 8px;border-left:2px solid transparent;}',
+      '.bm-toc-item:hover{color:' + BAMBOO_DEEP + ';}',
+      '.bm-toc-item.is-active{border-left-color:' + BAMBOO + ';color:' + BAMBOO_DEEP + ';font-weight:600;}',
+      '.bm-toc-h2{padding-left:18px;}.bm-toc-h3{padding-left:28px;}.bm-toc-h4{padding-left:38px;}',
+      // 正文排版（竹杖芒鞋 .bwr-body → .bm-md）
+      '.bm-md{--bw-bamboo-deep:#3d6b4a;--bw-bamboo:#4a7c59;--bw-bamboo-light:#6a9e6e;--bw-bamboo-pale:#a8c5a0;--bw-ink:#2c2c2c;--bw-ink-light:#5a5a5a;--bw-divider:#d4ccb8;--bw-radius:6px;--bw-blockquote-bg:rgba(168,197,160,.12);}',
+      '.bm-md{padding:6px 12px 20px;line-height:1.75;}',
+      '.bm-md p{margin-bottom:1.2em;text-align:justify;overflow-wrap:break-word;}',
+      '.bm-md h1{font-size:1.45em;margin-top:1.6em;}.bm-md h2{font-size:1.35em;margin-top:1.4em;}.bm-md h3{font-size:1.2em;margin-top:1.2em;}',
+      '.bm-md h1,.bm-md h2,.bm-md h3{line-height:1.4;letter-spacing:.02em;font-weight:600;color:var(--bw-ink,var(--text-normal));}',
+      '.bm-md :not(pre)>code{white-space:nowrap;text-align:initial;background:rgba(74,124,89,.1);padding:1px 5px;border-radius:4px;font-size:.9em;}',
+      '.bm-md ::selection{background:color-mix(in srgb,var(--bw-bamboo) 22%,transparent);}',
+      '.bm-md ul,.bm-md ol{padding-left:1.6em;margin:1.2em 0;}.bm-md li{margin-bottom:.4em;line-height:1.75;text-align:justify;}',
+      '.bm-md li.task-list-item{list-style:none;margin-left:-.2em;}.bm-md li.task-list-item input[type=checkbox]{margin-right:.5em;accent-color:var(--bw-bamboo);}',
+      '.bm-md strong{font-weight:600;color:var(--bw-ink,var(--text-normal));}.bm-md em{font-style:italic;color:var(--bw-bamboo-deep);}',
+      '.bm-md table{width:100%;border-collapse:collapse;margin:1.4em 0;font-size:.95em;}',
+      '.bm-md th,.bm-md td{border:1px solid var(--background-modifier-border);padding:8px 12px;text-align:left;}',
+      '.bm-md th{background:color-mix(in srgb,var(--bw-bamboo-pale) 16%,transparent);font-weight:600;}',
+      '.bm-md sup a{color:var(--bw-bamboo);}',
+      '.bm-md .footnotes{font-size:.85em;color:var(--text-muted);}',
+      '.bm-md blockquote{border-left:3px solid var(--bw-bamboo-light);background:color-mix(in srgb,var(--bw-bamboo-pale) 12%,transparent);padding:8px 16px;margin:1.2em 0;border-radius:0 4px 4px 0;color:var(--text-muted);text-align:justify;}',
+      '.bm-md pre{border-radius:var(--bw-radius);border:1px solid var(--background-modifier-border);padding:0;margin:1.2em 0;position:relative;overflow:auto;}',
+      '.bm-md pre,.bm-md code{font-family:"JetBrains Mono","SF Mono","Menlo","Consolas","Liberation Mono",monospace;}',
+      '.bm-md pre code{display:block;padding:12px 14px;font-size:.88em;line-height:1.6;background:transparent;}',
+      '.bm-md code{font-size:.9em;}',
+      '.bm-md img{display:block;max-width:100%;height:auto;margin:1.4em auto;border-radius:var(--bw-radius);box-shadow:0 1px 3px color-mix(in srgb,var(--bw-ink) 12%,transparent);cursor:zoom-in;}',
+      '.bm-md a{color:var(--bw-bamboo);border-bottom:1px solid var(--bw-bamboo-pale);transition:border-color .2s;text-decoration:none;}',
+      '.bm-md a:hover{border-bottom-color:var(--bw-bamboo);}',
+      '.bm-md hr{border:none;height:20px;margin:2em 0;background:none;position:relative;}',
+      '.bm-md hr::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:2px;background:var(--bw-bamboo-pale);border-radius:1px;}',
+      '.bm-code-header{display:flex;align-items:center;justify-content:space-between;padding:4px 10px;font-size:10px;color:var(--text-muted,#999);background:var(--background-secondary,#f0f0f0);border-bottom:1px solid var(--background-modifier-border);}',
+      '.bm-code-lang{text-transform:uppercase;letter-spacing:.05em;}',
+      '.bm-code-copy{border:none;background:none;cursor:pointer;font-size:11px;color:var(--text-muted,#999);padding:0;}',
+      '.bm-code-copy:hover{color:' + BAMBOO_DEEP + ';}',
+      '.bm-line{display:block;white-space:pre;}',
+      '.bm-prevnext{display:flex;gap:8px;margin:18px 12px 0;}',
+      '.bm-pn{flex:1 1 0;min-width:0;padding:10px 12px;border-radius:10px;background:var(--background-secondary,#f3f5ef);cursor:pointer;border:1px solid transparent;}',
+      '.bm-pn:hover{border-color:rgba(74,124,89,.28);}',
+      '.bm-pn-label{font-size:10px;color:var(--text-muted,#aaa);}',
+      '.bm-pn-title{font-size:13px;font-weight:600;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.bm-related{margin:18px 12px 0;}',
+      '.bm-related-title{font-size:12px;font-weight:700;color:var(--text-normal,#444);margin-bottom:6px;border-bottom:1px solid var(--background-modifier-border,#ececec);padding-bottom:4px;}',
+      '.bm-related-link{display:block;font-size:12.5px;color:' + BAMBOO_DEEP + ';padding:5px 0;cursor:pointer;}',
+      '.bm-related-link:hover{text-decoration:underline;}',
+      '.bm-reader-loading{padding:30px 14px;text-align:center;color:var(--text-muted,#9a9a9a);}',
+      '.bm-reader.bm-focus .bm-toc,.bm-reader.bm-focus .bm-article-head{display:none;}',
+      '.bm-lightbox-img{max-width:90vw;max-height:90vh;border-radius:8px;}',
+      '.theme-dark .bm-md{--bw-bamboo-deep:#7ab890;--bw-bamboo:#8fc59f;--bw-bamboo-light:#a8d6b5;--bw-bamboo-pale:rgba(143,197,159,.25);--bw-ink:#e0e0e0;--bw-blockquote-bg:rgba(143,197,159,.08);}',
+      '.theme-dark .bm-md blockquote{background:var(--bw-blockquote-bg);border-left-color:var(--bw-bamboo-pale);}',
     ].join('');
     document.head.appendChild(st);
   }
@@ -272,6 +343,7 @@ var __bamboo_module_blog = (function () {
   /* ────────────── 渲染 ────────────── */
   function render() {
     if (!root) return;
+    if (state.view === 'reader') { renderReader(); return; }
     var html = '<div class="bm-wrap">';
 
     // 作者卡
@@ -478,6 +550,7 @@ var __bamboo_module_blog = (function () {
   /* ────────────── 事件绑定 ────────────── */
   function bind() {
     if (!root) return;
+    root.removeEventListener('click', onRootClick);
     root.addEventListener('click', onRootClick);
     root.removeEventListener('keydown', onRootKey);
     root.addEventListener('keydown', onRootKey);
@@ -500,6 +573,12 @@ var __bamboo_module_blog = (function () {
         if (act === 'cancel') { state.editing = false; render(); return; }
         if (act === 'save') { saveProfile(); return; }
         if (act === 'apply-typography') { applyTypography(); return; }
+        if (act === 'back-to-list') { backToList(); return; }
+        if (act === 'open-central') { openCentral(); return; }
+        if (act === 'font-inc') { changeFont(1); return; }
+        if (act === 'font-dec') { changeFont(-1); return; }
+        if (act === 'font-reset') { changeFont(0); return; }
+        if (act === 'toggle-focus') { toggleFocus(); return; }
         if (act === 'refresh') { refresh(); return; }
         if (act === 'clear-search') { state.searchQuery = ''; state.searchFull = false; render(); return; }
         if (act === 'toggle-cat') {
@@ -583,11 +662,258 @@ var __bamboo_module_blog = (function () {
     showToast(msg);
   }
 
-  function openArticle(path) {
-    // 点击文章 → 在 Obsidian 中央视图打开（侧栏仅导航）
-    state.selected = path;
-    if (api) api.openFile(path);
+  /* ────────────── 内置阅读（继承竹杖芒鞋排版与增强） ────────────── */
+  function slugify(text) {
+    return (text || '').toLowerCase().replace(/[^\w\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  function stripFrontmatter(raw) {
+    return raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '').replace(/^---\r?\n[\s\S]*?\r?\n---$/, '');
+  }
+
+  /** 中英混排窄空格预处理（保护代码块/行内代码，避免误伤） */
+  function preprocessMarkdown(md) {
+    var codeBlocks = [], inlineCodes = [];
+    var processed = md.replace(/```[\s\S]*?```/g, function (m) { codeBlocks.push(m); return ' CB' + (codeBlocks.length - 1) + ' '; });
+    processed = processed.replace(/`[^`]*`/g, function (m) { inlineCodes.push(m); return ' IC' + (inlineCodes.length - 1) + ' '; });
+    processed = processed
+      .replace(/([\u4e00-\u9fff\u3400-\u4dbf\uff00-\uffef])([a-zA-Z0-9@&%$#])/g, '$1\u2009$2')
+      .replace(/([a-zA-Z0-9@&%$#])([\u4e00-\u9fff\u3400-\u4dbf\uff00-\uffef])/g, '$1\u2009$2');
+    processed = processed.replace(/ IC(\d+) /g, function (_, i) { return inlineCodes[+i] || ''; });
+    processed = processed.replace(/ CB(\d+) /g, function (_, i) { return codeBlocks[+i] || ''; });
+    return processed;
+  }
+
+  function parseArticle(raw, path) {
+    var meta = {
+      path: path,
+      title: (path.split('/').pop() || '').replace(/\.md$/i, ''),
+      date: '', tags: [], category: categoryOf(path),
+      author: state.profile.nickname,
+      mtime: (state.files.find(function (f) { return f.path === path; }) || {}).mtime || 0,
+    };
+    var m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+    if (m) {
+      var fm = m[1];
+      var t = fm.match(/title\s*:\s*(.+)/); if (t) meta.title = t[1].trim().replace(/^['"]|['"]$/g, '');
+      var d = fm.match(/date\s*:\s*(.+)/); if (d) meta.date = d[1].trim().replace(/^['"]|['"]$/g, '').slice(0, 10);
+      var tg = fm.match(/tags\s*:\s*\[([^\]]*)\]/); if (tg) meta.tags = tg[1].split(',').map(function (s) { return s.trim().replace(/^['"]|['"]$/g, ''); }).filter(Boolean);
+      var au = fm.match(/author\s*:\s*(.+)/); if (au) meta.author = au[1].trim().replace(/^['"]|['"]$/g, '');
+    }
+    return meta;
+  }
+
+  function loadReaderProgress(path) { return state.readerProgress[path] || 0; }
+  var _progTimer = null;
+  function scheduleSaveProgress(top) {
+    if (!state.current) return;
+    state.readerProgress[state.current.path] = top;
+    if (_progTimer) clearTimeout(_progTimer);
+    _progTimer = setTimeout(persist, 200);
+  }
+
+  function backToList() { state.view = 'list'; state.current = null; state.readerError = ''; render(); }
+  function openCentral() { if (state.current && api) api.openFile(state.current.path); }
+  function changeFont(d) {
+    if (d === 0) state.fontSize = 15;
+    else state.fontSize = Math.max(12, Math.min(22, state.fontSize + d * 2));
+    var md = root && root.querySelector('.bm-md'); if (md) md.style.fontSize = state.fontSize + 'px';
+    persist();
+  }
+  function toggleFocus() { state.focusMode = !state.focusMode; persist(); render(); }
+  function applyFontSize() { var md = root && root.querySelector('.bm-md'); if (md) md.style.fontSize = state.fontSize + 'px'; }
+
+  function openArticle(path) { enterReader(path); }
+
+  async function enterReader(path) {
+    state.view = 'reader';
+    state.current = null;
+    state.loadingReader = true;
+    state.readerError = '';
+    render();
+    try {
+      var raw = await api.readFile(path);
+      var meta = parseArticle(raw, path);
+      var body = stripFrontmatter(raw);
+      var pre = preprocessMarkdown(body);
+      var html = await api.renderMarkdown({ content: pre, sourcePath: path });
+      state.current = { path: path, html: html, meta: meta };
+      state.loadingReader = false;
+      render();
+      enhanceReader();
+    } catch (e) {
+      state.readerError = (e && e.message) ? e.message : '加载失败';
+      state.loadingReader = false;
+      render();
+    }
     markRead(path);
+  }
+
+  function renderReader() {
+    var html = '<div class="bm-reader' + (state.focusMode ? ' bm-focus' : '') + '">';
+    html += '<div class="bm-reader-bar">';
+    html += '<button class="bm-rbtn" data-act="back-to-list">← 列表</button>';
+    html += '<button class="bm-rbtn" data-act="font-dec" title="减小字号">A⁻</button>';
+    html += '<button class="bm-rbtn" data-act="font-reset" title="重置字号">A</button>';
+    html += '<button class="bm-rbtn" data-act="font-inc" title="增大字号">A⁺</button>';
+    html += '<button class="bm-rbtn' + (state.focusMode ? ' primary' : '') + '" data-act="toggle-focus" title="专注模式">◎</button>';
+    html += '<button class="bm-rbtn primary" data-act="open-central" title="在 Obsidian 打开">↗ 中央</button>';
+    html += '</div>';
+    if (state.loadingReader) {
+      html += '<div class="bm-reader-scroll"><div class="bm-reader-loading">正在加载文章…</div></div>';
+      root.innerHTML = html; bind(); return;
+    }
+    if (state.readerError) {
+      html += '<div class="bm-reader-scroll"><div class="bm-error"><div>' + esc(state.readerError) + '</div><button class="bm-btn primary" data-act="back-to-list">返回</button></div></div>';
+      root.innerHTML = html; bind(); return;
+    }
+    var c = state.current;
+    if (!c) { backToList(); return; }
+    html += '<div class="bm-reader-scroll" data-region="reader">';
+    html += '<div class="bm-article-head">';
+    html += '<div class="bm-ah-title">' + esc(c.meta.title) + '</div>';
+    html += '<div class="bm-ah-meta">';
+    html += '<span>' + esc(c.meta.author || '') + '</span>';
+    if (c.meta.date) { html += '<span class="bm-ah-sep">·</span><span>' + esc(c.meta.date) + '</span>'; }
+    if (c.meta.category && c.meta.category !== '未分类') { html += '<span class="bm-ah-sep">·</span><span class="bm-ah-badge">' + esc(c.meta.category) + '</span>'; }
+    html += '</div>';
+    if (c.meta.tags && c.meta.tags.length) {
+      html += '<div class="bm-ah-meta">';
+      for (var i = 0; i < c.meta.tags.length; i++) html += '<span class="bm-ah-badge">' + esc(c.meta.tags[i]) + '</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+    html += '<div class="bm-md" data-region="md">' + (c.html || '') + '</div>';
+    html += '<div data-region="pn"></div>';
+    html += '<div data-region="related"></div>';
+    html += '</div>';
+    root.innerHTML = html;
+    bind();
+    enhanceReader();
+  }
+
+  function enhanceReader() {
+    var scroll = root.querySelector('[data-region="reader"]');
+    var md = root.querySelector('[data-region="md"]');
+    if (!md) return;
+    var heads = md.querySelectorAll('h1,h2,h3,h4');
+    var toc = [];
+    heads.forEach(function (h) {
+      var id = slugify(h.textContent || '');
+      h.id = id;
+      toc.push({ level: h.tagName.charAt(1), text: h.textContent, id: id });
+    });
+    md.querySelectorAll('pre').forEach(function (pre) { enhanceCode(pre); });
+    md.querySelectorAll('img').forEach(function (img) {
+      img.addEventListener('click', function () { showLightbox(img.src, img.alt); });
+    });
+    var head = root.querySelector('.bm-article-head');
+    if (toc.length >= 2 && head) {
+      var tc = document.createElement('div'); tc.className = 'bm-toc';
+      tc.innerHTML = '<div class="bm-toc-title">目录</div><div class="bm-toc-list">' +
+        toc.map(function (t) { return '<div class="bm-toc-item bm-toc-h' + t.level + '" data-toc="' + esc(t.id) + '">' + esc(t.text) + '</div>'; }).join('') + '</div>';
+      head.parentNode.insertBefore(tc, md);
+      tc.querySelectorAll('.bm-toc-item').forEach(function (it) {
+        it.addEventListener('click', function () {
+          var el = document.getElementById(it.getAttribute('data-toc'));
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+    }
+    renderPrevNextRelated();
+    if (state.current) {
+      var saved = loadReaderProgress(state.current.path);
+      if (saved && scroll) scroll.scrollTop = saved;
+    }
+    if (scroll) {
+      scroll.addEventListener('scroll', function () {
+        updateTocSpy(scroll);
+        scheduleSaveProgress(scroll.scrollTop);
+      }, { passive: true });
+    }
+    applyFontSize();
+  }
+
+  function enhanceCode(pre) {
+    var code = pre.querySelector('code');
+    var lang = code ? (code.className.match(/language-(\w+)/) || [])[1] : null;
+    pre.classList.add('bm-code');
+    var header = document.createElement('div'); header.className = 'bm-code-header';
+    if (lang) { var l = document.createElement('span'); l.className = 'bm-code-lang'; l.textContent = lang; header.appendChild(l); }
+    var copy = document.createElement('button'); copy.className = 'bm-code-copy'; copy.textContent = '复制';
+    copy.addEventListener('click', function () {
+      var txt = code ? code.textContent : pre.textContent;
+      if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function () { copy.textContent = '已复制 ✓'; setTimeout(function () { copy.textContent = '复制'; }, 1500); });
+    });
+    header.appendChild(copy);
+    pre.insertBefore(header, pre.firstChild);
+    if (code) {
+      var nodes = Array.prototype.slice.call(code.childNodes);
+      var lines = [[]];
+      nodes.forEach(function (child) {
+        if (child.nodeType === 3) {
+          var parts = (child.textContent || '').split('\n');
+          for (var i = 0; i < parts.length; i++) { if (parts[i]) lines[lines.length - 1].push(document.createTextNode(parts[i])); if (i < parts.length - 1) lines.push([]); }
+        } else if (child.nodeName === 'BR') { lines.push([]); }
+        else { lines[lines.length - 1].push(child.cloneNode(true)); }
+      });
+      code.textContent = '';
+      var frag = document.createDocumentFragment();
+      for (var i = 0; i < lines.length; i++) {
+        var sp = document.createElement('span'); sp.className = 'bm-line';
+        lines[i].forEach(function (n) { sp.appendChild(n); });
+        frag.appendChild(sp);
+        if (i < lines.length - 1) frag.appendChild(document.createTextNode('\n'));
+      }
+      code.appendChild(frag);
+    }
+  }
+
+  function showLightbox(src, alt) {
+    var mask = document.createElement('div'); mask.className = 'bm-mask';
+    var img = document.createElement('img'); img.className = 'bm-lightbox-img'; img.src = src; img.alt = alt || '';
+    mask.appendChild(img);
+    mask.addEventListener('click', function (e) { if (e.target === mask && mask.parentNode) mask.parentNode.removeChild(mask); });
+    document.body.appendChild(mask);
+  }
+
+  function renderPrevNextRelated() {
+    var c = state.current; if (!c) return;
+    var pn = root.querySelector('[data-region="pn"]');
+    var rel = root.querySelector('[data-region="related"]');
+    var cat = c.meta.category || '未分类';
+    var same = state.files.filter(function (f) { return (f.category || '未分类') === cat; }).sort(function (a, b) { return b.mtime - a.mtime; });
+    var idx = same.findIndex(function (f) { return f.path === c.meta.path; });
+    var html = '';
+    if (same.length >= 2 && idx >= 0) {
+      var prev = idx < same.length - 1 ? same[idx + 1] : null;
+      var next = idx > 0 ? same[idx - 1] : null;
+      html += '<div class="bm-prevnext">';
+      if (prev) html += '<div class="bm-pn" data-path="' + esc(prev.path) + '"><div class="bm-pn-label">← 上一篇</div><div class="bm-pn-title">' + esc(prev.name) + '</div></div>';
+      else html += '<div class="bm-pn"></div>';
+      if (next) html += '<div class="bm-pn" data-path="' + esc(next.path) + '"><div class="bm-pn-label">下一篇 →</div><div class="bm-pn-title">' + esc(next.name) + '</div></div>';
+      else html += '<div class="bm-pn"></div>';
+      html += '</div>';
+    }
+    if (pn) pn.innerHTML = html;
+    var relList = same.filter(function (f) { return f.path !== c.meta.path; }).slice(0, 3);
+    if (relList.length && rel) {
+      var rh = '<div class="bm-related"><div class="bm-related-title">相关阅读</div>';
+      relList.forEach(function (f) { rh += '<div class="bm-related-link" data-path="' + esc(f.path) + '">' + esc(f.name) + '</div>'; });
+      rh += '</div>';
+      rel.innerHTML = rh;
+    }
+  }
+
+  function updateTocSpy(scroll) {
+    var items = root.querySelectorAll('.bm-toc-item');
+    if (!items.length) return;
+    var active = null;
+    items.forEach(function (it) {
+      var el = document.getElementById(it.getAttribute('data-toc'));
+      if (el && (el.offsetTop - scroll.offsetTop) <= scroll.scrollTop + 60) active = it;
+    });
+    items.forEach(function (it) { it.classList.toggle('is-active', it === active); });
   }
 
   function markRead(path) {
@@ -639,6 +965,9 @@ var __bamboo_module_blog = (function () {
       profile: state.profile,
       rootFolder: state.rootFolder,
       readSet: state.readSet,
+      fontSize: state.fontSize,
+      focusMode: state.focusMode,
+      readerProgress: state.readerProgress,
     });
   }
 
@@ -715,6 +1044,9 @@ var __bamboo_module_blog = (function () {
         }
         if (d.rootFolder) state.rootFolder = d.rootFolder;
         if (d.readSet) state.readSet = d.readSet || {};
+        if (typeof d.fontSize === 'number') state.fontSize = d.fontSize;
+        if (typeof d.focusMode === 'boolean') state.focusMode = d.focusMode;
+        if (d.readerProgress) state.readerProgress = d.readerProgress || {};
       }
     } catch (e) { /* 首次运行无数据 */ }
 
