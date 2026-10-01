@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.4.0","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.5.0","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客阅读器 v0.4
  *
@@ -45,6 +45,60 @@ var __bamboo_module_blog = (function () {
 
   var api = null;
   var root = null;
+
+  /* ────────────── 竹杖芒鞋阅读排版（CSS snippet，按 cssclasses 限定） ────────────── */
+  // 移植自《竹杖芒鞋》专栏阅读器 .bwr-body 排版：竹青色板、标题字距、两端对齐正文、
+  // 竹林风引用块、竹青链接、圆角居中图片、竹节分割线、表格/列表/代码块、暗色校准。
+  // 仅作用于 frontmatter 含 cssclasses: [bamboo-reading] 的笔记（Obsidian 原生阅读视图）。
+  var BAMBOO_READING_CSS = [
+    '/* 竹杖芒鞋 · 博客阅读排版（cssclasses: bamboo-reading）— 由「本地博客」模块注入 */',
+    '.bamboo-reading{',
+    '  --bw-bamboo-deep:#3d6b4a;--bw-bamboo:#4a7c59;--bw-bamboo-light:#6a9e6e;--bw-bamboo-pale:#a8c5a0;',
+    '  --bw-ink:#2c2c2c;--bw-ink-light:#5a5a5a;--bw-divider:#d4ccb8;--bw-radius:6px;',
+    '  --bw-blockquote-bg:rgba(168,197,160,.12);--bw-toc-active-bg:rgba(168,197,160,.15);',
+    '}',
+    '.bamboo-reading{max-width:38rem;margin:0 auto;padding-top:0;}',
+    '.bamboo-reading p{margin-bottom:1.2em;text-align:justify;overflow-wrap:break-word;}',
+    '.bamboo-reading h1{font-size:1.45em;margin-top:2em;}',
+    '.bamboo-reading h2{font-size:1.35em;margin-top:1.8em;}',
+    '.bamboo-reading h3{font-size:1.2em;margin-top:1.6em;}',
+    '.bamboo-reading h1,.bamboo-reading h2,.bamboo-reading h3{line-height:1.4;letter-spacing:.02em;font-weight:600;color:var(--bw-ink,var(--text-normal));text-wrap:pretty;word-break:auto-phrase;}',
+    '.bamboo-reading :not(pre)>code{white-space:nowrap;text-align:initial;}',
+    '.bamboo-reading ::selection{background:color-mix(in srgb,var(--bw-bamboo) 22%,transparent);}',
+    '.bamboo-reading a:focus-visible{outline:2px solid var(--bw-bamboo);outline-offset:2px;border-radius:2px;}',
+    '.bamboo-reading ul,.bamboo-reading ol{padding-left:1.6em;margin:1.2em 0;}',
+    '.bamboo-reading li{margin-bottom:.4em;line-height:1.75;text-align:justify;}',
+    '.bamboo-reading li.task-list-item{list-style:none;margin-left:-.2em;}',
+    '.bamboo-reading li.task-list-item input[type=checkbox]{margin-right:.5em;accent-color:var(--bw-bamboo);}',
+    '.bamboo-reading strong{font-weight:600;color:var(--bw-ink,var(--text-normal));}',
+    '.bamboo-reading em{font-style:italic;color:var(--bw-bamboo-deep);}',
+    '.bamboo-reading table{width:100%;border-collapse:collapse;margin:1.4em 0;font-size:.95em;}',
+    '.bamboo-reading th,.bamboo-reading td{border:1px solid var(--background-modifier-border);padding:8px 12px;text-align:left;}',
+    '.bamboo-reading th{background:color-mix(in srgb,var(--bw-bamboo-pale) 16%,transparent);font-weight:600;}',
+    '.bamboo-reading sup a{color:var(--bw-bamboo);}',
+    '.bamboo-reading .footnotes{font-size:.85em;color:var(--text-muted);}',
+    '.bamboo-reading blockquote{border-left:3px solid var(--bw-bamboo-light);background:color-mix(in srgb,var(--bw-bamboo-pale) 12%,transparent);padding:8px 16px;margin:1.2em 0;border-radius:0 4px 4px 0;color:var(--text-muted);text-align:justify;}',
+    '.bamboo-reading pre{border-radius:var(--bw-radius);border:1px solid var(--background-modifier-border);}',
+    '.bamboo-reading pre,.bamboo-reading code{font-family:"JetBrains Mono","SF Mono","Menlo","Consolas","Liberation Mono",monospace;}',
+    '.bamboo-reading code{font-size:.9em;}',
+    '.bamboo-reading img{display:block;max-width:100%;height:auto;margin:1.4em auto;border-radius:var(--bw-radius);box-shadow:0 1px 3px color-mix(in srgb,var(--bw-ink) 12%,transparent);}',
+    '.bamboo-reading a{color:var(--bw-bamboo);border-bottom:1px solid var(--bw-bamboo-pale);transition:border-color .2s;}',
+    '.bamboo-reading a:hover{border-bottom-color:var(--bw-bamboo);}',
+    '.bamboo-reading hr{border:none;height:20px;margin:2em 0;background:none;position:relative;}',
+    '.bamboo-reading hr::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:2px;background:var(--bw-bamboo-pale);border-radius:1px;}',
+    '/* 暗色模式校准 */',
+    '.theme-dark .bamboo-reading{',
+    '  --bw-bamboo-deep:#7ab890;--bw-bamboo:#8fc59f;--bw-bamboo-light:#a8d6b5;--bw-bamboo-pale:rgba(143,197,159,.25);',
+    '  --bw-ink:#e0e0e0;--bw-ink-light:#b0b0b0;--bw-divider:rgba(143,197,159,.15);',
+    '  --bw-blockquote-bg:rgba(143,197,159,.08);--bw-toc-active-bg:rgba(143,197,159,.15);',
+    '}',
+    '.theme-dark .bamboo-reading ::selection{background:color-mix(in srgb,var(--bw-bamboo-pale) 30%,transparent);}',
+    '.theme-dark .bamboo-reading blockquote{background:var(--bw-blockquote-bg);border-left-color:var(--bw-bamboo-pale);}',
+    '.theme-dark .bamboo-reading em{color:var(--bw-bamboo-deep);}',
+    '.theme-dark .bamboo-reading a{color:var(--bw-bamboo);}',
+    '.theme-dark .bamboo-reading hr::after{background:var(--bw-bamboo-pale);}',
+    '',
+  ].join('\n');
 
   /* ────────────── 样式（对标竹杖芒鞋：竹青、卡片、留白） ────────────── */
   function ensureStyle() {
@@ -135,8 +189,44 @@ var __bamboo_module_blog = (function () {
       '.bm-link{display:block;padding:7px 9px;border-radius:8px;text-decoration:none;color:' + BAMBOO_DEEP + ';font-size:12px;transition:background .12s;}',
       '.bm-link:hover{background:var(--background-secondary,#eef2e8);}',
       '.bm-modal .bm-actions{margin-top:14px;}',
+      '.bm-hint{font-size:11px;line-height:1.6;color:var(--text-muted,#888);opacity:.85;margin:2px 0 8px;}',
+      '.bm-toast{max-width:300px;line-height:1.7;}',
     ].join('');
     document.head.appendChild(st);
+  }
+
+  /* ────────────── 竹杖芒鞋排版注入辅助 ────────────── */
+  /** 把指定 cssclass 合并进 markdown 的 frontmatter（无则新建，有则追加，保留原文） */
+  function mergeCssClass(content, cls) {
+    var fm = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+    if (!fm) return '---\ncssclasses: [' + cls + ']\n---\n\n' + content;
+    var block = fm[1];
+    if (/^cssclasses\s*:/m.test(block)) {
+      if (/cssclasses\s*:\s*\[/.test(block)) {
+        return content.replace(/(cssclasses\s*:\s*\[)([^\]]*)(\])/, function (full, a, arr, c) {
+          var items = arr.split(',').map(function (s) { return s.trim().replace(/^['"]|['"]$/g, ''); }).filter(Boolean);
+          if (items.indexOf(cls) < 0) items.push(cls);
+          return a + items.join(', ') + c;
+        });
+      }
+      // 列表形式 cssclasses: \n  - x
+      return content.replace(/^(cssclasses\s*:)\r?\n/m, function (full, line) { return line + '\n  - ' + cls + '\n'; });
+    }
+    return content.replace(/^---\r?\n/, '---\ncssclasses: [' + cls + ']\n');
+  }
+
+  /** 轻量提示（复用弹层样式） */
+  function showToast(msg) {
+    var mask = document.createElement('div');
+    mask.className = 'bm-mask';
+    mask.innerHTML = '<div class="bm-modal bm-toast"><p style="white-space:pre-wrap">' + esc(msg) + '</p>' +
+      '<div class="bm-actions"><button class="bm-btn primary" data-act="close-modal">知道了</button></div></div>';
+    mask.addEventListener('click', function (e) {
+      if (e.target === mask || (e.target.getAttribute && e.target.getAttribute('data-act') === 'close-modal')) {
+        if (mask.parentNode) mask.parentNode.removeChild(mask);
+      }
+    });
+    document.body.appendChild(mask);
   }
 
   /* ────────────── 工具 ────────────── */
@@ -248,7 +338,11 @@ var __bamboo_module_blog = (function () {
       '<div class="bm-actions">' +
       '<button class="bm-btn primary" data-act="save">保存</button>' +
       '<button class="bm-btn" data-act="cancel">取消</button>' +
-      '</div></div>';
+      '</div>' +
+      '<div class="bm-label" style="margin-top:14px">竹杖芒鞋文章排版</div>' +
+      '<div class="bm-hint">为文章注入 cssclasses: bamboo-reading，并把竹青排版片段写入 vault 的 .obsidian/snippets/bamboo-reading.css。在 Obsidian 设置 → 外观 → CSS 片段 启用「bamboo-reading」后，点文章在中央打开即套用该排版（标题/引用/代码/图片/竹节分割线/竹青色板）。</div>' +
+      '<button class="bm-btn primary" data-act="apply-typography">应用排版到全部文章</button>' +
+      '</div>';
   }
 
   function renderStatus() {
@@ -405,6 +499,7 @@ var __bamboo_module_blog = (function () {
         if (act === 'about') { openAbout(); return; }
         if (act === 'cancel') { state.editing = false; render(); return; }
         if (act === 'save') { saveProfile(); return; }
+        if (act === 'apply-typography') { applyTypography(); return; }
         if (act === 'refresh') { refresh(); return; }
         if (act === 'clear-search') { state.searchQuery = ''; state.searchFull = false; render(); return; }
         if (act === 'toggle-cat') {
@@ -456,6 +551,37 @@ var __bamboo_module_blog = (function () {
 
   /* ────────────── 行为 ────────────── */
   function toggleEdit() { state.editing = !state.editing; render(); }
+
+  /* 一键应用竹杖芒鞋排版：写入 CSS 片段 + 给全部文章注入 cssclasses */
+  async function applyTypography() {
+    if (!api) return;
+    var cls = 'bamboo-reading';
+    var snippetPath = '.obsidian/snippets/bamboo-reading.css';
+    try {
+      await api.writeFile(snippetPath, BAMBOO_READING_CSS);
+    } catch (e) {
+      showToast('排版片段写入失败：' + (e && e.message ? e.message : e));
+      return;
+    }
+    var ok = 0, skip = 0, fail = 0;
+    for (var i = 0; i < state.files.length; i++) {
+      var p = state.files[i].path;
+      try {
+        var content = await api.readFile(p);
+        if (content == null) { fail++; continue; }
+        if (/cssclasses[\s\S]*\bbamboo-reading\b/.test(content)) { skip++; continue; }
+        var next = mergeCssClass(content, cls);
+        if (next === content) { skip++; continue; }
+        await api.writeFile(p, next);
+        ok++;
+      } catch (e) { fail++; }
+    }
+    var msg = '已把竹青排版片段写入 ' + snippetPath + '，并为 ' + ok + ' 篇文章注入 cssclasses';
+    if (skip) msg += '（' + skip + ' 篇已应用，跳过）';
+    if (fail) msg += '；' + fail + ' 篇写入失败';
+    msg += '。\n\n请到 Obsidian 设置 → 外观 → CSS 片段，点击刷新并启用「bamboo-reading」。之后点文章在中央打开即套用竹杖芒鞋排版。';
+    showToast(msg);
+  }
 
   function openArticle(path) {
     // 点击文章 → 在 Obsidian 中央视图打开（侧栏仅导航）
