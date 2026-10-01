@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.6.1","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.6.2","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客阅读器 v0.4
  *
@@ -262,6 +262,10 @@ var __bamboo_module_blog = (function () {
       '.bm-lightbox-img{max-width:90vw;max-height:90vh;border-radius:8px;}',
       '.theme-dark .bm-md{--bw-bamboo-deep:#7ab890;--bw-bamboo:#8fc59f;--bw-bamboo-light:#a8d6b5;--bw-bamboo-pale:rgba(143,197,159,.25);--bw-ink:#e0e0e0;--bw-blockquote-bg:rgba(143,197,159,.08);}',
       '.theme-dark .bm-md blockquote{background:var(--bw-blockquote-bg);border-left-color:var(--bw-bamboo-pale);}',
+      // 隐藏 webview 内默认滚动条（保留滚动能力）：模块外壳 #module-view-root 与内部列表/阅读区统一，
+      // 去掉 Chromium 默认那条灰色宽滚动条，观感更贴合竹青排版。
+      '#module-view-root,.bm-wrap,.bm-list-region,.bm-reader-scroll,.bm-modal{scrollbar-width:none;-ms-overflow-style:none;}',
+      '#module-view-root::-webkit-scrollbar,.bm-wrap::-webkit-scrollbar,.bm-list-region::-webkit-scrollbar,.bm-reader-scroll::-webkit-scrollbar,.bm-modal::-webkit-scrollbar{width:0;height:0;display:none;}',
     ].join('');
     document.head.appendChild(st);
   }
