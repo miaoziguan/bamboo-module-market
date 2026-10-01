@@ -232,6 +232,8 @@ var __bamboo_module_blog = (function () {
   function renderEditForm() {
     var links = (state.profile.links || []).map(function (l) { return l.label + '|' + l.url; }).join('\n');
     return '<div class="bm-form">' +
+      '<div class="bm-label">文章根目录（vault 内文件夹，文章按子目录自动分类）</div>' +
+      '<input class="bm-input" data-field="rootFolder" value="' + esc(state.rootFolder) + '" placeholder="如 博客">' +
       '<div class="bm-label">昵称</div>' +
       '<input class="bm-input" data-field="nickname" value="' + esc(state.profile.nickname) + '" placeholder="博客作者名">' +
       '<div class="bm-label">简介</div>' +
@@ -472,10 +474,12 @@ var __bamboo_module_blog = (function () {
 
   function saveProfile() {
     if (!root) return;
+    var rf = root.querySelector('[data-field="rootFolder"]');
     var nick = root.querySelector('[data-field="nickname"]');
     var bio = root.querySelector('[data-field="bio"]');
     var av = root.querySelector('[data-field="avatar"]');
     var linksEl = root.querySelector('[data-field="links"]');
+    if (rf) state.rootFolder = rf.value.trim() || '博客';
     if (nick) state.profile.nickname = nick.value.trim();
     if (bio) state.profile.bio = bio.value.trim();
     if (av) state.profile.avatar = av.value.trim();
@@ -496,6 +500,7 @@ var __bamboo_module_blog = (function () {
     } else {
       render();
     }
+    if (rf) refresh(); // 根目录可能变化，重列文章
   }
 
   function persist() {
