@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.6.0","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.6.1","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客阅读器 v0.4
  *
@@ -713,7 +713,7 @@ var __bamboo_module_blog = (function () {
   }
 
   function backToList() { state.view = 'list'; state.current = null; state.readerError = ''; render(); }
-  function openCentral() { if (state.current && api) api.openFile(state.current.path); }
+  function openCentral() { if (state.current && api) api.openReader(state.current.path); }
   function changeFont(d) {
     if (d === 0) state.fontSize = 15;
     else state.fontSize = Math.max(12, Math.min(22, state.fontSize + d * 2));
@@ -723,7 +723,7 @@ var __bamboo_module_blog = (function () {
   function toggleFocus() { state.focusMode = !state.focusMode; persist(); render(); }
   function applyFontSize() { var md = root && root.querySelector('.bm-md'); if (md) md.style.fontSize = state.fontSize + 'px'; }
 
-  function openArticle(path) { enterReader(path); }
+  function openArticle(path) { if (api) api.openReader(path); }
 
   async function enterReader(path) {
     state.view = 'reader';
