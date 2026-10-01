@@ -9,7 +9,7 @@
       "id": "blog",
       "name": "本地博客",
       "author": "羽鳞君",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "url": "https://raw.githubusercontent.com/miaoziguan/bamboo-module-market/main/modules/blog.js",
       "description": "在画中卷侧栏加载本地博客阅读器，支持作者资料卡、分类/时间线浏览、文章卡片（相对日期/字数/已读）、搜索与未读过滤。"
     }

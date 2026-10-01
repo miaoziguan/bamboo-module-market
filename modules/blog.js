@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.3.0","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.3.1","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客阅读器 v0.2
  *
@@ -64,6 +64,8 @@ var __bamboo_module_blog = (function () {
       '.bm-author-main{flex:1 1 auto;min-width:0;}',
       '.bm-name-row{display:flex;align-items:center;gap:6px;}',
       '.bm-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.bm-avatar[data-act],.bm-name[data-act]{cursor:pointer;}',
+      '.bm-avatar[data-act]:hover,.bm-name[data-act]:hover{opacity:.85;}',
       '.bm-handle{font-size:11px;opacity:.55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
       '.bm-bio{opacity:.7;font-size:12px;margin-top:2px;word-break:break-word;}',
       '.bm-icon-btn{flex:0 0 auto;border:none;background:transparent;cursor:pointer;opacity:.5;font-size:15px;padding:2px 4px;color:inherit;line-height:1;}',
@@ -222,10 +224,10 @@ var __bamboo_module_blog = (function () {
     // 作者卡
     html += '<div class="bm-header">';
     html += '<div class="bm-author">';
-    html += '<div class="bm-avatar">' + avatarHtml() + '</div>';
+    html += '<div class="bm-avatar" data-act="edit" title="点击编辑资料">' + avatarHtml() + '</div>';
     html += '<div class="bm-author-main">';
     html += '<div class="bm-name-row">';
-    html += '<span class="bm-name">' + esc(state.profile.nickname || '未命名') + '</span>';
+    html += '<span class="bm-name" data-act="edit" title="点击编辑资料">' + esc(state.profile.nickname || '未命名') + '</span>';
     html += '<button class="bm-icon-btn" data-act="about" title="关于 / 投稿" aria-label="关于">ⓘ</button>';
     html += '<button class="bm-icon-btn" data-act="edit" title="编辑资料" aria-label="编辑资料">✎</button>';
     html += '</div>';
@@ -276,8 +278,8 @@ var __bamboo_module_blog = (function () {
       '<input class="bm-input" data-field="nickname" value="' + esc(state.profile.nickname) + '" placeholder="博客作者名">' +
       '<div class="bm-label">简介</div>' +
       '<textarea class="bm-textarea" data-field="bio" placeholder="一句话介绍这个博客">' + esc(state.profile.bio) + '</textarea>' +
-      '<div class="bm-label">头像（vault 内图片路径，如 attachments/avatar.png）</div>' +
-      '<input class="bm-input" data-field="avatar" value="' + esc(state.profile.avatar) + '" placeholder="留空显示昵称首字">' +
+      '<div class="bm-label">头像（vault 内图片路径，如 attachments/avatar.png，或直接填写 https 图片链接）</div>' +
+      '<input class="bm-input" data-field="avatar" value="' + esc(state.profile.avatar) + '" placeholder="留空显示昵称首字，或填 https:// 图片 URL">' +
       '<div class="bm-label">平台链接（每行「标签|网址」，如 GitHub|https://github.com/...）</div>' +
       '<textarea class="bm-textarea" data-field="links" placeholder="GitHub|https://github.com/miaoziguan">' + esc(links) + '</textarea>' +
       '<div class="bm-actions">' +
@@ -539,13 +541,16 @@ var __bamboo_module_blog = (function () {
     }
     state.editing = false;
     persist();
-    state._avatarUrl = '';
-    if (state.profile.avatar) {
+    if (/^https?:\/\//i.test(state.profile.avatar || '')) {
+      state._avatarUrl = state.profile.avatar;
+      render();
+    } else if (state.profile.avatar && api) {
       api.resolveResource(state.profile.avatar).then(function (url) {
         state._avatarUrl = url || '';
         render();
       }).catch(function () { render(); });
     } else {
+      state._avatarUrl = '';
       render();
     }
     if (rf) refresh(); // 根目录可能变化，重列文章
@@ -690,8 +695,10 @@ var __bamboo_module_blog = (function () {
     } catch (e) { /* 首次运行无数据 */ }
 
     state._avatarUrl = '';
-    if (state.profile.avatar && api) {
-      try { state._avatarUrl = (await api.resolveResource(state.profile.avatar)) || ''; } catch (e) {}
+    var av0 = state.profile.avatar;
+    if (av0) {
+      if (/^https?:\/\//i.test(av0)) { state._avatarUrl = av0; }
+      else if (api) { try { state._avatarUrl = (await api.resolveResource(av0)) || ''; } catch (e) {} }
     }
     await refresh();
   }
