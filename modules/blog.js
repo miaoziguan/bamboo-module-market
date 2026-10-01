@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.3.1","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.3.2","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客阅读器 v0.2
  *
@@ -229,7 +229,6 @@ var __bamboo_module_blog = (function () {
     html += '<div class="bm-name-row">';
     html += '<span class="bm-name" data-act="edit" title="点击编辑资料">' + esc(state.profile.nickname || '未命名') + '</span>';
     html += '<button class="bm-icon-btn" data-act="about" title="关于 / 投稿" aria-label="关于">ⓘ</button>';
-    html += '<button class="bm-icon-btn" data-act="edit" title="编辑资料" aria-label="编辑资料">✎</button>';
     html += '</div>';
     html += '<div class="bm-bio">' + esc(state.profile.bio || '暂无简介') + '</div>';
     html += '</div></div>';
