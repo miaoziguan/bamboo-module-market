@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.2.0","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.2.1","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客阅读器 v0.2
  *
