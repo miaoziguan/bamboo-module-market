@@ -1,0 +1,17 @@
+{
+  "name": "竹林模块市场",
+  "version": "1.0.0",
+  "maintainer": "羽鳞君",
+  "license": "MIT",
+  "repository": "https://github.com/miaoziguan/bamboo-module-market",
+  "modules": [
+    {
+      "id": "blog",
+      "name": "本地博客",
+      "author": "羽鳞君",
+      "version": "0.1.0",
+      "url": "https://raw.githubusercontent.com/miaoziguan/bamboo-module-market/main/modules/blog.js",
+      "description": "在画中卷侧栏加载一个极简本地博客界面，支持 Markdown 文章与分类切换。"
+    }
+  ]
+}
