@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.2.1","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.3.0","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客阅读器 v0.2
  *
@@ -40,6 +40,8 @@ var __bamboo_module_blog = (function () {
     loading: true,
     error: '',
     selected: null,
+    view: 'list', // list | reader
+    current: null, // { path, name, html, loading }
     lastRefreshAt: 0,
     _searchTimer: null,
     _contentCache: {}, // path -> lowercased content（搜索全文用）
@@ -126,6 +128,35 @@ var __bamboo_module_blog = (function () {
       '.bm-link{display:block;padding:6px 8px;border-radius:6px;text-decoration:none;color:' + BAMBOO_DEEP + ';font-size:12px;}',
       '.bm-link:hover{background:var(--background-secondary,#eef2e8);}',
       '.bm-modal .bm-actions{margin-top:12px;}',
+      // 阅读器
+      '.bm-reader{display:flex;flex-direction:column;height:100%;box-sizing:border-box;}',
+      '.bm-reader-bar{position:sticky;top:0;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--background-primary,#fff);border-bottom:1px solid var(--background-modifier-border,#e3e0d6);z-index:2;}',
+      '.bm-back{border:none;background:none;cursor:pointer;font-size:16px;opacity:.6;padding:2px 4px;color:inherit;line-height:1;}',
+      '.bm-back:hover{opacity:1;}',
+      '.bm-reader-title{flex:1 1 auto;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.bm-open-ext{flex:0 0 auto;border:1px solid rgba(128,128,128,.3);background:var(--background-primary,#fff);border-radius:6px;cursor:pointer;font-size:12px;padding:3px 8px;color:inherit;opacity:.8;}',
+      '.bm-open-ext:hover{opacity:1;}',
+      '.bm-md-wrap{flex:1 1 auto;overflow:auto;padding:8px 12px 24px;box-sizing:border-box;}',
+      '.bm-md{font-size:14px;line-height:1.7;word-break:break-word;}',
+      '.bm-md>:first-child{margin-top:0;}',
+      '.bm-md h1,.bm-md h2,.bm-md h3,.bm-md h4{margin:1em 0 .45em;line-height:1.3;font-weight:600;}',
+      '.bm-md h1{font-size:1.5em;border-bottom:1px solid var(--background-modifier-border,#eee);padding-bottom:.2em;}',
+      '.bm-md h2{font-size:1.3em;border-bottom:1px solid var(--background-modifier-border,#eee);padding-bottom:.15em;}',
+      '.bm-md h3{font-size:1.14em;}',
+      '.bm-md p{margin:.6em 0;}',
+      '.bm-md ul,.bm-md ol{margin:.4em 0;padding-left:1.5em;}',
+      '.bm-md li{margin:.2em 0;}',
+      '.bm-md blockquote{margin:.6em 0;padding:.2em .8em;border-left:3px solid var(--background-modifier-border,#ccc);opacity:.85;}',
+      '.bm-md code{background:var(--background-secondary,#eee);padding:.1em .3em;border-radius:4px;font-size:.9em;font-family:var(--font-monospace,monospace);}',
+      '.bm-md pre{background:var(--background-secondary,#eee);padding:.8em;border-radius:8px;overflow:auto;}',
+      '.bm-md pre code{background:none;padding:0;}',
+      '.bm-md a{color:var(--text-accent,#4a7c59);}',
+      '.bm-md a.internal-link{color:var(--text-accent,#4a7c59);cursor:pointer;}',
+      '.bm-md img{max-width:100%;border-radius:8px;margin:.4em 0;}',
+      '.bm-md hr{border:none;border-top:1px solid var(--background-modifier-border,#ddd);margin:1em 0;}',
+      '.bm-md table{border-collapse:collapse;width:100%;margin:.6em 0;font-size:.92em;}',
+      '.bm-md th,.bm-md td{border:1px solid var(--background-modifier-border,#ddd);padding:.3em .5em;}',
+      '.bm-md .bm-md-loading{opacity:.6;padding:10px 4px;}',
     ].join('');
     document.head.appendChild(st);
   }
@@ -180,6 +211,13 @@ var __bamboo_module_blog = (function () {
   function render() {
     if (!root) return;
     var html = '<div class="bm-wrap">';
+    if (state.view === 'reader') {
+      html += renderReader();
+      html += '</div>';
+      root.innerHTML = html;
+      bind();
+      return;
+    }
 
     // 作者卡
     html += '<div class="bm-header">';
@@ -401,12 +439,22 @@ var __bamboo_module_blog = (function () {
   }
 
   function onRootClick(e) {
+    // 阅读器内：wikilink / 内部链接 → 模块内递归阅读
+    if (e.target && e.target.closest) {
+      var il = e.target.closest('a.internal-link');
+      if (il) {
+        var href = il.getAttribute('data-href') || il.getAttribute('href');
+        if (href) { openReader(href); return; }
+      }
+    }
     var el = e.target;
     while (el && el !== root) {
       if (el.getAttribute && el.getAttribute('data-act')) {
         var act = el.getAttribute('data-act');
         if (act === 'edit') { toggleEdit(); return; }
         if (act === 'about') { openAbout(); return; }
+        if (act === 'back') { state.view = 'list'; render(); return; }
+        if (act === 'open-ext') { if (api && state.current) api.openFile(state.current.path); return; }
         if (act === 'cancel') { state.editing = false; render(); return; }
         if (act === 'save') { saveProfile(); return; }
         if (act === 'refresh') { refresh(); return; }
@@ -520,9 +568,47 @@ var __bamboo_module_blog = (function () {
   }
 
   function openArticle(path) {
-    state.selected = path;
-    if (api) api.openFile(path);
+    openReader(path);
+  }
+
+  function openReader(path) {
+    state.view = 'reader';
+    state.current = {
+      path: path,
+      name: (path.split('/').pop() || path).replace(/\.md$/i, ''),
+      html: '',
+      loading: true,
+    };
+    render();
+    if (api) {
+      api.renderMarkdown({ path: path }).then(function (html) {
+        if (state.view === 'reader' && state.current && state.current.path === path) {
+          state.current.html = html || '<p style="opacity:.6">（空文章）</p>';
+          state.current.loading = false;
+          render();
+        }
+      }).catch(function (e) {
+        if (state.current) {
+          state.current.html = '<p style="opacity:.6">渲染失败：' + esc(e && e.message ? e.message : '未知错误') + '</p>';
+          state.current.loading = false;
+          render();
+        }
+      });
+    }
     markRead(path);
+  }
+
+  function renderReader() {
+    var c = state.current || { path: '', name: '', html: '', loading: true };
+    var bar = '<div class="bm-reader-bar">' +
+      '<button class="bm-back" data-act="back" title="返回" aria-label="返回">←</button>' +
+      '<span class="bm-reader-title">' + esc(c.name) + '</span>' +
+      '<button class="bm-open-ext" data-act="open-ext" title="在 Obsidian 中打开">在 Obsidian 打开</button>' +
+      '</div>';
+    var body = '<div class="bm-md-wrap">' +
+      (c.loading ? '<div class="bm-md-loading">渲染中…</div>' : '<div class="bm-md">' + (c.html || '') + '</div>') +
+      '</div>';
+    return '<div class="bm-reader">' + bar + body + '</div>';
   }
 
   function openAbout() {
