@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.5","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.6","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客 v0.7
  *
@@ -244,7 +244,9 @@ var __bamboo_module_blog = (function () {
       '.bm-actions{display:flex;gap:8px;margin-top:12px;}',
       // 设置态：表单整体移到机身盒外的列表区（.bm-settings 包裹），补偿列表区 -14px 上移并加横向留白，
       // 机身与表单不再重叠；顶部 14px 留白恰好落在机身下沿的纸带接缝处
-      '.bm-settings{padding:14px 16px 12px;box-sizing:border-box;animation:bmFade .16s ease both;}',
+      // 宽度对齐拍立得纸带（.bm-paper 左右各 36px 外边距）：设置块同宽，视觉上与纸带一条边。
+      // 顶部 14px 内边距仍用于抵消列表区 -14px 上移
+      '.bm-settings{margin:0 36px;padding:14px 0 12px;box-sizing:border-box;animation:bmFade .16s ease both;}',
       '@keyframes bmFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}',
       '.bm-btn{flex:1 1 auto;padding:7px 10px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;border:1px solid rgba(128,128,128,.28);background:var(--background-primary,var(--bm-surface));color:inherit;transition:.12s;}',
       '.bm-btn:hover{box-shadow:0 1px 3px rgba(0,0,0,.06);}',
