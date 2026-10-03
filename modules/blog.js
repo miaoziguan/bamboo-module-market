@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.4","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.5","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客 v0.7
  *
@@ -245,7 +245,6 @@ var __bamboo_module_blog = (function () {
       // 设置态：表单整体移到机身盒外的列表区（.bm-settings 包裹），补偿列表区 -14px 上移并加横向留白，
       // 机身与表单不再重叠；顶部 14px 留白恰好落在机身下沿的纸带接缝处
       '.bm-settings{padding:14px 16px 12px;box-sizing:border-box;animation:bmFade .16s ease both;}',
-      '.bm-settings-title{font-size:13px;font-weight:700;color:' + BAMBOO_DEEP + ';margin:2px 0 10px;padding:0 2px;}',
       '@keyframes bmFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}',
       '.bm-btn{flex:1 1 auto;padding:7px 10px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;border:1px solid rgba(128,128,128,.28);background:var(--background-primary,var(--bm-surface));color:inherit;transition:.12s;}',
       '.bm-btn:hover{box-shadow:0 1px 3px rgba(0,0,0,.06);}',
@@ -527,7 +526,7 @@ var __bamboo_module_blog = (function () {
     html += '</div>';
 
     // 列表区：编辑态时整块切换为设置表单（表单在机身盒外的正常流渲染，不再溢出压到列表）
-    html += '<div class="bm-list-region" data-region="list">' + (state.editing ? '<div class="bm-settings"><div class="bm-settings-title">资料设置</div>' + renderEditForm() + '</div>' : renderListInner()) + '</div>';
+    html += '<div class="bm-list-region" data-region="list">' + (state.editing ? '<div class="bm-settings">' + renderEditForm() + '</div>' : renderListInner()) + '</div>';
 
     // 状态栏
     // 手动刷新的落脚点：状态栏本身就在讲「更新于 HH:MM」，点它重扫一次（重载中会显示「吐纸中…」）
