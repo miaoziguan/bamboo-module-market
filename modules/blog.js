@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.1","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.2","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客 v0.7
  *
@@ -26,8 +26,8 @@
 
 var __bamboo_module_blog = (function () {
   var STYLE_ID = 'bamboo-blog-module-style';
-  var BAMBOO = '#4a7c59';
-  var BAMBOO_DEEP = '#3d6b4a';
+  var BAMBOO = 'var(--bw-bamboo)';
+  var BAMBOO_DEEP = 'var(--bw-bamboo-deep)';
   var SEARCH_ICON = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234a7c59' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>";
 
   var state = {
@@ -78,7 +78,7 @@ var __bamboo_module_blog = (function () {
       // 纸带卡片（.bm-paper-item / skeleton / empty / error）底色纯白（--bm-paper 系令牌一处改、四处同步）
       // 模块自带回退令牌：宿主若已提供 Obsidian 令牌，仍以宿主为准；缺令牌时按主题给对的值 ——
       // 否则暗色下 var(--text-normal,#2b2b2b) 会把卡片标题染成深灰而看不见、编辑表单回退成白板
-      '.bm-wrap{height:100%;display:flex;flex-direction:column;box-sizing:border-box;font-size:13px;color:var(--text-normal,var(--bm-ink));--bm-ink:#2b2b2b;--bm-muted:#9a9a9a;--bm-faint:#a8a8a8;--bm-surface:#ffffff;--bm-surface-2:#eef2e8;--bm-border:#e6e3da;--bm-hover:rgba(0,0,0,.05);--bm-paper:#ffffff;--bm-paper-hover:#f4f4f3;--bm-paper-active:#ebebea;--bm-tear:rgba(0,0,0,.22);--bw-bamboo-deep:#3d6b4a;--bw-bamboo:#4a7c59;--bw-bamboo-light:#6a9e6e;--bw-bamboo-pale:#a8c5a0;--bw-radius-sm:3px;--bw-radius-md:8px;--bw-space-xs:4px;overflow:visible;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;}',
+      '.bm-wrap{height:100%;display:flex;flex-direction:column;box-sizing:border-box;font-size:13px;color:var(--text-normal,var(--bm-ink));--bm-ink:#2b2b2b;--bm-muted:#9a9a9a;--bm-faint:#a8a8a8;--bm-surface:hsl(var(--accent-hue),24%,97%);--bm-surface-2:hsl(var(--accent-hue),28%,92%);--bm-border:hsl(var(--accent-hue),26%,87%);--bm-hover:hsla(var(--accent-hue),26%,38%,.07);--bm-paper:hsl(var(--accent-hue),28%,97%);--bm-paper-hover:hsl(var(--accent-hue),30%,94%);--bm-paper-active:hsl(var(--accent-hue),32%,90%);--bm-tear:rgba(0,0,0,.22);--bw-bamboo-deep:hsl(var(--accent-hue),36%,calc(38% + var(--accent-lightness-offset,0%)));--bw-bamboo:hsl(var(--accent-hue),32%,calc(48% + var(--accent-lightness-offset,0%)));--bw-bamboo-light:hsl(var(--accent-hue),34%,calc(60% + var(--accent-lightness-offset,0%)));--bw-bamboo-pale:hsla(var(--accent-hue),40%,calc(70% + var(--accent-lightness-offset,0%)),.35);--bw-radius-sm:3px;--bw-radius-md:8px;--bw-space-xs:4px;overflow:visible;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;}',
       // ────────────── 光影系统（本模块所有立体件的统一规矩） ──────────────
       // 病灶（都是量出来的，不是看着像）：机身上沿浮着一层 16px 灰纱、左右各裹一圈
       // 22~26px 灰箍、下沿压出一道 114~134 的近黑硬边、机身底色 R−B 高达 +13 的米黄
@@ -124,7 +124,7 @@ var __bamboo_module_blog = (function () {
       // 把底缘提亮，底边直接化进白纸里（暗色无此问题，故只改亮色）。改为：
       //   · 外圈补一道紧贴接触投影 0 2px 4px -2px .34 —— 白纸上勾出机身底边（替代白边）；
       //   · 机身底缘压一条 1px 接触暗线 inset 0 -1px 0 .20，把轮廓收住。
-      '.camera{position:absolute;left:50%;top:0;width:420px;height:400px;transform-origin:top center;border-radius:32px;background:radial-gradient(120% 100% at 50% 0%,#ffffff 0%,rgba(255,255,255,0) 55%),linear-gradient(160deg,#fdfcfa 0%,#f5f3ef 28%,#e9e7e3 60%,#d8d6d1 92%,#cdccc8 100%);box-shadow:0 2px 4px -2px rgba(var(--bm-shade),.34),0 24px 40px -18px rgba(var(--bm-shade),.24),0 14px 22px -12px rgba(var(--bm-shade),.20),0 5px 8px -3px rgba(var(--bm-shade),.16),inset 0 2px 2px rgba(255,255,255,.95),inset 0 -1px 0 rgba(var(--bm-shade),.20),inset 0 -14px 10px -4px rgba(var(--bm-shade),.24),inset 0 -5px 10px rgba(var(--bm-shade),.12),inset 0 -7px 16px rgba(var(--bm-shade),.08);z-index:2;-webkit-backface-visibility:hidden;backface-visibility:hidden;will-change:transform;image-rendering:auto;}',
+      '.camera{position:absolute;left:50%;top:0;width:420px;height:400px;transform-origin:top center;border-radius:32px;background:radial-gradient(120% 100% at 50% 0%,#fff 0%,rgba(255,255,255,0) 55%),linear-gradient(160deg,hsl(var(--accent-hue),20%,98%) 0%,hsl(var(--accent-hue),20%,94%) 28%,hsl(var(--accent-hue),24%,89%) 60%,hsl(var(--accent-hue),24%,83%) 92%,hsl(var(--accent-hue),24%,80%) 100%);box-shadow:0 2px 4px -2px rgba(var(--bm-shade),.34),0 24px 40px -18px rgba(var(--bm-shade),.24),0 14px 22px -12px rgba(var(--bm-shade),.20),0 5px 8px -3px rgba(var(--bm-shade),.16),inset 0 2px 2px rgba(255,255,255,.95),inset 0 -1px 0 rgba(var(--bm-shade),.20),inset 0 -14px 10px -4px rgba(var(--bm-shade),.24),inset 0 -5px 10px rgba(var(--bm-shade),.12),inset 0 -7px 16px rgba(var(--bm-shade),.08);z-index:2;-webkit-backface-visibility:hidden;backface-visibility:hidden;will-change:transform;image-rendering:auto;}',
       // 高光 / 暗角：正上方光源 → 高光圆心收到底部中线正上方 at 50% -6%（不再 14% 左上），
       // 暗角落到正下方 at 50% 108%（不再 95% 108% 右下）。右下那道原为暖褐 rgba(50,46,42,.20)
       // 已换成中性影色 .16，机身右下不再泛污黄
@@ -154,7 +154,7 @@ var __bamboo_module_blog = (function () {
       // 外圈原为「1px 白 + 1px 7% 黑」的双环，那道黑环在机身亮面上就是一道灰箍，删黑留白
       // 镜座渐变改 180deg（竖向顶光，不再 148deg 的斜向）；删掉 inset 4px 0 / -4px 0 的左/右
       // 横向内高光与内阴影（那是左向光，违反 ⑥），只留顶部内高光 + 底部内阴影
-      '.lens-unit{position:absolute;left:50%;top:206px;z-index:4;width:176px;height:176px;margin:-88px 0 0 -88px;border-radius:50%;cursor:pointer;background:linear-gradient(180deg,#e9e6e1 0%,#f5f3f0 20%,#cdc8c0 58%,#b8b3ab 80%,#d6d2cc 100%);box-shadow:0 11px 18px -8px rgba(var(--bm-shade),.28),0 6px 11px -5px rgba(var(--bm-shade),.22),0 3px 5px -2px rgba(var(--bm-shade),.18),inset 0 6px 12px rgba(255,255,255,.92),inset 0 -6px 12px rgba(var(--bm-shade),.30),0 0 0 1px rgba(255,255,255,.60);-webkit-backface-visibility:hidden;backface-visibility:hidden;}',
+      '.lens-unit{position:absolute;left:50%;top:206px;z-index:4;width:176px;height:176px;margin:-88px 0 0 -88px;border-radius:50%;cursor:pointer;background:linear-gradient(180deg,hsl(var(--accent-hue),20%,89%) 0%,hsl(var(--accent-hue),18%,93%) 20%,hsl(var(--accent-hue),24%,79%) 58%,hsl(var(--accent-hue),24%,71%) 80%,hsl(var(--accent-hue),22%,84%) 100%);box-shadow:0 11px 18px -8px rgba(var(--bm-shade),.28),0 6px 11px -5px rgba(var(--bm-shade),.22),0 3px 5px -2px rgba(var(--bm-shade),.18),inset 0 6px 12px rgba(255,255,255,.92),inset 0 -6px 12px rgba(var(--bm-shade),.30),0 0 0 1px rgba(255,255,255,.60);-webkit-backface-visibility:hidden;backface-visibility:hidden;}',
       // 镜座顶面眩光：高光圆心收到正上方 at 50% 14%（不再 30% 22% 左上）
       // 亮色下调淡（.50/.10 → .32/.08）：这层 screen 眩光覆盖整个镜头（含金属环与镜片），
       // 亮色下镜座本色就浅，再压一层 .50 白会把金属环的「顶亮→中沉」与镜片深坑一起洗掉，
@@ -166,7 +166,7 @@ var __bamboo_module_blog = (function () {
       '.lens-barrel{position:absolute;inset:9px;border-radius:50%;background:linear-gradient(180deg,#fbfbfb 0%,#d4d4d4 18%,#9d9d9d 42%,#6e6e6e 58%,#8c8c8c 80%,#bcbcbc 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.34),inset 0 0 0 2.5px rgba(var(--bm-shade),.10),0 5px 10px -4px rgba(var(--bm-shade),.28),0 2px 4px -1px rgba(var(--bm-shade),.18);}',
       // ③ 镜片玻璃 —— 凹陷深坑：高光圆心收正上方 at 50% 18%（不再 34% 26% 左上）；
       // 左/右内阴影改对称（inset 7px 0 / -7px 0 同值），去掉原左偏深 8px/右 6px 的左向偏差
-      '.lens-glass{position:absolute;inset:24px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 18%,#7c8fba 0%,#45516d 22%,#232c40 50%,#141a28 76%,#0a0e16 100%);box-shadow:inset 0 10px 20px rgba(var(--bm-shade),.80),inset 0 -6px 12px rgba(255,255,255,.12),inset 7px 0 15px rgba(var(--bm-shade),.42),inset -7px 0 15px rgba(var(--bm-shade),.42),0 0 0 1px rgba(255,255,255,.12);-webkit-backface-visibility:hidden;backface-visibility:hidden;}',
+      '.lens-glass{position:absolute;inset:24px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 18%,hsl(var(--accent-hue),38%,58%) 0%,hsl(var(--accent-hue),40%,34%) 22%,hsl(var(--accent-hue),42%,19%) 50%,hsl(var(--accent-hue),44%,12%) 76%,hsl(var(--accent-hue),46%,7%) 100%);box-shadow:inset 0 10px 20px rgba(var(--bm-shade),.80),inset 0 -6px 12px rgba(255,255,255,.12),inset 7px 0 15px rgba(var(--bm-shade),.42),inset -7px 0 15px rgba(var(--bm-shade),.42),0 0 0 1px rgba(255,255,255,.12);-webkit-backface-visibility:hidden;backface-visibility:hidden;}',
       // 头像占住参考稿 iris 的位置：在 18px 基础上略放大到 inset:14px（74 → 82px），黑圈相应收到 14px，
       // 仅比原值多让出 4px，幅度克制；内投影维持原样（5px 12px / .60）保留镜头凹陷景深
       '.bm-avatar{position:absolute;inset:14px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#e3ecdd 0%,#cfe0c8 100%);color:' + BAMBOO_DEEP + ';font-size:36px;font-weight:700;box-shadow:inset 0 0 0 1px rgba(150,175,215,.24),inset 0 5px 12px rgba(var(--bm-shade),.60);}',
@@ -175,7 +175,7 @@ var __bamboo_module_blog = (function () {
       // 违反 ⑥。改为正上方顶光：一道竖向高光带 + 顶部居中的柔蓝晕
       // 亮色下调淡（白峰值 .92→.58、柔蓝晕 .40→.30）：.92 的白带在亮底上是一整块死白，
       // 盖住镜片本身的深坑景深；压到 .58 仍保留玻璃的反光，却让镜片结构与头像透出来
-      '.lens-flare{position:absolute;inset:0;border-radius:50%;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.58) 0%,rgba(255,255,255,.26) 9%,rgba(255,255,255,.04) 24%,rgba(255,255,255,0) 36%),radial-gradient(ellipse 64% 42% at 50% 16%,rgba(150,200,255,.30),transparent 72%);mix-blend-mode:screen;}',
+      '.lens-flare{position:absolute;inset:0;border-radius:50%;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.58) 0%,rgba(255,255,255,.26) 9%,rgba(255,255,255,.04) 24%,rgba(255,255,255,0) 36%),radial-gradient(ellipse 64% 42% at 50% 16%,hsla(var(--accent-hue),80%,72%,.30),transparent 72%);mix-blend-mode:screen;}',
       // ④ 红色快门 —— 凸起；现为明暗切换开关（手动刷新已挪到状态栏），按钮上不放图标
       // 缩到 46 宽：约束②上限随之降到 46 × 6% = 2.76px，故三级收缩由 7/3/0 改 8/4/0，
       // 使「模糊 − 收缩」= 2/2/2 ≤ 2.76 —— 否则影子会横向包住按钮，四周起一圈灰箍。
@@ -320,12 +320,12 @@ var __bamboo_module_blog = (function () {
       // 复合选择器（权重 1,1,0 > 1,0,0）才压得住，否则暗色会漏出亮色的冷调值。
       ':is(.theme-dark,.dark),:is(.theme-dark,.dark) body,:is(.theme-dark,.dark) #module-view-root{--bm-shade:30,30,34;}',
       // 暗色：卡片底色中性压深；并补上模块回退令牌的暗色值（宿主无令牌时表单/输入/文字也不露白）
-      ':is(.theme-dark,.dark) .bm-wrap{--bm-ink:#dcddde;--bm-muted:#9b9b9b;--bm-faint:#8a8a8a;--bm-surface:#242424;--bm-surface-2:#1f1f1f;--bm-border:#3a3a3a;--bm-hover:rgba(255,255,255,.07);--bm-paper:#2b2e29;--bm-paper-hover:#33362f;--bm-paper-active:#313a31;--bm-tear:rgba(255,255,255,.18);--bw-bamboo-deep:#7ab890;--bw-bamboo:#8fc59f;--bw-bamboo-light:#a8d6b5;--bw-bamboo-pale:rgba(143,197,159,.25);}',
+      ':is(.theme-dark,.dark) .bm-wrap{--bm-ink:#dcddde;--bm-muted:#9b9b9b;--bm-faint:#8a8a8a;--bm-surface:hsl(var(--accent-hue),12%,15%);--bm-surface-2:hsl(var(--accent-hue),12%,13%);--bm-border:hsl(var(--accent-hue),14%,22%);--bm-hover:hsla(var(--accent-hue),18%,80%,.08);--bm-paper:hsl(var(--accent-hue),14%,18%);--bm-paper-hover:hsl(var(--accent-hue),14%,21%);--bm-paper-active:hsl(var(--accent-hue),16%,20%);--bm-tear:rgba(255,255,255,.18);--bw-bamboo-deep:hsl(var(--accent-hue),32%,calc(58% + var(--accent-lightness-offset,0%)));--bw-bamboo:hsl(var(--accent-hue),30%,calc(66% + var(--accent-lightness-offset,0%)));--bw-bamboo-light:hsl(var(--accent-hue),28%,calc(74% + var(--accent-lightness-offset,0%)));--bw-bamboo-pale:hsla(var(--accent-hue),38%,calc(78% + var(--accent-lightness-offset,0%)),.28);}',
       // 暗色：三个面同样保持「顶亮 / 正中共 / 侧暗」的落差，否则立体感会塌掉
       // 暗色：参考稿没有暗色版，这里只把三个大面压深，凹凸的光影规则与投影数值一律照搬
       // 暗色机身同样遵守 ⑥：高光圆心收正上方 at 50% 0%，删左边高光 inset 3px 0，暗角落正下方
       // 暗色出纸槽：槽顶压得更深（中性黑 .48，暗面不发灰），槽口下沿的受光亮边压到 .08
-      ':is(.theme-dark,.dark) .camera{background:radial-gradient(120% 100% at 50% 0%,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 55%),linear-gradient(160deg,#4a4b44 0%,#42433c 28%,#383930 60%,#2e2f28 92%,#282922 100%);box-shadow:0 24px 40px -18px rgba(0,0,0,.50),0 14px 22px -12px rgba(0,0,0,.40),0 5px 8px -3px rgba(0,0,0,.30),inset 0 2px 2px rgba(255,255,255,.10),inset 0 -14px 10px -4px rgba(0,0,0,.48),inset 0 -2px 3px -1px rgba(255,255,255,.08),inset 0 -5px 10px rgba(0,0,0,.42),inset 0 -7px 16px rgba(0,0,0,.30);}',
+      ':is(.theme-dark,.dark) .camera{background:radial-gradient(120% 100% at 50% 0%,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 55%),linear-gradient(160deg,hsl(var(--accent-hue),10%,30%) 0%,hsl(var(--accent-hue),10%,27%) 28%,hsl(var(--accent-hue),12%,23%) 60%,hsl(var(--accent-hue),12%,19%) 92%,hsl(var(--accent-hue),12%,17%) 100%);box-shadow:0 24px 40px -18px rgba(0,0,0,.50),0 14px 22px -12px rgba(0,0,0,.40),0 5px 8px -3px rgba(0,0,0,.30),inset 0 2px 2px rgba(255,255,255,.10),inset 0 -14px 10px -4px rgba(0,0,0,.48),inset 0 -2px 3px -1px rgba(255,255,255,.08),inset 0 -5px 10px rgba(0,0,0,.42),inset 0 -7px 16px rgba(0,0,0,.30);}',
       // 暗色机身 ::before 高光/暗角同步到正上/正下
       ':is(.theme-dark,.dark) .camera::before{background:radial-gradient(130% 95% at 50% -6%,rgba(255,255,255,.16),transparent 52%),radial-gradient(92% 76% at 50% 108%,rgba(0,0,0,.42),transparent 62%);}',
       ':is(.theme-dark,.dark) .camera::after{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.10);}',
@@ -333,15 +333,16 @@ var __bamboo_module_blog = (function () {
       // 暗色：凹槽面板里的搜索格同样保持「上缘暗、下缘亮」的内嵌感
       ':is(.theme-dark,.dark) .bm-search{background:linear-gradient(180deg,#1b1c17 0%,#21221c 45%,#27281f 100%);border-color:rgba(255,255,255,.10);color:#e6e4dd;box-shadow:inset 0 3px 6px rgba(0,0,0,.60),inset 0 -2px 3px rgba(255,255,255,.06),0 1px 0 rgba(255,255,255,.06);}',
       ':is(.theme-dark,.dark) .bm-search::placeholder{color:#8b8880;}',
-      ':is(.theme-dark,.dark) .bm-search:focus{border-color:#8fc59f;box-shadow:inset 0 2px 5px rgba(0,0,0,.50),inset 0 -2px 3px rgba(255,255,255,.06),0 0 0 3px rgba(143,197,159,.18),0 1px 0 rgba(255,255,255,.06);}',
+      ':is(.theme-dark,.dark) .bm-search:focus{border-color:var(--bw-bamboo);box-shadow:inset 0 2px 5px rgba(0,0,0,.50),inset 0 -2px 3px rgba(255,255,255,.06),0 0 0 3px rgba(143,197,159,.18),0 1px 0 rgba(255,255,255,.06);}',
       ':is(.theme-dark,.dark) .top-panel .bm-search-wrap::before{filter:brightness(1.7) saturate(.75);}',
       ':is(.theme-dark,.dark) .bm-search-clear:hover{background:rgba(255,255,255,.10);}',
       // 暗色镜座：渐变改 180deg 竖向顶光，删左/右横向内高光与内阴影（遵守 ⑥）
-      ':is(.theme-dark,.dark) .lens-unit{background:linear-gradient(180deg,#3f403a 0%,#4a4b44 20%,#31322c 58%,#26271f 80%,#3a3b34 100%);box-shadow:0 11px 18px -8px rgba(0,0,0,.55),0 6px 11px -5px rgba(0,0,0,.45),0 3px 5px -2px rgba(0,0,0,.35),inset 0 6px 12px rgba(255,255,255,.18),inset 0 -6px 12px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.12);}',
+      ':is(.theme-dark,.dark) .lens-unit{background:linear-gradient(180deg,hsl(var(--accent-hue),10%,25%) 0%,hsl(var(--accent-hue),10%,29%) 20%,hsl(var(--accent-hue),12%,20%) 58%,hsl(var(--accent-hue),12%,16%) 80%,hsl(var(--accent-hue),10%,23%) 100%);box-shadow:0 11px 18px -8px rgba(0,0,0,.55),0 6px 11px -5px rgba(0,0,0,.45),0 3px 5px -2px rgba(0,0,0,.35),inset 0 6px 12px rgba(255,255,255,.18),inset 0 -6px 12px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.12);}',
       // 暗色眩光回到调淡前的原值（.50/.10 与 .92/.40/.40）：暗色下镜座底色深，同样的白眩光
       // 反而把结构「挑」出来，不会洗掉，故暗色维持不动
       ':is(.theme-dark,.dark) .lens-unit::after{background:radial-gradient(circle at 50% 14%,rgba(255,255,255,.50) 0%,rgba(255,255,255,.10) 24%,transparent 48%);}',
       ':is(.theme-dark,.dark) .lens-flare{background:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.40) 9%,rgba(255,255,255,.05) 24%,rgba(255,255,255,0) 36%),radial-gradient(ellipse 64% 42% at 50% 16%,rgba(150,200,255,.40),transparent 72%);}',
+      ':is(.theme-dark,.dark) .lens-glass{background:radial-gradient(circle at 50% 18%,hsl(var(--accent-hue),36%,46%) 0%,hsl(var(--accent-hue),40%,26%) 22%,hsl(var(--accent-hue),42%,14%) 50%,hsl(var(--accent-hue),44%,9%) 76%,hsl(var(--accent-hue),46%,5%) 100%);}',
       // 暗色金属环：竖向银色金属渐变，中段最暗只到 #5e5e5e（不发黑），与亮色同一光源方向
       ':is(.theme-dark,.dark) .lens-barrel{background:linear-gradient(180deg,#e6e6e6 0%,#b4b4b4 18%,#828282 42%,#5e5e5e 58%,#787878 80%,#a6a6a6 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.34),inset 0 0 0 2.5px rgba(var(--bm-shade),.16),0 5px 10px -4px rgba(var(--bm-shade),.42),0 2px 4px -1px rgba(var(--bm-shade),.30);}',
       ':is(.theme-dark,.dark) .shutter{box-shadow:0 6px 10px -7px rgba(0,0,0,.55),0 3px 6px -3px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.35),inset 0 -5px 10px rgba(0,0,0,.5),inset 0 4px 9px rgba(255,255,255,.5),0 0 0 2px rgba(60,61,55,.95),0 0 0 3px rgba(0,0,0,.18);}',
