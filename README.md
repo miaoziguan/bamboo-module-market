@@ -50,8 +50,13 @@ bamboo-module-market/
 1. 把模块源码放到 `modules/<id>.js`，文件顶部用注释声明元信息：
 
    ```js
-   /* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.1.0","fab":{"icon":"book-open","label":"博客"},"location":"left"} */
+   /* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.1.0","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
    ```
+
+   > ⚠️ `fab.icon` 必须用 **webapp 图标表里的驼峰名**（如 `bookOpen`、`fileText`、`shoppingCart`），
+   > 而不是 Lucide 官方的 kebab-case（`book-open`）。宿主 `LucideUtils.createIcon` 按驼峰名查表，
+   > 查不到会**静默回退成一个空心圆圈**，不报错但图标完全不对。
+   > 可用名见 `webapp/assets/scripts/utils/lucideUtils.js` 的 `ICONS`（约 91 个）。
 
 2. 在 `manifest.json` 的 `modules` 数组追加一项（注意 `url` 指向本仓库 raw 地址）。
 3. 提交并推送到 `main` 分支，插件侧「模块市场」即可看到并安装。
