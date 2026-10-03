@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.3","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.4","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客 v0.7
  *
@@ -569,8 +569,8 @@ var __bamboo_module_blog = (function () {
       '<div class="bm-label">头像（vault 内图片路径，如 attachments/avatar.png，或填写 https 图片链接）</div>' +
       '<input class="bm-input" data-field="avatar" value="' + esc(state.profile.avatar) + '" placeholder="留空显示昵称首字，或填 https:// 图片 URL">' +
       '<div class="bm-actions">' +
-      '<button class="bm-btn primary" data-act="save">保存</button>' +
       '<button class="bm-btn" data-act="cancel">取消</button>' +
+      '<button class="bm-btn primary" data-act="save">保存</button>' +
       '</div>' +
       '</div>';
   }
