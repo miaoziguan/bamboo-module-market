@@ -1,6 +1,6 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.8","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.9","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
- * 竹林模块 · 本地博客 v0.7
+ * 竹林模块 · 博客写立得 v0.7
  *
  * 排版借鉴《竹杖芒鞋》专栏阅读器：竹青色板、宣纸暖白、卡片阴影、圆角留白。
  *
@@ -1001,7 +1001,7 @@ var __bamboo_module_blog = (function () {
 
   /* ────────────── 生命周期 ────────────── */
   return {
-    name: '本地博客',
+    name: '博客写立得',
     mount: function (container, a) {
       api = a;
       root = container;
