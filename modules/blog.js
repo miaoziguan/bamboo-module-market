@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.7","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"本地博客","version":"0.7.8","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 本地博客 v0.7
  *
@@ -236,22 +236,55 @@ var __bamboo_module_blog = (function () {
       //     不靠任何独立元素，因此没有「横条戳出圆角」的假结构。
       // 分隔/压感仍由 .bm-cam-stage::after 的接地软影承担。
       // 编辑表单
-      '.bm-form{margin:0;padding:12px;border-radius:12px;background:var(--background-secondary,var(--bm-surface-2));box-shadow:inset 0 0 0 1px rgba(74,124,89,.08);}',
-      '.bm-label{font-size:11px;opacity:.6;margin:8px 0 3px;}',
-      '.bm-label:first-child{margin-top:0;}',
-      '.bm-input{width:100%;box-sizing:border-box;padding:7px 9px;border-radius:8px;font:inherit;font-size:13px;border:1px solid rgba(128,128,128,.28);background:var(--background-primary,var(--bm-surface));color:inherit;transition:border-color .12s,box-shadow .12s;}',
-      '.bm-input:focus{outline:none;border-color:' + BAMBOO + ';box-shadow:0 0 0 3px rgba(74,124,89,.12);}',
-      '.bm-actions{display:flex;gap:8px;margin-top:12px;}',
+      // ────────────── 设置表单：排版规范 ──────────────
+      // 四级排版层级（字号递增、对比递减，主次一眼可辨，不靠括号或加粗硬凑）：
+      //   组标题 10.5/600/竹青+竖条  →  字段标签 12/500/主文字色
+      //   →  字段提示 11/400/弱文字色  →  控件内文字 13/400（最大但对比最低，因为落在框内）
+      // 四档间距（全是 4 的倍数，纵向节奏因此统一）：
+      //   标签→提示 2 · 提示→控件 6 · 字段间 13 · 组间 15(+1px 线) · 字段→按钮区 17(+1px 线)
+      // 控件高度一律 height:34px 固定（不再靠 padding 撑高），标签长短、侧栏宽窄都一致。
+      // 边框与底色统一走 --accent-hue 派生（弃用原中性灰 rgba(128,128,128,.28)）：
+      // 灰边与竹青主按钮并置正是「风格跳变」的来源，统一到竹青族后整套只剩一个色相来源。
+      '.bm-form{margin:0;padding:14px 13px 13px;border-radius:12px;background:var(--bm-surface-2);box-shadow:inset 0 0 0 1px hsla(var(--accent-hue),28%,calc(50% + var(--accent-lightness-offset,0%)),.18),0 1px 2px rgba(0,0,0,.04);}',
+      // 组标题：比字段标签更轻的元信息层。此前在左侧加 2px 竖条作视觉锚点，但竖条占掉一个
+      // flex 槽位，把标题文字整体推向右侧、看着并没有真正居中；去掉后改用与标签/提示
+      // 相同的 text-align:center，三层居中机制一致，不存在两套写法。
+      '.bm-group-title{display:block;text-align:center;font-size:10.5px;font-weight:600;letter-spacing:.08em;color:' + BAMBOO + ';margin:0 0 8px;}',
+      // 组间：1px 极淡分隔线 + 比字段间距更大的留白 → 读作「分组」而非「分段」
+      '.bm-group+.bm-group{margin-top:15px;padding-top:15px;border-top:1px solid hsla(var(--accent-hue),22%,calc(60% + var(--accent-lightness-offset,0%)),.14);}',
+      '.bm-field+.bm-field{margin-top:13px;}',
+      // 标签不用 opacity 压灰（整行一起变淡且不可控），改用弱文字色令牌
+      // 标签与提示居中：窄侧栏里三条提示长短悬殊（原来 19/8/24 字），左对齐时右边缘参差；
+      // 居中后每行都居中折行，右侧齐整。输入框文字仍保持左对齐 —— 它是可编辑控件，
+      // 居中会让光标从中间起跳，长 URL 尤其难定位。
+      '.bm-label{font-size:12px;font-weight:500;line-height:1.4;letter-spacing:.02em;text-align:center;color:var(--bm-ink);margin:0;}',
+      // 提示独立成行、最轻的一层；行高给足，长文案折行也不会打乱相邻字段的间距
+      '.bm-hint{font-size:11px;font-weight:400;line-height:1.55;text-align:center;color:var(--bm-faint);margin:2px 0 0;}',
+      // 亮色单独提深一档：亮色下 --bm-faint(#a8a8a8) 落在 92% 浅底上只有约 2.2:1，达不到可读阈值；
+      // 暗色下它反而合适（约 5.5:1），故只在亮色覆写。提示与 placeholder 同批处理。
+      ':root:not(.theme-dark):not(.dark) .bm-hint,:root:not(.theme-dark):not(.dark) .bm-input::placeholder{color:hsl(var(--accent-hue),12%,calc(44% + var(--accent-lightness-offset,0%)));}',
+      '.bm-input{width:100%;box-sizing:border-box;height:34px;margin-top:6px;padding:0 10px;border-radius:9px;font:inherit;font-size:13px;border:1px solid hsla(var(--accent-hue),24%,calc(46% + var(--accent-lightness-offset,0%)),.30);background:var(--bm-surface);color:var(--bm-ink);transition:border-color .12s,box-shadow .12s;}',
+      '.bm-input::placeholder{color:var(--bm-faint);}',
+      '.bm-input:focus{outline:none;border-color:' + BAMBOO + ';box-shadow:0 0 0 3px hsla(var(--accent-hue),50%,calc(70% + var(--accent-lightness-offset,0%)),.16);}',
+      // 按钮区：与最后一个字段之间加分隔线 + 更大留白，读作「表单收尾动作」而非第四个字段
+      '.bm-actions{display:flex;gap:8px;margin-top:17px;padding-top:15px;border-top:1px solid hsla(var(--accent-hue),22%,calc(60% + var(--accent-lightness-offset,0%)),.14);}',
       // 设置态：表单整体移到机身盒外的列表区（.bm-settings 包裹），补偿列表区 -14px 上移并加横向留白，
       // 机身与表单不再重叠；顶部 14px 留白恰好落在机身下沿的纸带接缝处
       // 宽度对齐拍立得纸带（.bm-paper 左右各 36px 外边距）：设置块同宽，视觉上与纸带一条边。
       // 顶部 14px 内边距仍用于抵消列表区 -14px 上移
       '.bm-settings{margin:0 36px;padding:14px 0 12px;box-sizing:border-box;animation:bmFade .16s ease both;}',
       '@keyframes bmFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}',
-      '.bm-btn{flex:1 1 auto;padding:7px 10px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;border:1px solid rgba(128,128,128,.28);background:var(--background-primary,var(--bm-surface));color:inherit;transition:.12s;}',
-      '.bm-btn:hover{box-shadow:0 1px 3px rgba(0,0,0,.06);}',
-      '.bm-btn.primary{background:' + BAMBOO_DEEP + ';color:#fff;border-color:' + BAMBOO_DEEP + ';}',
-      '.bm-btn.primary:hover{background:' + BAMBOO + ';}',
+      // 次要按钮（取消）走 ghost：透明底 + 竹青描边，hover 才给淡底。
+      // 文字用主文字色而非 --bm-muted：后者亮色下 #9a9a9a 在浅底上仅约 3.2:1，偏灰发虚。
+      '.bm-btn{flex:1 1 auto;height:34px;padding:0 12px;border-radius:9px;cursor:pointer;font:inherit;font-size:13px;font-weight:500;border:1px solid hsla(var(--accent-hue),24%,calc(46% + var(--accent-lightness-offset,0%)),.32);background:transparent;color:var(--bm-ink);transition:border-color .12s,background .12s;}',
+      '.bm-btn:hover{border-color:hsla(var(--accent-hue),32%,calc(58% + var(--accent-lightness-offset,0%)),.46);background:hsla(var(--accent-hue),26%,calc(52% + var(--accent-lightness-offset,0%)),.10);}',
+      // 主按钮：实心竹青 + 白字。底色固定 40% 明度而不用 --bw-bamboo-deep：
+      // 后者是给「深底上的浅色文字」设计的（暗色下 58%），拿来当按钮底再压白字对比度不够。
+      '.bm-btn.primary{background:hsla(var(--accent-hue),36%,calc(40% + var(--accent-lightness-offset,0%)),1);color:#fff;border-color:transparent;}',
+      '.bm-btn.primary:hover{background:hsla(var(--accent-hue),38%,calc(48% + var(--accent-lightness-offset,0%)),1);color:#fff;}',
+      // 窄侧栏（≤300px）：间距收紧一档、提示降半号，按钮纵向堆叠 ——
+      // 等宽横排在 260px 下每个只剩约 110px，中文只有两字却撑得很宽，显笨重。
+      '@media (max-width:300px){.bm-form{padding:12px 11px 11px;}.bm-field+.bm-field{margin-top:11px;}.bm-group+.bm-group{margin-top:13px;padding-top:13px;}.bm-actions{margin-top:14px;padding-top:13px;}.bm-hint{font-size:10.5px;}.bm-actions{flex-direction:column;}}',
       // 搜索样式已上移到相机 .top-panel 内（见 ① 顶部凹槽面板）
       // 纸带：从出纸口吐出来的连续小票
       // 上移 14px 把纸带顶边送进机身背后（负 margin 而非 padding：纸带区是 overflow:auto，
@@ -561,14 +594,33 @@ var __bamboo_module_blog = (function () {
     stage.style.setProperty('--bm-inv-t', String(Math.max(1, Math.min(1.9, inv))));
   }
 
+  // 设置表单的一个字段块：标签 / 提示 / 控件三层刻意拆开。
+  // 原先把提示塞进标签的括号里（「文章根目录（vault 内文件夹，文章按子目录自动分类）」），
+  // 于是提示与标签同字号同色、无法降级，标签被撑长折行，纵向节奏随文案长短跳动。
+  // 拆开后：标签恒定短、提示独立成行并降一级灰，控件高度也与标签无关地统一。
+  function formField(name, label, hint, value, placeholder) {
+    return '<div class="bm-field">' +
+      '<div class="bm-label">' + esc(label) + '</div>' +
+      '<div class="bm-hint">' + esc(hint) + '</div>' +
+      '<input class="bm-input" data-field="' + name + '" value="' + esc(value) + '" placeholder="' + esc(placeholder) + '">' +
+      '</div>';
+  }
+
   function renderEditForm() {
+    // 文案分工：placeholder 说「填什么」，提示说「填了会怎样」。两者不再互相重复
+    // （原提示与 placeholder 都在讲「vault 内文件夹」，头像那条又长达 24 字）。
+    // 字段按语义分两组：目录决定「内容从哪来」，昵称与头像决定「以什么面貌出现」，
+    // 两组性质不同，用细分隔线 + 组标题切开，避免三段平铺读不出归属。
     return '<div class="bm-form">' +
-      '<div class="bm-label">文章根目录（vault 内文件夹，文章按子目录自动分类）</div>' +
-      '<input class="bm-input" data-field="rootFolder" value="' + esc(state.rootFolder) + '" placeholder="如 博客">' +
-      '<div class="bm-label">昵称</div>' +
-      '<input class="bm-input" data-field="nickname" value="' + esc(state.profile.nickname) + '" placeholder="博客作者名">' +
-      '<div class="bm-label">头像（vault 内图片路径，如 attachments/avatar.png，或填写 https 图片链接）</div>' +
-      '<input class="bm-input" data-field="avatar" value="' + esc(state.profile.avatar) + '" placeholder="留空显示昵称首字，或填 https:// 图片 URL">' +
+      '<div class="bm-group">' +
+        '<div class="bm-group-title">内容源</div>' +
+        formField('rootFolder', '文章根目录', '文章按子目录自动分类', state.rootFolder, 'vault 内文件夹，如 博客') +
+      '</div>' +
+      '<div class="bm-group">' +
+        '<div class="bm-group-title">博主资料</div>' +
+        formField('nickname', '昵称', '显示在机身品牌位', state.profile.nickname, '博客作者名') +
+        formField('avatar', '头像', '留空则显示昵称首字', state.profile.avatar, '图片路径或链接，如 avatar.png') +
+      '</div>' +
       '<div class="bm-actions">' +
       '<button class="bm-btn" data-act="cancel">取消</button>' +
       '<button class="bm-btn primary" data-act="save">保存</button>' +
