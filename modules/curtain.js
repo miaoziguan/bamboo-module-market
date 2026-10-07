@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.12","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.13","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -347,8 +347,12 @@ var __bamboo_module_curtain = (function () {
 
       // —— 卷筒：毛竹横筒。圆柱全靠竖向光影（上缘受光、下缘入暗），平涂一块色立刻成「一根条」
       // 卷筒兼作明暗开关：点击切换 Obsidian 基础明暗（同博客「快门」）。cursor + hover/按压/焦点反馈。
+      // 卷筒带 role="button"（明暗开关），会命中 base.css 的全局触控目标规则
+      // :where(button,[role="button"],…){min-width/min-height:var(--touch-target)=44px}，
+      // 把 20px 的竹筒撑成 44px —— 窗顶比例就此崩掉。显式压回 0，保住设计尺寸。
       '.bc-roller{position:absolute;left:50%;top:0;width:' + FRAME_W + 'px;height:' + ROLLER_H +
-        'px;margin-left:-' + FRAME_W / 2 + 'px;z-index:4;cursor:pointer;-webkit-tap-highlight-color:transparent;' +
+        'px;min-width:0;min-height:0;margin-left:-' + FRAME_W / 2 + 'px;z-index:4;cursor:pointer;' +
+        '-webkit-tap-highlight-color:transparent;' +
         'transform-origin:50% 50%;transition:transform .34s cubic-bezier(.22,.9,.24,1),filter .12s;}',
       '.bc-roller:hover{filter:brightness(1.05);}',
       '.bc-roller:active{filter:brightness(.94);}',
