@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.11","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.12","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -346,9 +346,13 @@ var __bamboo_module_curtain = (function () {
         'px;transform-origin:top center;transform:translateX(-50%);}',
 
       // —— 卷筒：毛竹横筒。圆柱全靠竖向光影（上缘受光、下缘入暗），平涂一块色立刻成「一根条」
+      // 卷筒兼作明暗开关：点击切换 Obsidian 基础明暗（同博客「快门」）。cursor + hover/按压/焦点反馈。
       '.bc-roller{position:absolute;left:50%;top:0;width:' + FRAME_W + 'px;height:' + ROLLER_H +
-        'px;margin-left:-' + FRAME_W / 2 + 'px;z-index:4;' +
-        'transform-origin:50% 50%;transition:transform .34s cubic-bezier(.22,.9,.24,1);}',
+        'px;margin-left:-' + FRAME_W / 2 + 'px;z-index:4;cursor:pointer;-webkit-tap-highlight-color:transparent;' +
+        'transform-origin:50% 50%;transition:transform .34s cubic-bezier(.22,.9,.24,1),filter .12s;}',
+      '.bc-roller:hover{filter:brightness(1.05);}',
+      '.bc-roller:active{filter:brightness(.94);}',
+      '.bc-roller:focus-visible{outline:2px solid hsl(var(--bc-hue),40%,46%);outline-offset:3px;border-radius:7px;}',
       '.bc-roll-body{position:absolute;left:0;right:0;top:0;bottom:0;border-radius:' + ROLLER_H / 2 + 'px;' +
         'background:linear-gradient(180deg,' +
         'var(--bc-l4) 0%,var(--bc-l2) 24%,var(--bc-l1) 44%,' +
@@ -583,7 +587,7 @@ var __bamboo_module_curtain = (function () {
       '<div class="bc-wrap">' +
       '<div class="bc-stage">' +
       '<div class="bc-win">' +
-      '<div class="bc-roller">' +
+      '<div class="bc-roller" role="button" tabindex="0" aria-label="切换明暗">' +
       '<div class="bc-bracket l"></div><div class="bc-bracket r"></div>' +
       '<div class="bc-roll-body"></div>' +
       '</div>' +
@@ -653,6 +657,13 @@ var __bamboo_module_curtain = (function () {
     if (el.cancelBtn) el.cancelBtn.addEventListener('click', closeSettings);
     if (el.openToggle) el.openToggle.addEventListener('change', function () { state.openOnPull = el.openToggle.checked; applyOpenOnPull(); });
     if (el.mask) el.mask.addEventListener('click', closeSettings);
+    // 卷筒兼作明暗开关（与博客模块「快门」同一宿主接口 module:toggleTheme）
+    if (el.roller) {
+      el.roller.addEventListener('click', toggleTheme);
+      el.roller.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleTheme(); }
+      });
+    }
 
     paintLand();
     bindDrag();
@@ -686,6 +697,21 @@ var __bamboo_module_curtain = (function () {
     if (!el.wrap) return;
     el.wrap.style.setProperty('--bc-hue', String(Math.round(THEME.hue)));
     el.wrap.classList.toggle('bc-dark', !!THEME.isDark);
+    syncRoller();
+  }
+
+  // 卷筒=明暗开关：交给宿主代劳（与博客模块「快门」同一实现 module:toggleTheme），
+  // 切换后主题管线把新明暗推回来（本模块已主动观察 .dark），卷筒随侧栏一起变。宿主无此能力则静默跳过。
+  function toggleTheme() {
+    if (api && typeof api.toggleTheme === 'function') api.toggleTheme();
+  }
+
+  // 同步卷筒的 tooltip / aria（随明暗变化更新，不重建 DOM）
+  function syncRoller() {
+    if (!el.roller) return;
+    var label = THEME.isDark ? '切换到亮色' : '切换到暗色';
+    el.roller.setAttribute('title', label);
+    el.roller.setAttribute('aria-label', label);
   }
 
   var _repaintRaf = 0;
