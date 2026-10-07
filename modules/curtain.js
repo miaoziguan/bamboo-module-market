@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.9","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.10","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -533,12 +533,14 @@ var __bamboo_module_curtain = (function () {
       '.bc-hint{font-size:9.5px;line-height:1.5;opacity:.7;margin:2px 0 6px;}' +
       '.bc-field input{width:100%;box-sizing:border-box;border:1px solid var(--bc-paper-edge);' +
         'border-radius:5px;padding:5px 6px;font-size:11px;background:transparent;color:inherit;}' +
-      '.bc-actions{display:flex;gap:6px;justify-content:flex-end;align-items:center;margin-top:2px;}' +
-      '.bc-btn{border:1px solid var(--bc-paper-edge);background:transparent;color:var(--bc-goose);' +
-        'border-radius:999px;padding:3px 13px;font-size:10px;line-height:1.3;cursor:pointer;transition:background .12s,border-color .12s;}' +
-      '.bc-btn:hover{background:rgba(128,128,128,.12);}' +
-      '.bc-btn.primary{background:var(--bc-seal);border-color:var(--bc-seal);color:#fff;}' +
-      '.bc-btn.primary:hover{filter:brightness(1.06);}' +
+      // 按钮区对齐博客模块：与末字段间加分隔线，取消/保存等宽横排（ghost 取消 / 实心主色保存）。
+      // 尺寸交给全局触控目标（base.css 把裸 button 地板到 44px），与博客模块一致。
+      '.bc-actions{display:flex;gap:8px;margin-top:14px;padding-top:13px;border-top:1px solid hsla(var(--bc-hue),22%,52%,.14);}' +
+      '.bc-btn{flex:1 1 auto;height:34px;padding:0 12px;border-radius:9px;cursor:pointer;font:inherit;font-size:13px;font-weight:500;' +
+        'border:1px solid hsla(var(--bc-hue),24%,46%,.32);background:transparent;color:var(--bc-goose);transition:border-color .12s,background .12s;}' +
+      '.bc-btn:hover{border-color:hsla(var(--bc-hue),32%,48%,.46);background:hsla(var(--bc-hue),26%,46%,.10);}' +
+      '.bc-btn.primary{background:hsl(var(--bc-hue),36%,40%);border-color:transparent;color:#fff;}' +
+      '.bc-btn.primary:hover{background:hsl(var(--bc-hue),38%,48%);color:#fff;}' +
       '.bc-sill{cursor:pointer;}' +
       // 设置框里的开关：拉开窗即读一篇
       '.bc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 6px;}' +
@@ -546,7 +548,7 @@ var __bamboo_module_curtain = (function () {
       '.bc-switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1;}' +
       '.bc-switch .bc-track{position:absolute;inset:0;background:rgba(128,128,128,.32);border-radius:9px;transition:background .15s;}' +
       '.bc-switch .bc-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .15s;}' +
-      '.bc-switch input:checked ~ .bc-track{background:var(--bc-seal);}' +
+      '.bc-switch input:checked ~ .bc-track{background:hsl(var(--bc-hue),36%,40%);}' +
       '.bc-switch input:checked ~ .bc-thumb{transform:translateX(16px);}'
     ].join('\n');
     document.head.appendChild(st);
