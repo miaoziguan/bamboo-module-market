@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.13","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.14","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -66,6 +66,7 @@ var __bamboo_module_curtain = (function () {
     opened: false,  // 本次开帘是否已触发过打开文章（关帘清零，避免重复打开）
     folder: '',     // 信箱目录（vault 内文件夹），由设置框持久化
     openOnPull: true, // 拉开百叶窗是否随机打开文章；关掉即纯挂件，只露远山
+    driftSpeed: 1,    // 风景（远山视差）漂移倍速：0 = 静止，1 = 默认，上限 2
   };
 
   var api = null;
@@ -225,7 +226,9 @@ var __bamboo_module_curtain = (function () {
 
   // ── 开窗后远山/云游动：视差漂移（远山小慢、近山大快，云更慢更大，各自随机相位错峰不重叠）──
   var _driftEls = [];
-  var _driftRaf = 0, _driftOn = false, _reduceMotion = false;
+  // _driftT 是「虚拟时间」：每帧只累加 dt × 倍速，而不是把绝对时间 now 乘倍速 ——
+  // 后者在改速度的一瞬会整体跳相位（山瞬移），累加式则平滑过渡，才能真的边拖边看快慢。
+  var _driftRaf = 0, _driftOn = false, _driftT = 0, _driftLast = 0;
   function collectDrift() {
     _driftEls = [];
     if (!el.insert) return;
@@ -239,16 +242,22 @@ var __bamboo_module_curtain = (function () {
     }
   }
   function startDrift() {
-    _reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    if (_reduceMotion) return; // 尊重系统「减少动态」
+    // 0 = 静止。系统「减少动态」不在此硬拦：默认值已按它取 0（见 loadConfig），
+    // 但用户手动把滑块拉离 0 属于显式选择，应当尊重。
+    if (state.driftSpeed <= 0) return;
     collectDrift();
     if (!_driftEls.length || _driftRaf) return;
     _driftOn = true;
+    _driftT = 0;
+    _driftLast = 0;
     (function tick(now) {
       if (!_driftOn) return;
+      var dt = _driftLast ? (now - _driftLast) : 0;
+      _driftLast = now;
+      _driftT += dt * state.driftSpeed; // 倍速只作用于虚拟时间的推进速率
       for (var i = 0; i < _driftEls.length; i++) {
         var e = _driftEls[i];
-        var dx = e.ax * Math.sin(now / e.sx + e.px), dy = e.ay * Math.sin(now / e.sy + e.py);
+        var dx = e.ax * Math.sin(_driftT / e.sx + e.px), dy = e.ay * Math.sin(_driftT / e.sy + e.py);
         e.node.setAttribute('transform', 'translate(' + f(dx) + ',' + f(dy) + ')');
       }
       _driftRaf = requestAnimationFrame(tick);
@@ -257,6 +266,7 @@ var __bamboo_module_curtain = (function () {
   function stopDrift() {
     _driftOn = false;
     if (_driftRaf) { cancelAnimationFrame(_driftRaf); _driftRaf = 0; }
+    _driftLast = 0;
     for (var i = 0; i < _driftEls.length; i++) _driftEls[i].node.setAttribute('transform', 'translate(0,0)');
   }
 
@@ -560,7 +570,19 @@ var __bamboo_module_curtain = (function () {
       '.bc-switch .bc-track{position:absolute;inset:0;background:rgba(128,128,128,.32);border-radius:9px;transition:background .15s;}' +
       '.bc-switch .bc-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .15s;}' +
       '.bc-switch input:checked ~ .bc-track{background:hsl(var(--bc-hue),36%,40%);}' +
-      '.bc-switch input:checked ~ .bc-thumb{transform:translateX(16px);}'
+      '.bc-switch input:checked ~ .bc-thumb{transform:translateX(16px);}' +
+      // 风景流速滑块：range 同样命中 base.css 全局触控地板（input 在 :where 列表里），
+      // 必须显式 min-height:0，否则被撑成 44px 高把面板顶变形（与卷筒同一个坑）。
+      '.bc-speed-val{font-size:11px;font-weight:600;opacity:.75;font-variant-numeric:tabular-nums;}' +
+      '.bc-range{-webkit-appearance:none;appearance:none;display:block;width:100%;height:18px;min-height:0;' +
+        'margin:6px 0 0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent;}' +
+      '.bc-range::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:hsla(var(--bc-hue),20%,46%,.28);}' +
+      '.bc-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;margin-top:-5px;' +
+        'border-radius:50%;background:hsl(var(--bc-hue),36%,40%);box-shadow:0 1px 2px rgba(0,0,0,.3);}' +
+      '.bc-range::-moz-range-track{height:4px;border-radius:2px;background:hsla(var(--bc-hue),20%,46%,.28);}' +
+      '.bc-range::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;' +
+        'background:hsl(var(--bc-hue),36%,40%);box-shadow:0 1px 2px rgba(0,0,0,.3);}' +
+      '.bc-range:focus-visible{outline:2px solid hsl(var(--bc-hue),40%,46%);outline-offset:2px;}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -632,6 +654,14 @@ var __bamboo_module_curtain = (function () {
           '<div class="bc-hint">每次开窗从该目录随机取一篇</div>' +
           '<input class="bc-folder" type="text" data-field="letterFolder" placeholder="vault 内文件夹，如 信箱" />' +
         '</div>' +
+        '<div class="bc-group">' +
+          '<div class="bc-row">' +
+            '<div class="bc-label">风景流速</div>' +
+            '<span class="bc-speed-val">1.0×</span>' +
+          '</div>' +
+          '<input class="bc-range" type="range" min="0" max="2" step="0.1" aria-label="风景流速" />' +
+          '<div class="bc-hint">0 = 静止，1× 为默认；只在拉开帘后运行</div>' +
+        '</div>' +
         '<div class="bc-actions">' +
           '<button class="bc-btn" data-act="cancel">取消</button>' +
           '<button class="bc-btn primary" data-act="save">保存</button>' +
@@ -655,6 +685,8 @@ var __bamboo_module_curtain = (function () {
     el.saveBtn = root.querySelector('[data-act="save"]');
     el.cancelBtn = root.querySelector('[data-act="cancel"]');
     el.mask = root.querySelector('.bc-settings-mask');
+    el.range = root.querySelector('.bc-range');
+    el.speedVal = root.querySelector('.bc-speed-val');
     if (el.sill) el.sill.addEventListener('click', openSettings);
     if (el.folderInput) el.folderInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') onFolderSave(); });
     if (el.saveBtn) el.saveBtn.addEventListener('click', onFolderSave);
@@ -668,12 +700,23 @@ var __bamboo_module_curtain = (function () {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleTheme(); }
       });
     }
+    // 风景流速：拖动即时生效（0 停 / >0 且帘已开则续跑），数值随滑块实时回显
+    if (el.range) {
+      el.range.addEventListener('input', function () {
+        var v = parseFloat(el.range.value);
+        if (!isFinite(v)) v = 1;
+        state.driftSpeed = Math.max(0, Math.min(2, v));
+        syncDriftSpeed();
+        applyDriftSpeed();
+      });
+    }
 
     paintLand();
     bindDrag();
     fitStage();
     applyPull(false);
     applyOpenOnPull();
+    syncDriftSpeed();
   }
 
   /* ───────────────────── 缩放：宽高双向取小，且允许放大 ───────────────────── */
@@ -857,13 +900,17 @@ var __bamboo_module_curtain = (function () {
       var d = await api.loadData();
       state.folder = (d && typeof d.letterFolder === 'string') ? d.letterFolder : '';
       state.openOnPull = (d && typeof d.openOnPull === 'boolean') ? d.openOnPull : true;
+      var sp = (d && typeof d.driftSpeed === 'number' && isFinite(d.driftSpeed))
+        ? d.driftSpeed : (prefersReduceMotion() ? 0 : 1);
+      state.driftSpeed = Math.max(0, Math.min(2, sp));
+      syncDriftSpeed();
     } catch (e) { state.folder = ''; }
   }
 
   async function saveConfig(folder) {
     if (!api || !api.saveData) return;
     state.folder = folder || '';
-    try { await api.saveData({ letterFolder: state.folder, openOnPull: !!state.openOnPull }); } catch (e) {}
+    try { await api.saveData({ letterFolder: state.folder, openOnPull: !!state.openOnPull, driftSpeed: state.driftSpeed }); } catch (e) {}
   }
 
   // 开关关闭时把「信箱目录」整组淡化：只作视觉提示（暂不生效），
@@ -872,12 +919,32 @@ var __bamboo_module_curtain = (function () {
     if (el.folderGroup) el.folderGroup.classList.toggle('is-off', !state.openOnPull);
   }
 
+  // 系统「减少动态」：只用来给流速一个 0 的默认值，不再硬禁用 ——
+  // 用户手动把滑块拉离 0 是显式选择，应当尊重。
+  function prefersReduceMotion() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  // 滑块位置与数值回显（渲染后、打开面板时各同步一次）
+  function syncDriftSpeed() {
+    var v = Math.max(0, Math.min(2, state.driftSpeed));
+    if (el.range) el.range.value = String(v);
+    if (el.speedVal) el.speedVal.textContent = v.toFixed(1) + '×';
+  }
+
+  // 流速改变即时生效：0 直接停；>0 且帘已开则续跑（帘关着时本就不跑）
+  function applyDriftSpeed() {
+    if (state.driftSpeed <= 0) { stopDrift(); return; }
+    if (state.pull >= 1) startDrift();
+  }
+
   // 点击窗台（.bc-sill）弹出信箱目录设置；沿用博客模块的 save/cancel 范式
   function openSettings() {
     if (!el.wrap) return;
     if (el.folderInput) el.folderInput.value = state.folder || '';
     if (el.openToggle) el.openToggle.checked = !!state.openOnPull;
     applyOpenOnPull();
+    syncDriftSpeed();
     el.wrap.classList.add('bc-set-open');
   }
 
