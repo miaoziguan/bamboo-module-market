@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.2","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.3","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -155,8 +155,8 @@ var __bamboo_module_curtain = (function () {
     // 山更暗（近山成剪影、远山化进雾里），反差靠明度而非饱和。
     var top, low, fog, water, fogOp;
     if (dk) {
-      top = 'hsl(' + h + ',12%,18%)'; low = 'hsl(' + h + ',14%,30%)';
-      fog = 'hsl(' + h + ',8%,52%)'; water = 'hsl(' + h + ',12%,26%)'; fogOp = 0.6;
+      top = 'hsl(' + h + ',20%,19%)'; low = 'hsl(' + h + ',22%,32%)';
+      fog = 'hsl(' + h + ',14%,52%)'; water = 'hsl(' + h + ',18%,27%)'; fogOp = 0.62;
     } else {
       top = 'hsl(' + h + ',10%,95%)'; low = 'hsl(' + h + ',12%,88%)';
       fog = 'hsl(' + h + ',16%,97%)'; water = 'hsl(' + h + ',14%,90%)'; fogOp = 0.9;
@@ -228,7 +228,7 @@ var __bamboo_module_curtain = (function () {
     st.textContent = [
       '.bc-wrap{position:relative;padding:34px 4px 18px;box-sizing:border-box;' +
         '--bc-hue:152;' + // 与 THEME.hue 的兜底值一致（挂载后即由 applyTheme 覆盖）
-        '--bc-cav-l:96%;' +
+        '--bc-cav-l:96%;--bc-cav-s:16%;' +
         // 提饱和、同时把最暗一档抬起来：发浑＝低饱和＋中明度。
         // 上轮为了「减重」把饱和一路压到 23~30%，正好落进浑浊带，整片糊成灰绿。
         // 减重要靠明度，不能靠抽饱和 —— 抽了饱和就发灰。
@@ -259,36 +259,33 @@ var __bamboo_module_curtain = (function () {
         '--bc-j5:hsl(var(--bc-jh),15%,57%);' +
         // 投影也带青 —— 中性灰的影子会把附近的绿抽成脏灰
         '--bc-shadow:rgba(14,52,44,.3);}',
-      // 深色主题：一扇「夜里的玻璃帘」。三件事 ——
-      // 一，叶半透（--bc-lam-op）：帘不再是挡视线的板，而是隔着玻璃看夜色；
-      // 二，纱换成半透冷雾（--bc-veil-bg）：叶缝里透出来的是夜雾，不是一块实色；
-      // 三，帘后磨砂（--bc-glass）：窗外山水被 blur 化开，玻璃的「厚度」全从这里来。
-      // 色相仍挂主题 hue，但饱和压到 14~17%、明度压进 15~44% 一档，
-      // 让它躺在深绿主题里而不是浮在上面；暖天光换冷夜雾（青白），冷绿才不发脏。
-      // 深色主题：一扇「夜里的玻璃帘」。玻璃的四件事 ——
-      // 一，清不清：纱减到近乎无（--bc-veil-bg 只留一丝冷调），玻璃是清的，不是奶奶的；
-      // 二，透不透：叶半透（--bc-lam-op .6），窗外的夜山从叶后透上来；
-      // 三，亮不亮：叶顶一道锐利棱光（--bc-lam-rim）—— 玻璃的「亮」全在棱上，不在面上；
-      // 四，厚不厚：帘后一点磨砂（--bc-glass），夜山被柔化，玻璃才有厚度。
-      // 叶面做成上亮下暗的强渐变（40%→9%），一道光从上方斜落在玻璃上；
-      // 色调：色相仍挂主题 hue，饱和压到 18%、明度压进 7~40% —— 躺在深绿里，不浮在上面。
-      '.bc-wrap.bc-dark{--bc-cav-l:12%;' +
-        '--bc-l1:hsl(calc(var(--bc-hue) + 2),18%,40%);' +
-        '--bc-l2:hsl(calc(var(--bc-hue) + 1),18%,26%);' +
-        '--bc-l3:hsl(var(--bc-hue),18%,16%);' +
-        '--bc-l4:hsl(var(--bc-hue),18%,9%);' +
-        '--bc-line:hsl(var(--bc-hue),19%,7%);' +
-        '--bc-lam-op:.6;' +
-        '--bc-lam-rim:rgba(228,248,242,.6);' +
+      // 暗色重写（治本）：原暗块写死 18% 饱和 + 色相不偏（hue+0~2），而「竹林星光」暗调的竹绿是
+      // --bamboo-dark:hue+6/35%/25%、--bamboo-deep:hue+5/34%/26%、--bm-primary:hue+2/25%/47%、
+      // --bamboo-light:hue/39%/65% —— 整整低一档饱和、也没那 +5/+6 色相偏移，于是发灰、对不上主题暗绿。
+      // 现直接复刻主题 :host(.dark) 的同款公式（色相偏移 + 饱和 + 明度），让窗台暗色与全站强调色
+      // 同源同调：用户换任意色相、或主题换了暗调，窗台都自动对齐，不再手调写死的数值。
+      // 玻璃观感（叶半透 / 冷雾纱 / 帘后磨砂 / 棱光）保持不变，只把「绿」换成主题那支竹绿。
+      '.bc-wrap.bc-dark{' +
+        // 窗洞：比叶色深一档的暗绿虚空，贴近主题 bg-gradient-end（hue+2,30%,9%）
+        '--bc-cav-l:11%;--bc-cav-s:26%;' +
+        // 叶片四档明度沿主题竹调铺开：顶光≈bm-primary 受光面，底暗≈bamboo-dark
+        '--bc-l1:hsl(calc(var(--bc-hue) + 2),33%,49%);' +
+        '--bc-l2:hsl(calc(var(--bc-hue) + 3),34%,38%);' +
+        '--bc-l3:hsl(calc(var(--bc-hue) + 5),34%,29%);' +
+        '--bc-l4:hsl(calc(var(--bc-hue) + 6),35%,22%);' +
+        '--bc-line:hsl(calc(var(--bc-hue) + 6),35%,15%);' +
+        '--bc-lam-op:.62;' +
+        '--bc-lam-rim:rgba(228,248,242,.66);' +
         '--bc-glass:blur(2px);' +
         '--bc-veil-bg:linear-gradient(180deg,rgba(206,232,222,.10) 0%,rgba(170,200,190,.04) 100%);' +
         '--bc-veil-glow:rgba(206,232,222,.08);' +
-        '--bc-glow2:rgba(200,228,218,.22);' +
-        '--bc-j1:hsl(var(--bc-jh),9%,56%);' +
-        '--bc-j2:hsl(var(--bc-jh),8%,48%);' +
-        '--bc-j3:hsl(var(--bc-jh),9%,40%);' +
-        '--bc-j4:hsl(var(--bc-jh),11%,31%);' +
-        '--bc-j5:hsl(var(--bc-jh),13%,23%);' +
+        '--bc-glow2:rgba(200,228,218,.24);' +
+        // 白玉：暗色下整体压亮（filter 在 .bc-sill），玉调也往主题青白靠一点
+        '--bc-j1:hsl(var(--bc-jh),11%,58%);' +
+        '--bc-j2:hsl(var(--bc-jh),10%,49%);' +
+        '--bc-j3:hsl(var(--bc-jh),10%,41%);' +
+        '--bc-j4:hsl(var(--bc-jh),12%,32%);' +
+        '--bc-j5:hsl(var(--bc-jh),14%,24%);' +
         '--bc-shadow:rgba(2,18,16,.55);}',
 
       // 裁掉 .bc-win 那截未缩放的布局盒：transform 不参与布局，absolute 的窗口
@@ -324,7 +321,7 @@ var __bamboo_module_curtain = (function () {
         'px;height:' + FRAME_H + 'px;margin-left:-' + FRAME_W / 2 +
         'px;overflow:hidden;box-sizing:border-box;border-radius:2px;' +
         'border:4px solid var(--bc-l4);' +
-        'background:hsl(calc(var(--bc-hue) + 3),16%,var(--bc-cav-l));' +
+        'background:hsl(calc(var(--bc-hue) + 3),var(--bc-cav-s,16%),var(--bc-cav-l));' +
         'box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 3px 6px rgba(4,30,26,.24),' +
         'inset 6px 0 12px rgba(4,30,26,.16),inset -6px 0 12px rgba(4,30,26,.16),' +
         '0 10px 22px var(--bc-shadow);}',

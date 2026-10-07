@@ -17,9 +17,9 @@
       "id": "curtain",
       "name": "竹林卷帘窗",
       "author": "羽鳞君",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "url": "https://raw.githubusercontent.com/miaoziguan/bamboo-module-market/main/modules/curtain.js",
-      "description": "侧栏一扇竖长竹制卷帘窗：竹框嵌远山，下拉玉珠拉链卷起百叶帘露出门外山色；明暗主题实时联动，触屏与键盘皆可操作。"
+      "description": "侧栏一扇竖长竹制卷帘窗：竹框嵌远山，下拉玉珠拉链卷起百叶帘露出门外山色；明暗主题实时联动，触屏与键盘皆可操作。v0.2.3 暗色色调对齐主题「竹林星光」竹绿暗调（复刻 --bamboo-dark/--bamboo-deep/--bm-primary 同款色相偏移与饱和，远山夜色也带绿调），不再发灰。"
     }
   ]
 }
