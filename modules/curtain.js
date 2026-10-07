@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.4","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.5","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -141,13 +141,6 @@ var __bamboo_module_curtain = (function () {
     return s + ' L' + f(w + ext) + ',' + f(baseY) + ' L' + f(-ext) + ',' + f(baseY) + ' Z';
   }
 
-  // 飘云：开窗后随山一起缓缓游动（比山更慢更大），软椭圆 + 模糊，落在上半天、山后
-  function cloudSvg(P, x, y, rx, ry, op) {
-    return '<g class="bc-cloud" data-kind="cloud" data-depth="1">' +
-      '<ellipse cx="' + f(x) + '" cy="' + f(y) + '" rx="' + f(rx) + '" ry="' + f(ry) + '" ' +
-      'fill="#ffffff" opacity="' + op + '" filter="url(#' + P + 'Cld)"/></g>';
-  }
-
   // 满天星：星位固定（定种子），只在暗色出现。夜里满天星，位置不跳才像真天；
   // 画在山之前，低处的星会被山自然遮住。格式 [x, y, 大小, 亮度]。
   var STARS = (function () {
@@ -190,7 +183,6 @@ var __bamboo_module_curtain = (function () {
     }
     s += '<filter id="' + P + 'BRr" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8"/></filter>';
     s += '<filter id="' + P + 'BStar" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="0.45"/></filter>';
-    s += '<filter id="' + P + 'Cld" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="3.4"/></filter>';
     s += '</defs>';
 
     s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#' + P + 'Paper)"/>';
@@ -205,9 +197,6 @@ var __bamboo_module_curtain = (function () {
     // 水：一笔淡痕（山 + 水 = 山水），倒影在上头
     var wy = H * 0.735;
     s += '<rect x="0" y="' + f(wy) + '" width="' + W + '" height="' + f(H - wy) + '" fill="' + water + '" opacity=".5"/>';
-    // 飘云：落在上半天、山后；开窗后随山一起游动（比山更慢更大），让画面活起来
-    s += cloudSvg(P, W * 0.30, H * 0.17, W * 0.22, H * 0.028, dk ? 0.16 : 0.50);
-    s += cloudSvg(P, W * 0.70, H * 0.31, W * 0.17, H * 0.022, dk ? 0.14 : 0.42);
 
     // 远 → 近三层，每层之间垫一道雾，山脚都埋进雾里，只剩峰浮着（各层包进 .bc-ridge 便于独立游动）
     for (var i = 0; i < RANGES.length; i++) {
@@ -242,15 +231,9 @@ var __bamboo_module_curtain = (function () {
     var nodes = el.insert.querySelectorAll('.bc-ridge, .bc-cloud');
     var r = mulberry32(4242);
     for (var i = 0; i < nodes.length; i++) {
-      var n = nodes[i], kind = n.getAttribute('data-kind'), depth = parseFloat(n.getAttribute('data-depth')) || 0;
-      var ax, ay, sx, sy;
-      if (kind === 'cloud') {
-        ax = FRAME_W * (0.12 + r() * 0.08); ay = FRAME_H * (0.015 + r() * 0.02);
-        sx = 5500 + r() * 3000; sy = 7000 + r() * 3000;
-      } else {
-        ax = FRAME_W * (0.04 + 0.035 * depth); ay = FRAME_H * (0.015 + 0.015 * depth);
-        sx = 2500 + depth * 900 + r() * 800; sy = 3200 + depth * 1000 + r() * 1000;
-      }
+      var n = nodes[i], depth = parseFloat(n.getAttribute('data-depth')) || 0;
+      var ax = FRAME_W * (0.04 + 0.035 * depth), ay = FRAME_H * (0.015 + 0.015 * depth);
+      var sx = 2500 + depth * 900 + r() * 800, sy = 3200 + depth * 1000 + r() * 1000;
       _driftEls.push({ node: n, ax: ax, ay: ay, sx: sx, sy: sy, px: r() * 6.283, py: r() * 6.283 });
     }
   }
