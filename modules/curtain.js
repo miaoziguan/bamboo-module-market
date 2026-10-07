@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.7","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.8","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -528,7 +528,6 @@ var __bamboo_module_curtain = (function () {
         'border-radius:8px;padding:12px;box-shadow:0 -4px 22px rgba(0,0,0,.32);' +
         'opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}' +
       '.bc-wrap.bc-set-open .bc-dialog{opacity:1;pointer-events:auto;transform:translateY(0) scale(1);}' +
-      '.bc-dialog-title{font-size:12px;font-weight:600;margin-bottom:8px;}' +
       '.bc-field{margin-bottom:4px;}' +
       '.bc-label{font-size:12px;font-weight:600;}' +
       '.bc-hint{font-size:9.5px;line-height:1.5;opacity:.7;margin:2px 0 6px;}' +
@@ -605,7 +604,6 @@ var __bamboo_module_curtain = (function () {
       '</div>' +
       '<div class="bc-settings-mask"></div>' +
       '<div class="bc-dialog">' +
-        '<div class="bc-dialog-title">信箱目录</div>' +
         '<div class="bc-field">' +
           '<div class="bc-label">信箱目录</div>' +
           '<div class="bc-hint">每次拉开百叶窗，会从该目录随机打开一篇文章（中央阅读视图）</div>' +
