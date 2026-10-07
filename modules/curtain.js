@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.8","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.9","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -533,9 +533,9 @@ var __bamboo_module_curtain = (function () {
       '.bc-hint{font-size:9.5px;line-height:1.5;opacity:.7;margin:2px 0 6px;}' +
       '.bc-field input{width:100%;box-sizing:border-box;border:1px solid var(--bc-paper-edge);' +
         'border-radius:5px;padding:5px 6px;font-size:11px;background:transparent;color:inherit;}' +
-      '.bc-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:4px;}' +
+      '.bc-actions{display:flex;gap:6px;justify-content:flex-end;align-items:center;margin-top:2px;}' +
       '.bc-btn{border:1px solid var(--bc-paper-edge);background:transparent;color:var(--bc-goose);' +
-        'border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;transition:background .12s,border-color .12s;}' +
+        'border-radius:999px;padding:3px 13px;font-size:10px;line-height:1.3;cursor:pointer;transition:background .12s,border-color .12s;}' +
       '.bc-btn:hover{background:rgba(128,128,128,.12);}' +
       '.bc-btn.primary{background:var(--bc-seal);border-color:var(--bc-seal);color:#fff;}' +
       '.bc-btn.primary:hover{filter:brightness(1.06);}' +
