@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.4","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.5","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -474,26 +474,28 @@ var __bamboo_module_curtain = (function () {
         'pointer-events:none;transition:opacity .3s ease;}',
       '.bc-wrap.is-dragging .bc-tip,.bc-wrap.touched .bc-tip{opacity:0;}',
       // ── 鸿雁传书：信箱目录设置 + 飞雁衔信 ──
-      '.bc-gear{position:absolute;top:6px;right:6px;z-index:8;width:20px;height:20px;line-height:20px;' +
-        'text-align:center;border-radius:50%;cursor:pointer;color:var(--bc-goose);' +
-        'background:rgba(128,128,128,.14);font-size:12px;opacity:.55;transition:opacity .2s;}' +
-      '.bc-gear:hover{opacity:1;}' +
+      // ── 点击窗台弹出的目录设置对话框（范式对齐博客模块：标签+提示+输入，ghost 取消 / 主色保存）──
       '.bc-settings-mask{position:absolute;inset:0;z-index:9;background:rgba(0,0,0,.3);' +
         'opacity:0;pointer-events:none;transition:opacity .2s;}' +
       '.bc-wrap.bc-set-open .bc-settings-mask{opacity:1;pointer-events:auto;}' +
-      '.bc-settings{position:absolute;left:8px;right:8px;top:50%;z-index:10;' +
+      '.bc-dialog{position:absolute;left:8px;right:8px;top:50%;z-index:10;' +
         'transform:translateY(-50%) scale(.96);background:var(--bc-paper);color:var(--bc-goose);' +
         'border-radius:8px;padding:12px;box-shadow:0 8px 22px rgba(0,0,0,.32);' +
         'opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}' +
-      '.bc-wrap.bc-set-open .bc-settings{opacity:1;pointer-events:auto;transform:translateY(-50%) scale(1);}' +
-      '.bc-settings-title{font-size:12px;font-weight:600;margin-bottom:8px;}' +
-      '.bc-settings-row input{width:100%;box-sizing:border-box;border:1px solid var(--bc-paper-edge);' +
+      '.bc-wrap.bc-set-open .bc-dialog{opacity:1;pointer-events:auto;transform:translateY(-50%) scale(1);}' +
+      '.bc-dialog-title{font-size:12px;font-weight:600;margin-bottom:8px;}' +
+      '.bc-field{margin-bottom:4px;}' +
+      '.bc-label{font-size:12px;font-weight:600;}' +
+      '.bc-hint{font-size:9.5px;line-height:1.5;opacity:.7;margin:2px 0 6px;}' +
+      '.bc-field input{width:100%;box-sizing:border-box;border:1px solid var(--bc-paper-edge);' +
         'border-radius:5px;padding:5px 6px;font-size:11px;background:transparent;color:inherit;}' +
-      '.bc-settings-hint{font-size:9.5px;line-height:1.5;margin:7px 0;opacity:.75;}' +
-      '.bc-settings-actions{display:flex;gap:6px;justify-content:flex-end;}' +
-      '.bc-settings-actions button{border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;}' +
-      '.bc-set-save{background:var(--bc-seal);color:#fff;}' +
-      '.bc-set-cancel{background:rgba(128,128,128,.2);color:inherit;}' +
+      '.bc-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:4px;}' +
+      '.bc-btn{border:1px solid var(--bc-paper-edge);background:transparent;color:var(--bc-goose);' +
+        'border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;transition:background .12s,border-color .12s;}' +
+      '.bc-btn:hover{background:rgba(128,128,128,.12);}' +
+      '.bc-btn.primary{background:var(--bc-seal);border-color:var(--bc-seal);color:#fff;}' +
+      '.bc-btn.primary:hover{filter:brightness(1.06);}' +
+      '.bc-sill{cursor:pointer;}' +
       // 传书层：盖在山水之上、百叶之下（开帘后百叶已卷起）
       '.bc-letter{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .3s ease;}' +
       '.bc-wrap.bc-letter-show .bc-letter{opacity:1;}' +
@@ -566,15 +568,17 @@ var __bamboo_module_curtain = (function () {
       '</div>' +
       '</div>' +
       '</div>' +
-      '<div class="bc-gear" role="button" tabindex="0" aria-label="设置信箱目录" title="设置信箱目录">⚙</div>' +
       '<div class="bc-settings-mask"></div>' +
-      '<div class="bc-settings">' +
-        '<div class="bc-settings-title">鸿雁传书</div>' +
-        '<div class="bc-settings-row"><input class="bc-folder" type="text" placeholder="vault 内文件夹，如 信箱" /></div>' +
-        '<div class="bc-settings-hint">每次拉开百叶窗，会从该目录随机取一篇，由鸿雁衔来信封。设置后才会传书。</div>' +
-        '<div class="bc-settings-actions">' +
-          '<button class="bc-set-save">保存</button>' +
-          '<button class="bc-set-cancel">取消</button>' +
+      '<div class="bc-dialog">' +
+        '<div class="bc-dialog-title">鸿雁传书</div>' +
+        '<div class="bc-field">' +
+          '<div class="bc-label">信箱目录</div>' +
+          '<div class="bc-hint">每次拉开百叶窗，会从该目录随机取一篇，由鸿雁衔来信封</div>' +
+          '<input class="bc-folder" type="text" data-field="letterFolder" placeholder="vault 内文件夹，如 信箱" />' +
+        '</div>' +
+        '<div class="bc-actions">' +
+          '<button class="bc-btn" data-act="cancel">取消</button>' +
+          '<button class="bc-btn primary" data-act="save">保存</button>' +
         '</div>' +
       '</div>' +
       '<div class="bc-tip">拽玉珠，看山色</div>' +
@@ -589,12 +593,12 @@ var __bamboo_module_curtain = (function () {
     el.beads = root.querySelector('.bc-beads');
     el.grip = root.querySelector('.bc-grip');
     el.letter = root.querySelector('.bc-letter');
-    el.gear = root.querySelector('.bc-gear');
+    el.sill = root.querySelector('.bc-sill');
     el.folderInput = root.querySelector('.bc-folder');
-    el.saveBtn = root.querySelector('.bc-set-save');
-    el.cancelBtn = root.querySelector('.bc-set-cancel');
+    el.saveBtn = root.querySelector('[data-act="save"]');
+    el.cancelBtn = root.querySelector('[data-act="cancel"]');
     el.mask = root.querySelector('.bc-settings-mask');
-    if (el.gear) el.gear.addEventListener('click', toggleSettings);
+    if (el.sill) el.sill.addEventListener('click', openSettings);
     if (el.folderInput) el.folderInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') onFolderSave(); });
     if (el.saveBtn) el.saveBtn.addEventListener('click', onFolderSave);
     if (el.cancelBtn) el.cancelBtn.addEventListener('click', closeSettings);
@@ -791,7 +795,7 @@ var __bamboo_module_curtain = (function () {
     if (status === 'ok' && letter) {
       html += envelopeSvg();
     } else if (status === 'set') {
-      html += '<div class="bc-letter-hint">点右上角 ⚙ 设置信箱目录</div>';
+      html += '<div class="bc-letter-hint">点下方窗台，设置信箱目录</div>';
     } else if (status === 'empty') {
       html += '<div class="bc-letter-hint">「' + esc(state.folder) + '」暂无文章</div>';
     } else {
@@ -846,10 +850,11 @@ var __bamboo_module_curtain = (function () {
     try { await api.saveData({ letterFolder: state.folder }); } catch (e) {}
   }
 
-  function toggleSettings() {
+  // 点击窗台（.bc-sill）弹出信箱目录设置；沿用博客模块的 save/cancel 范式
+  function openSettings() {
     if (!el.wrap) return;
-    var open = el.wrap.classList.toggle('bc-set-open');
-    if (open && el.folderInput) el.folderInput.value = state.folder || '';
+    if (el.folderInput) el.folderInput.value = state.folder || '';
+    el.wrap.classList.add('bc-set-open');
   }
 
   function closeSettings() {
