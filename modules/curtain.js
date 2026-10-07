@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.2","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.3","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -250,8 +250,8 @@ var __bamboo_module_curtain = (function () {
         // 五样都做成变量 —— 暗色要的那点「玻璃」，全靠在这五个值上换，不动任何结构。
         '--bc-lam-op:.62;' +
         '--bc-lam-rim:rgba(255,255,255,.45);' +
-        '--bc-veil-bg:linear-gradient(180deg,var(--bc-glow1) 0%,var(--bc-glow1) 52%,var(--bc-glow2) 100%);' +
-        '--bc-veil-glow:var(--bc-glow1);' +
+        '--bc-veil-bg:linear-gradient(180deg,rgba(255,253,247,.45) 0%,rgba(255,253,247,0) 48%,rgba(146,158,150,0) 100%);' +
+        '--bc-veil-glow:rgba(255,253,247,.26);' +
         '--bc-glass:blur(2px);' +
         // 白玉：几乎无色，饱和只留 11~15% 的一点青白底，全靠明度塑形。
         // 也不能真给纯白 —— 纯白落在白底侧栏上会化掉，得留一点灰青才有石头的分量。
@@ -373,9 +373,9 @@ var __bamboo_module_curtain = (function () {
       '.bc-art-wrap{position:absolute;inset:0;overflow:hidden;background:hsl(var(--bc-hue),12%,90%);}',
       '.bc-art{display:block;width:100%;height:100%;}',
 
-      // —— 帘后的纱：浅色下它是「光源」（天光渐层），暗色下它是「夜雾」（半透冷雾）。
-      // 缝里露出来的是光而不是一块颜色 —— 透光感全在这一层。
-      // 两套只差 --bc-veil-bg / --bc-veil-glow 两个变量，结构一动不动。
+      // —— 帘后的纱：浅色下它是「天光」（半透暖白渐层，远山从下透出），暗色下它是「夜雾」（半透冷雾）。
+      // 两套都做半透，远山才能从缝里、叶后透出来；透光感全在这一层（亮色原本写死不透明奶油，把山景全糊住）。
+      // 只差 --bc-veil-bg / --bc-veil-glow 两个变量的不透明度，结构一动不动。
       // 它同时仍要挡住明信片（纱在帘内、帘在卡之上），纱随帘一起上移：
       // 帘升多少、纱退多少，画才从下往上一寸寸显出来。
       '.bc-veil{position:absolute;left:0;top:0;right:0;bottom:0;z-index:0;' +
