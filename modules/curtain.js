@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.9","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.0","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -312,7 +312,7 @@ var __bamboo_module_curtain = (function () {
         'box-shadow:0 3px 8px var(--bc-shadow),inset 0 1px 0 rgba(255,255,255,.42);}',
       // 竹节：两道环，环上沿亮、下沿暗（凸起件的通例）
       '.bc-roll-body:before,.bc-roll-body:after{content:"";position:absolute;top:1px;bottom:1px;width:2px;' +
-        'background:linear-gradient(90deg,rgba(255,255,255,.34),rgba(0,0,0,.26));border-radius:1px;}',
+        'background:linear-gradient(90deg,rgba(255,255,255,.34),hsla(var(--bc-hue),26%,26%,.22));border-radius:1px;}',
       '.bc-roll-body:before{left:24%;}',
       '.bc-roll-body:after{right:24%;}',
       // 两端轴托：筒是「架」在托架上的 —— 少了这对，那根竹筒就是横空浮着的一根条
@@ -347,8 +347,8 @@ var __bamboo_module_curtain = (function () {
         'rgba(255,253,247,0) 81%,rgba(255,253,247,.5)),' +
         'radial-gradient(62% 98% at 24% 44%,rgba(255,255,255,.34),rgba(255,255,255,0) 72%),' +
         'radial-gradient(50% 84% at 73% 58%,rgba(255,255,255,.22),rgba(255,255,255,0) 74%),' +
-        // 一缕极淡的沉色（不是绿絮，白玉的杂质是中性的），只给一点内部深度
-        'radial-gradient(40% 66% at 54% 62%,rgba(146,158,150,.18),rgba(146,158,150,0) 74%),' +
+        // 一缕极淡的沉色：改成跟玉色走的淡青，避免中性灰把玉台弄脏；只给一点内部深度
+        'radial-gradient(40% 66% at 54% 62%,hsla(var(--bc-jh),18%,52%,.16),hsla(var(--bc-jh),18%,52%,0) 74%),' +
         'linear-gradient(180deg,' +
         'var(--bc-j1) 0px,var(--bc-j2) 3.5px,' +
         'rgba(255,255,255,.5) 5.5px,' +
@@ -430,7 +430,7 @@ var __bamboo_module_curtain = (function () {
         'var(--bc-l3) 0%,var(--bc-l1) 22%,var(--bc-l2) 48%,var(--bc-l4) 82%,var(--bc-line) 100%);' +
         'box-shadow:0 4px 11px var(--bc-shadow),inset 0 1px 0 rgba(255,255,255,.44);}',
       '.bc-bar:before,.bc-bar:after{content:"";position:absolute;top:1px;bottom:1px;width:2px;border-radius:1px;' +
-        'background:linear-gradient(90deg,rgba(255,255,255,.34),rgba(0,0,0,.24));}',
+        'background:linear-gradient(90deg,rgba(255,255,255,.34),hsla(var(--bc-hue),26%,26%,.20));}',
       '.bc-bar:before{left:16%;}',
       '.bc-bar:after{right:16%;}',
 
