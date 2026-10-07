@@ -20,14 +20,6 @@
       "version": "0.2.9",
       "url": "https://raw.githubusercontent.com/miaoziguan/bamboo-module-market/main/modules/curtain.js",
       "description": "侧栏一扇竖长竹制卷帘窗：竹框嵌远山，下拉玉珠拉链卷起百叶帘露出门外山色；明暗主题实时联动，触屏与键盘皆可操作。每次拉开百叶窗，即随机打开「信箱目录」里的一篇笔记（竹杖芒鞋中央阅读视图）；点窗台弹出目录设置。v0.2.9 去掉飞雁衔信动画，改为拉开窗帘直接打开文章。"
-    },
-    {
-      "id": "shichen",
-      "name": "时色",
-      "author": "羽鳞君",
-      "version": "0.1.0",
-      "url": "https://raw.githubusercontent.com/miaoziguan/bamboo-module-market/main/modules/shichen.js",
-      "description": "以中国传统十二时辰调色，替代显示设置面板的调色旋钮。地支罗盘拨一格一时辰，选中即铺满主题色；默认随真太阳时缓缓流转（天色随一天自然变化），可「钉」住一时辰，并附明度微调。v0.1.0 首发：十二时辰色环 + 点选钤印 + 随真时自动流转 + 明度微调。"
     }
   ]
 }
