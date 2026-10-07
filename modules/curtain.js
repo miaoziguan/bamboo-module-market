@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.6","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.7","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -511,6 +511,7 @@ var __bamboo_module_curtain = (function () {
       '.bc-wrap.bc-letter-show .bc-envelope{animation:bcEnvDrop 1.3s .5s cubic-bezier(.2,.8,.3,1) forwards;}' +
       '.bc-envelope:hover{filter:brightness(1.08) drop-shadow(0 0 5px var(--bc-seal));}' +
       '.bc-envelope:focus-visible{outline:2px solid var(--bc-seal);outline-offset:2px;}' +
+      '.bc-env-svg{width:100%;height:100%;display:block;}' +
       '@keyframes bcEnvDrop{0%{opacity:0;transform:translateY(-28px);}30%{opacity:1;}' +
         '100%{opacity:1;transform:translateY(0);}}' +
       '.bc-letter-hint{position:absolute;left:0;right:0;bottom:9%;text-align:center;' +
@@ -761,7 +762,7 @@ var __bamboo_module_curtain = (function () {
 
   // 飞雁：侧身衔信的剪影，色随主题（--bc-goose）
   function gooseSvg() {
-    return '<svg class="bc-goose-svg" viewBox="0 0 80 48" aria-hidden="true">' +
+    return '<svg class="bc-goose" viewBox="0 0 80 48" aria-hidden="true">' +
       '<path d="M20 28 L4 22 L20 34 Z" fill="currentColor"/>' +
       '<ellipse cx="40" cy="30" rx="22" ry="10" fill="currentColor"/>' +
       '<path d="M40 22 Q50 2 60 10 Q50 16 42 26 Z" fill="currentColor" opacity=".92"/>' +
@@ -791,34 +792,49 @@ var __bamboo_module_curtain = (function () {
     showLetterLayer(false);
   }
 
+  // 飞雁常驻、信封随取信结果增删：靠不重建飞雁来避免每轮 innerHTML 重播飞入动画
   function renderLetter(letter, status) {
     if (!el.letter) return;
-    var html = gooseSvg();
-    if (status === 'ok' && letter) {
-      html += envelopeSvg();
-    } else if (status === 'set') {
-      html += '<div class="bc-letter-hint">点下方窗台，设置信箱目录</div>';
-    } else if (status === 'empty') {
-      html += '<div class="bc-letter-hint">「' + esc(state.folder) + '」暂无文章</div>';
-    } else {
-      html += '<div class="bc-letter-hint">取信失败，目录是否存在？</div>';
+    if (!el.letter.querySelector('.bc-goose')) {
+      el.letter.insertAdjacentHTML('beforeend', gooseSvg());
     }
-    el.letter.innerHTML = html;
     var env = el.letter.querySelector('.bc-envelope');
-    if (env) {
-      env.addEventListener('click', openLetter);
-      env.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLetter(); }
-      });
+    if (status === 'ok' && letter) {
+      if (!env) {
+        el.letter.insertAdjacentHTML('beforeend', envelopeSvg());
+        env = el.letter.querySelector('.bc-envelope');
+        if (env) {
+          env.addEventListener('click', openLetter);
+          env.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLetter(); }
+          });
+        }
+      }
+      var oldHint = el.letter.querySelector('.bc-letter-hint');
+      if (oldHint) oldHint.remove();
+    } else {
+      if (env) env.remove();
+      var text = status === 'set' ? '点下方窗台，设置信箱目录'
+        : status === 'empty' ? '「' + state.folder + '」暂无文章'
+        : '取信失败，目录是否存在？';
+      var hint = el.letter.querySelector('.bc-letter-hint');
+      if (!hint) {
+        hint = document.createElement('div');
+        hint.className = 'bc-letter-hint';
+        el.letter.appendChild(hint);
+      }
+      hint.textContent = text; // textContent 自动转义，无需 esc
     }
     showLetterLayer(true);
   }
 
   async function fetchLetter() {
     if (!el.letter || !api) return;
+    // 先让飞雁入场（不依赖读文件），信封等取回再落 —— 只飞一次
+    showLetterLayer(true);
+    if (!el.letter.querySelector('.bc-goose')) el.letter.insertAdjacentHTML('beforeend', gooseSvg());
     if (!state.folder) { renderLetter(null, 'set'); return; }
     state.letterLoading = true;
-    showLetterLayer(true); // 雁先飞入
     try {
       var files = await api.listFiles(state.folder, true);
       if (!files || !files.length) { renderLetter(null, 'empty'); return; }
