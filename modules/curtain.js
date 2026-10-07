@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.7","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.8","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -829,10 +829,11 @@ var __bamboo_module_curtain = (function () {
   }
 
   async function fetchLetter() {
-    if (!el.letter || !api) return;
-    // 先让飞雁入场（不依赖读文件），信封等取回再落 —— 只飞一次
+    if (!el.letter) return;
+    // 先让飞雁入场——不依赖宿主 api，避免「api 未注入即整段静默」把飞雁也吞掉
     showLetterLayer(true);
     if (!el.letter.querySelector('.bc-goose')) el.letter.insertAdjacentHTML('beforeend', gooseSvg());
+    if (!api || !api.listFiles) { renderLetter(null, 'set'); return; }
     if (!state.folder) { renderLetter(null, 'set'); return; }
     state.letterLoading = true;
     try {
