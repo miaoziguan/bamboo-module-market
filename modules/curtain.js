@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.6","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.7","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -65,6 +65,7 @@ var __bamboo_module_curtain = (function () {
     dragging: false,
     opened: false,  // 本次开帘是否已触发过打开文章（关帘清零，避免重复打开）
     folder: '',     // 信箱目录（vault 内文件夹），由设置框持久化
+    openOnPull: true, // 拉开百叶窗是否随机打开文章；关掉即纯挂件，只露远山
   };
 
   var api = null;
@@ -539,7 +540,15 @@ var __bamboo_module_curtain = (function () {
       '.bc-btn:hover{background:rgba(128,128,128,.12);}' +
       '.bc-btn.primary{background:var(--bc-seal);border-color:var(--bc-seal);color:#fff;}' +
       '.bc-btn.primary:hover{filter:brightness(1.06);}' +
-      '.bc-sill{cursor:pointer;}'
+      '.bc-sill{cursor:pointer;}' +
+      // 设置框里的开关：拉开窗即读一篇
+      '.bc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 6px;}' +
+      '.bc-switch{position:relative;display:inline-block;width:34px;height:18px;flex:0 0 auto;}' +
+      '.bc-switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1;}' +
+      '.bc-switch .bc-track{position:absolute;inset:0;background:rgba(128,128,128,.32);border-radius:9px;transition:background .15s;}' +
+      '.bc-switch .bc-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .15s;}' +
+      '.bc-switch input:checked ~ .bc-track{background:var(--bc-seal);}' +
+      '.bc-switch input:checked ~ .bc-thumb{transform:translateX(16px);}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -602,12 +611,20 @@ var __bamboo_module_curtain = (function () {
           '<div class="bc-hint">每次拉开百叶窗，会从该目录随机打开一篇文章（中央阅读视图）</div>' +
           '<input class="bc-folder" type="text" data-field="letterFolder" placeholder="vault 内文件夹，如 信箱" />' +
         '</div>' +
+        '<div class="bc-row">' +
+          '<div class="bc-label">拉开窗即读一篇</div>' +
+          '<label class="bc-switch">' +
+            '<input type="checkbox" data-field="openOnPull" />' +
+            '<span class="bc-track"></span><span class="bc-thumb"></span>' +
+          '</label>' +
+        '</div>' +
+        '<div class="bc-hint">关闭后，拉开百叶窗只作挂件、不再自动打开文章；信箱目录仍可在此设置，留作备用。</div>' +
         '<div class="bc-actions">' +
           '<button class="bc-btn" data-act="cancel">取消</button>' +
           '<button class="bc-btn primary" data-act="save">保存</button>' +
         '</div>' +
       '</div>' +
-      '<div class="bc-tip">拉开帘，读一篇</div>' +
+      '<div class="bc-tip">拉开帘，看远山</div>' +
       '</div>';
 
     el.wrap = root.querySelector('.bc-wrap');
@@ -620,6 +637,7 @@ var __bamboo_module_curtain = (function () {
     el.grip = root.querySelector('.bc-grip');
     el.sill = root.querySelector('.bc-sill');
     el.folderInput = root.querySelector('.bc-folder');
+    el.openToggle = root.querySelector('[data-field="openOnPull"]');
     el.saveBtn = root.querySelector('[data-act="save"]');
     el.cancelBtn = root.querySelector('[data-act="cancel"]');
     el.mask = root.querySelector('.bc-settings-mask');
@@ -627,6 +645,7 @@ var __bamboo_module_curtain = (function () {
     if (el.folderInput) el.folderInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') onFolderSave(); });
     if (el.saveBtn) el.saveBtn.addEventListener('click', onFolderSave);
     if (el.cancelBtn) el.cancelBtn.addEventListener('click', closeSettings);
+    if (el.openToggle) el.openToggle.addEventListener('change', function () { state.openOnPull = el.openToggle.checked; });
     if (el.mask) el.mask.addEventListener('click', closeSettings);
 
     paintLand();
@@ -764,7 +783,7 @@ var __bamboo_module_curtain = (function () {
     if (target >= 1) {
       el.wrap.classList.add('touched'); // 首次开窗后收掉「↓」
       // 进开帘态 → 随机打开信箱目录里的一篇文章（每次拉开都重新随机）
-      if (!state.opened) { state.opened = true; openRandomArticle(); }
+      if (!state.opened) { state.opened = true; if (state.openOnPull) openRandomArticle(); }
       startDrift(); // 开窗后远山/云开始游动
     } else {
       // 关帘 → 重置，下次拉开再随机一篇
@@ -800,19 +819,21 @@ var __bamboo_module_curtain = (function () {
     try {
       var d = await api.loadData();
       state.folder = (d && typeof d.letterFolder === 'string') ? d.letterFolder : '';
+      state.openOnPull = (d && typeof d.openOnPull === 'boolean') ? d.openOnPull : true;
     } catch (e) { state.folder = ''; }
   }
 
   async function saveConfig(folder) {
     if (!api || !api.saveData) return;
     state.folder = folder || '';
-    try { await api.saveData({ letterFolder: state.folder }); } catch (e) {}
+    try { await api.saveData({ letterFolder: state.folder, openOnPull: !!state.openOnPull }); } catch (e) {}
   }
 
   // 点击窗台（.bc-sill）弹出信箱目录设置；沿用博客模块的 save/cancel 范式
   function openSettings() {
     if (!el.wrap) return;
     if (el.folderInput) el.folderInput.value = state.folder || '';
+    if (el.openToggle) el.openToggle.checked = !!state.openOnPull;
     el.wrap.classList.add('bc-set-open');
   }
 
