@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.5","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.6","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -478,11 +478,13 @@ var __bamboo_module_curtain = (function () {
       '.bc-settings-mask{position:absolute;inset:0;z-index:9;background:rgba(0,0,0,.3);' +
         'opacity:0;pointer-events:none;transition:opacity .2s;}' +
       '.bc-wrap.bc-set-open .bc-settings-mask{opacity:1;pointer-events:auto;}' +
-      '.bc-dialog{position:absolute;left:8px;right:8px;top:50%;z-index:10;' +
-        'transform:translateY(-50%) scale(.96);background:var(--bc-paper);color:var(--bc-goose);' +
-        'border-radius:8px;padding:12px;box-shadow:0 8px 22px rgba(0,0,0,.32);' +
+      // 设置框锚定在窗台下方，自下而上滑出（而非居中浮层）
+      '.bc-dialog{position:absolute;left:8px;right:8px;bottom:8px;z-index:10;' +
+        'transform:translateY(12px) scale(.98);transform-origin:bottom center;' +
+        'background:var(--bc-paper);color:var(--bc-goose);' +
+        'border-radius:8px;padding:12px;box-shadow:0 -4px 22px rgba(0,0,0,.32);' +
         'opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}' +
-      '.bc-wrap.bc-set-open .bc-dialog{opacity:1;pointer-events:auto;transform:translateY(-50%) scale(1);}' +
+      '.bc-wrap.bc-set-open .bc-dialog{opacity:1;pointer-events:auto;transform:translateY(0) scale(1);}' +
       '.bc-dialog-title{font-size:12px;font-weight:600;margin-bottom:8px;}' +
       '.bc-field{margin-bottom:4px;}' +
       '.bc-label{font-size:12px;font-weight:600;}' +
