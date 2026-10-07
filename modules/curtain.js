@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.3","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.4","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -40,6 +40,7 @@ var __bamboo_module_curtain = (function () {
   var FRAME_W = 186; // 窗比卷筒窄，两侧露出筒架 = 轴托
   var FRAME_H = 620;
   var OVERLAP = 3; // 卷筒压住窗框上边的量
+  var DRIFT_OS = 0.14; // 远山游动留白：山脊左右各外扩 14%，漂移时不露纸底
   var GAP = 7; // 帘下沿离窗底的缝
   var SILL_H = 13; // 窗台：台面 + 前立面的总厚
   var SILL_TUCK = 2; // 窗台压住窗框底边的量（贴合，不留缝）
@@ -125,9 +126,11 @@ var __bamboo_module_curtain = (function () {
 
   /** 天际线：控制点 [x,y]（画幅比例）经 Catmull-Rom 样条插值成平滑轮廓，填到底。
       用样条而非高斯叠加 —— 样条才画得出峰的转折，像山不像土包。 */
-  function ridge(w, h, prof, baseY) {
+  function ridge(w, h, prof, baseY, os) {
+    os = os || 0;
+    var ext = w * os, ww = w + 2 * ext; // 左右各外扩 os，漂移时不露纸底
     var P = [];
-    for (var i = 0; i < prof.length; i++) P.push([prof[i][0] * w, prof[i][1] * h]);
+    for (var i = 0; i < prof.length; i++) P.push([(prof[i][0] - 0.5) * ww + w / 2, prof[i][1] * h]);
     var s = 'M' + f(P[0][0]) + ',' + f(P[0][1]);
     for (var j = 0; j < P.length - 1; j++) {
       var p0 = P[j - 1] || P[j], p1 = P[j], p2 = P[j + 1], p3 = P[j + 2] || P[j + 1];
@@ -135,7 +138,14 @@ var __bamboo_module_curtain = (function () {
         ' ' + f(p2[0] - (p3[0] - p1[0]) / 6) + ',' + f(p2[1] - (p3[1] - p1[1]) / 6) +
         ' ' + f(p2[0]) + ',' + f(p2[1]);
     }
-    return s + ' L' + w + ',' + f(baseY) + ' L0,' + f(baseY) + ' Z';
+    return s + ' L' + f(w + ext) + ',' + f(baseY) + ' L' + f(-ext) + ',' + f(baseY) + ' Z';
+  }
+
+  // 飘云：开窗后随山一起缓缓游动（比山更慢更大），软椭圆 + 模糊，落在上半天、山后
+  function cloudSvg(P, x, y, rx, ry, op) {
+    return '<g class="bc-cloud" data-kind="cloud" data-depth="1">' +
+      '<ellipse cx="' + f(x) + '" cy="' + f(y) + '" rx="' + f(rx) + '" ry="' + f(ry) + '" ' +
+      'fill="#ffffff" opacity="' + op + '" filter="url(#' + P + 'Cld)"/></g>';
   }
 
   // 满天星：星位固定（定种子），只在暗色出现。夜里满天星，位置不跳才像真天；
@@ -180,6 +190,7 @@ var __bamboo_module_curtain = (function () {
     }
     s += '<filter id="' + P + 'BRr" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8"/></filter>';
     s += '<filter id="' + P + 'BStar" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="0.45"/></filter>';
+    s += '<filter id="' + P + 'Cld" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="3.4"/></filter>';
     s += '</defs>';
 
     s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#' + P + 'Paper)"/>';
@@ -194,14 +205,19 @@ var __bamboo_module_curtain = (function () {
     // 水：一笔淡痕（山 + 水 = 山水），倒影在上头
     var wy = H * 0.735;
     s += '<rect x="0" y="' + f(wy) + '" width="' + W + '" height="' + f(H - wy) + '" fill="' + water + '" opacity=".5"/>';
+    // 飘云：落在上半天、山后；开窗后随山一起游动（比山更慢更大），让画面活起来
+    s += cloudSvg(P, W * 0.30, H * 0.17, W * 0.22, H * 0.028, dk ? 0.16 : 0.50);
+    s += cloudSvg(P, W * 0.70, H * 0.31, W * 0.17, H * 0.022, dk ? 0.14 : 0.42);
 
-    // 远 → 近三层，每层之间垫一道雾，山脚都埋进雾里，只剩峰浮着
+    // 远 → 近三层，每层之间垫一道雾，山脚都埋进雾里，只剩峰浮着（各层包进 .bc-ridge 便于独立游动）
     for (var i = 0; i < RANGES.length; i++) {
       var R = RANGES[i];
       var LL = dk ? R.dl : R.l, OO = dk ? R.do : R.o;
-      s += '<path d="' + ridge(W, H, R.prof, R.base * H) + '" fill="hsl(' + ((h + R.dh) % 360) + ',' + R.s + '%,' + LL + '%)" opacity="' + OO + '" filter="url(#' + P + 'BR' + i + ')"/>';
+      s += '<g class="bc-ridge" data-kind="ridge" data-depth="' + i + '">';
+      s += '<path d="' + ridge(W, H, R.prof, R.base * H, DRIFT_OS) + '" fill="hsl(' + ((h + R.dh) % 360) + ',' + R.s + '%,' + LL + '%)" opacity="' + OO + '" filter="url(#' + P + 'BR' + i + ')"/>';
       var fy = R.base * H, fh = H * 0.11;
-      s += '<rect x="0" y="' + f(fy - fh / 2) + '" width="' + W + '" height="' + f(fh) + '" fill="url(#' + P + 'Fog)"/>';
+      s += '<rect x="' + f(-DRIFT_OS * W) + '" y="' + f(fy - fh / 2) + '" width="' + f(W * (1 + 2 * DRIFT_OS)) + '" height="' + f(fh) + '" fill="url(#' + P + 'Fog)"/>';
+      s += '</g>';
     }
     // 近山倒影：淡淡一笔，暗示水
     var last = RANGES[RANGES.length - 1];
@@ -214,6 +230,50 @@ var __bamboo_module_curtain = (function () {
 
   function paintLand() {
     if (el.insert) el.insert.innerHTML = '<div class="bc-art-wrap">' + landSvg() + '</div>';
+    collectDrift(); // 远山/云重建后重抓可动元素（主题切换会重建整幅 SVG）
+  }
+
+  // ── 开窗后远山/云游动：视差漂移（远山小慢、近山大快，云更慢更大，各自随机相位错峰不重叠）──
+  var _driftEls = [];
+  var _driftRaf = 0, _driftOn = false, _reduceMotion = false;
+  function collectDrift() {
+    _driftEls = [];
+    if (!el.insert) return;
+    var nodes = el.insert.querySelectorAll('.bc-ridge, .bc-cloud');
+    var r = mulberry32(4242);
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i], kind = n.getAttribute('data-kind'), depth = parseFloat(n.getAttribute('data-depth')) || 0;
+      var ax, ay, sx, sy;
+      if (kind === 'cloud') {
+        ax = FRAME_W * (0.12 + r() * 0.08); ay = FRAME_H * (0.015 + r() * 0.02);
+        sx = 5500 + r() * 3000; sy = 7000 + r() * 3000;
+      } else {
+        ax = FRAME_W * (0.04 + 0.035 * depth); ay = FRAME_H * (0.015 + 0.015 * depth);
+        sx = 2500 + depth * 900 + r() * 800; sy = 3200 + depth * 1000 + r() * 1000;
+      }
+      _driftEls.push({ node: n, ax: ax, ay: ay, sx: sx, sy: sy, px: r() * 6.283, py: r() * 6.283 });
+    }
+  }
+  function startDrift() {
+    _reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (_reduceMotion) return; // 尊重系统「减少动态」
+    collectDrift();
+    if (!_driftEls.length || _driftRaf) return;
+    _driftOn = true;
+    (function tick(now) {
+      if (!_driftOn) return;
+      for (var i = 0; i < _driftEls.length; i++) {
+        var e = _driftEls[i];
+        var dx = e.ax * Math.sin(now / e.sx + e.px), dy = e.ay * Math.sin(now / e.sy + e.py);
+        e.node.setAttribute('transform', 'translate(' + f(dx) + ',' + f(dy) + ')');
+      }
+      _driftRaf = requestAnimationFrame(tick);
+    })(performance.now());
+  }
+  function stopDrift() {
+    _driftOn = false;
+    if (_driftRaf) { cancelAnimationFrame(_driftRaf); _driftRaf = 0; }
+    for (var i = 0; i < _driftEls.length; i++) _driftEls[i].node.setAttribute('transform', 'translate(0,0)');
   }
 
   /* ────────────────────────────── 样式 ────────────────────────────── */
@@ -722,9 +782,11 @@ var __bamboo_module_curtain = (function () {
       el.wrap.classList.add('touched'); // 首次开窗后收掉「↓」
       // 进开帘态 → 随机打开信箱目录里的一篇文章（每次拉开都重新随机）
       if (!state.opened) { state.opened = true; openRandomArticle(); }
+      startDrift(); // 开窗后远山/云开始游动
     } else {
       // 关帘 → 重置，下次拉开再随机一篇
       state.opened = false;
+      stopDrift(); // 收帘即停，省电也避免关帘时还在背后重算磨砂
     }
   }
 
@@ -896,6 +958,7 @@ var __bamboo_module_curtain = (function () {
       cancelAnimationFrame(_repaintRaf);
       _repaintRaf = 0;
     }
+    stopDrift();
     if (_ro) {
       _ro.disconnect();
       _ro = null;
