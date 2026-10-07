@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.1","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.2","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -248,7 +248,7 @@ var __bamboo_module_curtain = (function () {
         '--bc-glow2:hsla(40,22%,44%,.30);' +
         // 纱的底色 / 纱的辉光 / 叶的不透明度 / 叶顶那道棱光 / 帘后磨砂。
         // 五样都做成变量 —— 暗色要的那点「玻璃」，全靠在这五个值上换，不动任何结构。
-        '--bc-lam-op:.72;' +
+        '--bc-lam-op:.62;' +
         '--bc-lam-rim:rgba(255,255,255,.45);' +
         '--bc-veil-bg:linear-gradient(180deg,var(--bc-glow1) 0%,var(--bc-glow1) 52%,var(--bc-glow2) 100%);' +
         '--bc-veil-glow:var(--bc-glow1);' +
@@ -395,7 +395,7 @@ var __bamboo_module_curtain = (function () {
       // 拖拽中关掉帘后磨砂：backdrop-filter 每帧都要重采样一次背景，暗色下是全程最贵的一笔。
       // 「玻璃厚度」留给静止时表现，动起来先保跟手。
       '.bc-wrap.is-dragging .bc-inner{-webkit-backdrop-filter:none;backdrop-filter:none;}',
-      // 叶的透明度走变量：浅色 .72、暗色 .62，都做成半透 —— 叶后也能透出远山；
+      // 叶的透明度走变量：浅色与暗色同为 .62，都做成半透 —— 叶后也能透出远山；
       // 浅色不再写死 .96 不透明，否则亮色下百叶把风景全挡住（暗色透光好正是因为它 .62 + 磨砂）。
       // 刻意保持「平」：只有上缘一道受光 + 整体由浅到中，底缘不再给光 ——
       // 上亮/中暗/底亮三段一叠就成圆管了。亮一律交给缝，缝才是光来的地方。
