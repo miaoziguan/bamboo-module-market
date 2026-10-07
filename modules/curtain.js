@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.10","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.11","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -528,11 +528,14 @@ var __bamboo_module_curtain = (function () {
         'border-radius:8px;padding:12px;box-shadow:0 -4px 22px rgba(0,0,0,.32);' +
         'opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}' +
       '.bc-wrap.bc-set-open .bc-dialog{opacity:1;pointer-events:auto;transform:translateY(0) scale(1);}' +
-      '.bc-field{margin-bottom:4px;}' +
-      '.bc-label{font-size:12px;font-weight:600;}' +
-      '.bc-hint{font-size:9.5px;line-height:1.5;opacity:.7;margin:2px 0 6px;}' +
-      '.bc-field input{width:100%;box-sizing:border-box;border:1px solid var(--bc-paper-edge);' +
-        'border-radius:5px;padding:5px 6px;font-size:11px;background:transparent;color:inherit;}' +
+      // 分组排版：开关组在前（决定行为），目录组在后；开关关闭时目录组整组淡化（暂不生效）。
+      // 字号层级：分组标签 12.5/600 > 输入框 12 > 提示 10.5（此前提示 9.5 比输入文字还小，偏虚）。
+      '.bc-group+.bc-group{margin-top:12px;}' +
+      '.bc-group.is-off{opacity:.5;}' +
+      '.bc-label{font-size:12.5px;font-weight:600;line-height:1.35;}' +
+      '.bc-hint{font-size:10.5px;line-height:1.45;opacity:.72;margin-top:4px;}' +
+      '.bc-folder{margin-top:6px;width:100%;box-sizing:border-box;border:1px solid var(--bc-paper-edge);' +
+        'border-radius:5px;padding:6px 7px;font-size:12px;background:transparent;color:inherit;}' +
       // 按钮区对齐博客模块：与末字段间加分隔线，取消/保存等宽横排（ghost 取消 / 实心主色保存）。
       // 尺寸交给全局触控目标（base.css 把裸 button 地板到 44px），与博客模块一致。
       '.bc-actions{display:flex;gap:8px;margin-top:14px;padding-top:13px;border-top:1px solid hsla(var(--bc-hue),22%,52%,.14);}' +
@@ -543,7 +546,7 @@ var __bamboo_module_curtain = (function () {
       '.bc-btn.primary:hover{background:hsl(var(--bc-hue),38%,48%);color:#fff;}' +
       '.bc-sill{cursor:pointer;}' +
       // 设置框里的开关：拉开窗即读一篇
-      '.bc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 6px;}' +
+      '.bc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;}' +
       '.bc-switch{position:relative;display:inline-block;width:34px;height:18px;flex:0 0 auto;}' +
       '.bc-switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1;}' +
       '.bc-switch .bc-track{position:absolute;inset:0;background:rgba(128,128,128,.32);border-radius:9px;transition:background .15s;}' +
@@ -606,19 +609,21 @@ var __bamboo_module_curtain = (function () {
       '</div>' +
       '<div class="bc-settings-mask"></div>' +
       '<div class="bc-dialog">' +
-        '<div class="bc-field">' +
+        '<div class="bc-group">' +
+          '<div class="bc-row">' +
+            '<div class="bc-label">拉开窗即读一篇</div>' +
+            '<label class="bc-switch">' +
+              '<input type="checkbox" data-field="openOnPull" />' +
+              '<span class="bc-track"></span><span class="bc-thumb"></span>' +
+            '</label>' +
+          '</div>' +
+          '<div class="bc-hint">关闭后只露远山，不打开文章</div>' +
+        '</div>' +
+        '<div class="bc-group bc-group-folder">' +
           '<div class="bc-label">信箱目录</div>' +
-          '<div class="bc-hint">每次拉开百叶窗，会从该目录随机打开一篇文章（中央阅读视图）</div>' +
+          '<div class="bc-hint">每次开窗从该目录随机取一篇</div>' +
           '<input class="bc-folder" type="text" data-field="letterFolder" placeholder="vault 内文件夹，如 信箱" />' +
         '</div>' +
-        '<div class="bc-row">' +
-          '<div class="bc-label">拉开窗即读一篇</div>' +
-          '<label class="bc-switch">' +
-            '<input type="checkbox" data-field="openOnPull" />' +
-            '<span class="bc-track"></span><span class="bc-thumb"></span>' +
-          '</label>' +
-        '</div>' +
-        '<div class="bc-hint">关闭后，拉开百叶窗只作挂件、不再自动打开文章；信箱目录仍可在此设置，留作备用。</div>' +
         '<div class="bc-actions">' +
           '<button class="bc-btn" data-act="cancel">取消</button>' +
           '<button class="bc-btn primary" data-act="save">保存</button>' +
@@ -638,6 +643,7 @@ var __bamboo_module_curtain = (function () {
     el.sill = root.querySelector('.bc-sill');
     el.folderInput = root.querySelector('.bc-folder');
     el.openToggle = root.querySelector('[data-field="openOnPull"]');
+    el.folderGroup = root.querySelector('.bc-group-folder');
     el.saveBtn = root.querySelector('[data-act="save"]');
     el.cancelBtn = root.querySelector('[data-act="cancel"]');
     el.mask = root.querySelector('.bc-settings-mask');
@@ -645,13 +651,14 @@ var __bamboo_module_curtain = (function () {
     if (el.folderInput) el.folderInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') onFolderSave(); });
     if (el.saveBtn) el.saveBtn.addEventListener('click', onFolderSave);
     if (el.cancelBtn) el.cancelBtn.addEventListener('click', closeSettings);
-    if (el.openToggle) el.openToggle.addEventListener('change', function () { state.openOnPull = el.openToggle.checked; });
+    if (el.openToggle) el.openToggle.addEventListener('change', function () { state.openOnPull = el.openToggle.checked; applyOpenOnPull(); });
     if (el.mask) el.mask.addEventListener('click', closeSettings);
 
     paintLand();
     bindDrag();
     fitStage();
     applyPull(false);
+    applyOpenOnPull();
   }
 
   /* ───────────────────── 缩放：宽高双向取小，且允许放大 ───────────────────── */
@@ -829,11 +836,18 @@ var __bamboo_module_curtain = (function () {
     try { await api.saveData({ letterFolder: state.folder, openOnPull: !!state.openOnPull }); } catch (e) {}
   }
 
+  // 开关关闭时把「信箱目录」整组淡化：只作视觉提示（暂不生效），
+  // 不禁用输入框 —— 用户可能想先填好目录、再打开开关，禁用会把这条路堵死。
+  function applyOpenOnPull() {
+    if (el.folderGroup) el.folderGroup.classList.toggle('is-off', !state.openOnPull);
+  }
+
   // 点击窗台（.bc-sill）弹出信箱目录设置；沿用博客模块的 save/cancel 范式
   function openSettings() {
     if (!el.wrap) return;
     if (el.folderInput) el.folderInput.value = state.folder || '';
     if (el.openToggle) el.openToggle.checked = !!state.openOnPull;
+    applyOpenOnPull();
     el.wrap.classList.add('bc-set-open');
   }
 
