@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.1","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.2","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -596,19 +596,48 @@ var __bamboo_module_curtain = (function () {
     scheduleRepaint();
   }
 
-  // 宿主也走 documentElement 的 class 兜底（推主题有延迟，首帧不能闪回默认色）。
-  // 返回「明暗是否发生变化」：变了必须由调用方触发重绘 ——
-  // 上一版只改 THEME.isDark 不重画，于是只改 class 的切主题方式完全不生效。
+  // 明暗跟随的「治本」来源：模块沙箱不加载 store，bridge.js 收到宿主 theme:changed 后
+  // 走「无 store」分支，把 .dark 直接 toggle 到 document.documentElement（见 bridge.js）。
+  // 父文档的 theme-dark/theme-light 永远不会进入 iframe 沙箱，旧逻辑读错类、永远读不到 ——
+  // 这正是「暗色下打开窗台却停在亮色、要手动再切一次主题才追上」的根因。
+  // 改为只读沙箱内真实存在的 .dark：挂载时 bridge 早已置好，可直接拿到「当前」明暗，
+  // 不再依赖那条因「取模块代码是异步 postMessage 往返」而必丢的首帧 theme:changed。
+  // 返回「明暗是否发生变化」：变了必须由调用方触发重绘。
   function readDocClass() {
     var de = document.documentElement;
-    if (!de || !de.classList) return false;
-    var dk;
-    if (de.classList.contains('theme-dark')) dk = true;
-    else if (de.classList.contains('theme-light')) dk = false;
-    else return false;
-    if (THEME.isDark === dk) return false;
+    var b = document.body;
+    // 同时认 .dark（宿主 webapp 暗色，挂在 documentElement 上）与 .theme-dark（Obsidian 原生暗色），
+    // 与博客模块 isDarkNow() 同款兜底 —— 任一出现即判暗色，跨环境不漏。沙箱里实际只有 .dark 会被 bridge 同步进来。
+    var dk =
+      (de && de.classList && (de.classList.contains('dark') || de.classList.contains('theme-dark'))) ||
+      (b && b.classList && (b.classList.contains('dark') || b.classList.contains('theme-dark')));
+    if (typeof dk !== 'boolean' || THEME.isDark === dk) return false;
     THEME.isDark = dk;
     return true;
+  }
+
+  // 实时跟随：监听沙箱 documentElement/body 的 .dark 类变化。
+  // 宿主切主题 → bridge 翻转 .dark → 此处立即重绘，不等 resize/切标签，也不赌 postMessage 时序。
+  // 这才是彻底治本：窗台对明暗的感知从「被动等一条推送」变成「主动观察沙箱内已有令牌」。
+  var _darkObserver = null;
+  function startDarkObserver() {
+    if (typeof MutationObserver === 'undefined' || _darkObserver) return;
+    var cb = function () {
+      if (readDocClass()) scheduleRepaint();
+    };
+    _darkObserver = new MutationObserver(cb);
+    if (document.documentElement) {
+      _darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    }
+    if (document.body) {
+      _darkObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    }
+  }
+  function stopDarkObserver() {
+    if (_darkObserver) {
+      _darkObserver.disconnect();
+      _darkObserver = null;
+    }
   }
 
   /* ────────────────────────────── 拉动 ────────────────────────────── */
@@ -743,6 +772,7 @@ var __bamboo_module_curtain = (function () {
   function teardown() {
     unbindDrag();
     window.removeEventListener('message', onThemeMessage);
+    stopDarkObserver();
     window.removeEventListener('resize', onReflow);
     document.removeEventListener('visibilitychange', onReflow);
     if (_raf) {
@@ -785,6 +815,7 @@ var __bamboo_module_curtain = (function () {
       render();
       applyTheme();
       window.addEventListener('message', onThemeMessage);
+      startDarkObserver(); // 主动观察沙箱 .dark，明暗切换即时生效（治本）
       window.addEventListener('resize', onReflow);
       document.addEventListener('visibilitychange', onReflow);
       if (typeof ResizeObserver !== 'undefined') {
