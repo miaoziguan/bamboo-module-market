@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.3","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.2.4","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -62,6 +62,10 @@ var __bamboo_module_curtain = (function () {
   var state = {
     pull: 0,
     dragging: false,
+    letterOpen: false,    // 当前是否处于开帘传书态
+    letterLoading: false,
+    letter: null,         // { path, name } 当前衔来的那封信
+    folder: '',           // 信箱目录（vault 内文件夹）
   };
 
   var api = null;
@@ -229,6 +233,8 @@ var __bamboo_module_curtain = (function () {
       '.bc-wrap{position:relative;padding:34px 4px 18px;box-sizing:border-box;' +
         '--bc-hue:152;' + // 与 THEME.hue 的兜底值一致（挂载后即由 applyTheme 覆盖）
         '--bc-cav-l:96%;--bc-cav-s:16%;' +
+        '--bc-goose:hsl(var(--bc-hue),18%,28%);--bc-seal:hsl(6,55%,48%);' +
+        '--bc-paper:hsl(var(--bc-hue),22%,96%);--bc-paper-edge:hsl(var(--bc-hue),20%,86%);' +
         // 提饱和、同时把最暗一档抬起来：发浑＝低饱和＋中明度。
         // 上轮为了「减重」把饱和一路压到 23~30%，正好落进浑浊带，整片糊成灰绿。
         // 减重要靠明度，不能靠抽饱和 —— 抽了饱和就发灰。
@@ -286,7 +292,9 @@ var __bamboo_module_curtain = (function () {
         '--bc-j3:hsl(var(--bc-jh),10%,41%);' +
         '--bc-j4:hsl(var(--bc-jh),12%,32%);' +
         '--bc-j5:hsl(var(--bc-jh),14%,24%);' +
-        '--bc-shadow:rgba(2,18,16,.55);}',
+        '--bc-shadow:rgba(2,18,16,.55);' +
+        '--bc-goose:hsl(var(--bc-hue),12%,82%);--bc-seal:hsl(6,50%,60%);' +
+        '--bc-paper:hsl(var(--bc-hue),14%,24%);--bc-paper-edge:hsl(var(--bc-hue),14%,32%);}',
 
       // 裁掉 .bc-win 那截未缩放的布局盒：transform 不参与布局，absolute 的窗口
       // 布局宽仍是 200px，侧栏一窄就横向溢出，在栏底顶出一条滚动条。
@@ -464,7 +472,45 @@ var __bamboo_module_curtain = (function () {
       '.bc-tip{position:absolute;left:0;right:0;bottom:0;z-index:6;text-align:center;' +
         'font-size:10.5px;color:var(--text-muted,#8b8b8b);letter-spacing:.4px;white-space:nowrap;' +
         'pointer-events:none;transition:opacity .3s ease;}',
-      '.bc-wrap.is-dragging .bc-tip,.bc-wrap.touched .bc-tip{opacity:0;}'
+      '.bc-wrap.is-dragging .bc-tip,.bc-wrap.touched .bc-tip{opacity:0;}',
+      // ── 鸿雁传书：信箱目录设置 + 飞雁衔信 ──
+      '.bc-gear{position:absolute;top:6px;right:6px;z-index:8;width:20px;height:20px;line-height:20px;' +
+        'text-align:center;border-radius:50%;cursor:pointer;color:var(--bc-goose);' +
+        'background:rgba(128,128,128,.14);font-size:12px;opacity:.55;transition:opacity .2s;}' +
+      '.bc-gear:hover{opacity:1;}' +
+      '.bc-settings-mask{position:absolute;inset:0;z-index:9;background:rgba(0,0,0,.3);' +
+        'opacity:0;pointer-events:none;transition:opacity .2s;}' +
+      '.bc-wrap.bc-set-open .bc-settings-mask{opacity:1;pointer-events:auto;}' +
+      '.bc-settings{position:absolute;left:8px;right:8px;top:50%;z-index:10;' +
+        'transform:translateY(-50%) scale(.96);background:var(--bc-paper);color:var(--bc-goose);' +
+        'border-radius:8px;padding:12px;box-shadow:0 8px 22px rgba(0,0,0,.32);' +
+        'opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}' +
+      '.bc-wrap.bc-set-open .bc-settings{opacity:1;pointer-events:auto;transform:translateY(-50%) scale(1);}' +
+      '.bc-settings-title{font-size:12px;font-weight:600;margin-bottom:8px;}' +
+      '.bc-settings-row input{width:100%;box-sizing:border-box;border:1px solid var(--bc-paper-edge);' +
+        'border-radius:5px;padding:5px 6px;font-size:11px;background:transparent;color:inherit;}' +
+      '.bc-settings-hint{font-size:9.5px;line-height:1.5;margin:7px 0;opacity:.75;}' +
+      '.bc-settings-actions{display:flex;gap:6px;justify-content:flex-end;}' +
+      '.bc-settings-actions button{border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;}' +
+      '.bc-set-save{background:var(--bc-seal);color:#fff;}' +
+      '.bc-set-cancel{background:rgba(128,128,128,.2);color:inherit;}' +
+      // 传书层：盖在山水之上、百叶之下（开帘后百叶已卷起）
+      '.bc-letter{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .3s ease;}' +
+      '.bc-wrap.bc-letter-show .bc-letter{opacity:1;}' +
+      '.bc-goose{position:absolute;top:13%;left:50%;width:46px;height:auto;margin-left:-23px;' +
+        'color:var(--bc-goose);opacity:0;transform:translate(140%,-80%) rotate(-10deg);}' +
+      '.bc-wrap.bc-letter-show .bc-goose{animation:bcGooseFly 1.2s cubic-bezier(.2,.7,.3,1) forwards;}' +
+      '@keyframes bcGooseFly{0%{opacity:0;transform:translate(140%,-80%) rotate(-10deg);}' +
+        '15%{opacity:1;}100%{opacity:1;transform:translate(0,0) rotate(0);}}' +
+      '.bc-envelope{position:absolute;left:50%;bottom:15%;width:54px;height:40px;margin-left:-27px;' +
+        'cursor:pointer;pointer-events:auto;opacity:0;transform:translateY(-28px);}' +
+      '.bc-wrap.bc-letter-show .bc-envelope{animation:bcEnvDrop 1.3s .5s cubic-bezier(.2,.8,.3,1) forwards;}' +
+      '.bc-envelope:hover{filter:brightness(1.08) drop-shadow(0 0 5px var(--bc-seal));}' +
+      '.bc-envelope:focus-visible{outline:2px solid var(--bc-seal);outline-offset:2px;}' +
+      '@keyframes bcEnvDrop{0%{opacity:0;transform:translateY(-28px);}30%{opacity:1;}' +
+        '100%{opacity:1;transform:translateY(0);}}' +
+      '.bc-letter-hint{position:absolute;left:0;right:0;bottom:9%;text-align:center;' +
+        'font-size:10px;color:var(--bc-goose);opacity:.85;padding:0 12px;}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -509,6 +555,7 @@ var __bamboo_module_curtain = (function () {
       '<div class="bc-twine" style="left:76%"></div>' +
       '</div>' +
       '<div class="bc-bar"></div>' +
+      '<div class="bc-letter" aria-hidden="true"></div>' +
       '</div>' +
       '</div>' +
       '<div class="bc-sill"></div>' +
@@ -518,6 +565,17 @@ var __bamboo_module_curtain = (function () {
       '<div class="bc-grip" role="button" tabindex="0" aria-label="拉动百叶，露出窗外远山"></div>' +
       '</div>' +
       '</div>' +
+      '</div>' +
+      '<div class="bc-gear" role="button" tabindex="0" aria-label="设置信箱目录" title="设置信箱目录">⚙</div>' +
+      '<div class="bc-settings-mask"></div>' +
+      '<div class="bc-settings">' +
+        '<div class="bc-settings-title">鸿雁传书</div>' +
+        '<div class="bc-settings-row"><input class="bc-folder" type="text" placeholder="vault 内文件夹，如 信箱" /></div>' +
+        '<div class="bc-settings-hint">每次拉开百叶窗，会从该目录随机取一篇，由鸿雁衔来信封。设置后才会传书。</div>' +
+        '<div class="bc-settings-actions">' +
+          '<button class="bc-set-save">保存</button>' +
+          '<button class="bc-set-cancel">取消</button>' +
+        '</div>' +
       '</div>' +
       '<div class="bc-tip">拽玉珠，看山色</div>' +
       '</div>';
@@ -530,6 +588,17 @@ var __bamboo_module_curtain = (function () {
     el.roller = root.querySelector('.bc-roller');
     el.beads = root.querySelector('.bc-beads');
     el.grip = root.querySelector('.bc-grip');
+    el.letter = root.querySelector('.bc-letter');
+    el.gear = root.querySelector('.bc-gear');
+    el.folderInput = root.querySelector('.bc-folder');
+    el.saveBtn = root.querySelector('.bc-set-save');
+    el.cancelBtn = root.querySelector('.bc-set-cancel');
+    el.mask = root.querySelector('.bc-settings-mask');
+    if (el.gear) el.gear.addEventListener('click', toggleSettings);
+    if (el.folderInput) el.folderInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') onFolderSave(); });
+    if (el.saveBtn) el.saveBtn.addEventListener('click', onFolderSave);
+    if (el.cancelBtn) el.cancelBtn.addEventListener('click', closeSettings);
+    if (el.mask) el.mask.addEventListener('click', closeSettings);
 
     paintLand();
     bindDrag();
@@ -662,7 +731,136 @@ var __bamboo_module_curtain = (function () {
   // 不再另存一份 state.opened —— 两份真相迟早对不上。
   function settle(target) {
     setPull(target);
-    if (target >= 1 && el.wrap) el.wrap.classList.add('touched'); // 首次开窗后收掉「↓」
+    if (!el.wrap) return;
+    if (target >= 1) {
+      el.wrap.classList.add('touched'); // 首次开窗后收掉「↓」
+      // 进开帘态 → 鸿雁衔信（每次拉开都重新随机取一篇）
+      if (!state.letterOpen) { state.letterOpen = true; fetchLetter(); }
+    } else if (state.letterOpen) {
+      // 关帘 → 收起传书层，下次拉开再换一篇
+      state.letterOpen = false;
+      clearLetter();
+    }
+  }
+
+  // ───────────────────── 鸿雁传书 ─────────────────────
+  // 每次拉开百叶窗（settle 进开帘态）从「信箱目录」随机取一篇，
+  // 鸿雁衔信封落于窗台，点击经竹杖芒鞋式中央阅读视图打开。
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // 飞雁：侧身衔信的剪影，色随主题（--bc-goose）
+  function gooseSvg() {
+    return '<svg class="bc-goose-svg" viewBox="0 0 80 48" aria-hidden="true">' +
+      '<path d="M20 28 L4 22 L20 34 Z" fill="currentColor"/>' +
+      '<ellipse cx="40" cy="30" rx="22" ry="10" fill="currentColor"/>' +
+      '<path d="M40 22 Q50 2 60 10 Q50 16 42 26 Z" fill="currentColor" opacity=".92"/>' +
+      '<path d="M58 26 Q70 18 66 8 Q64 4 60 6 Q62 14 52 22 Z" fill="currentColor"/>' +
+      '<path d="M66 8 L75 6 L66 11 Z" fill="var(--bc-seal)"/>' +
+      '<line x1="44" y1="39" x2="44" y2="47" stroke="currentColor" stroke-width="1.4"/>' +
+      '</svg>';
+  }
+
+  // 信封：竹笺 + 蜡封，可点
+  function envelopeSvg() {
+    return '<div class="bc-envelope" role="button" tabindex="0" aria-label="点开读信" title="点开读信">' +
+      '<svg class="bc-env-svg" viewBox="0 0 60 44" aria-hidden="true">' +
+      '<rect x="4" y="6" width="52" height="34" rx="3" fill="var(--bc-paper)" stroke="var(--bc-paper-edge)" stroke-width="1.5"/>' +
+      '<path d="M4 8 L30 26 L56 8" fill="none" stroke="var(--bc-paper-edge)" stroke-width="1.5"/>' +
+      '<circle cx="30" cy="24" r="5" fill="var(--bc-seal)"/>' +
+      '</svg></div>';
+  }
+
+  function showLetterLayer(show) {
+    if (el.wrap) el.wrap.classList.toggle('bc-letter-show', !!show);
+  }
+
+  function clearLetter() {
+    state.letter = null;
+    if (el.letter) el.letter.innerHTML = '';
+    showLetterLayer(false);
+  }
+
+  function renderLetter(letter, status) {
+    if (!el.letter) return;
+    var html = gooseSvg();
+    if (status === 'ok' && letter) {
+      html += envelopeSvg();
+    } else if (status === 'set') {
+      html += '<div class="bc-letter-hint">点右上角 ⚙ 设置信箱目录</div>';
+    } else if (status === 'empty') {
+      html += '<div class="bc-letter-hint">「' + esc(state.folder) + '」暂无文章</div>';
+    } else {
+      html += '<div class="bc-letter-hint">取信失败，目录是否存在？</div>';
+    }
+    el.letter.innerHTML = html;
+    var env = el.letter.querySelector('.bc-envelope');
+    if (env) {
+      env.addEventListener('click', openLetter);
+      env.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLetter(); }
+      });
+    }
+    showLetterLayer(true);
+  }
+
+  async function fetchLetter() {
+    if (!el.letter || !api) return;
+    if (!state.folder) { renderLetter(null, 'set'); return; }
+    state.letterLoading = true;
+    showLetterLayer(true); // 雁先飞入
+    try {
+      var files = await api.listFiles(state.folder, true);
+      if (!files || !files.length) { renderLetter(null, 'empty'); return; }
+      var pick = files[Math.floor(Math.random() * files.length)];
+      state.letter = { path: pick.path, name: pick.name };
+      renderLetter(state.letter, 'ok');
+    } catch (e) {
+      renderLetter(null, 'err');
+    } finally {
+      state.letterLoading = false;
+    }
+  }
+
+  function openLetter() {
+    if (!state.letter || !api || !api.openReader) return;
+    api.openReader(state.letter.path);
+  }
+
+  // ── 信箱目录配置（持久化到宿主，避沙箱无 localStorage）──
+  async function loadConfig() {
+    if (!api || !api.loadData) return;
+    try {
+      var d = await api.loadData();
+      state.folder = (d && typeof d.letterFolder === 'string') ? d.letterFolder : '';
+    } catch (e) { state.folder = ''; }
+  }
+
+  async function saveConfig(folder) {
+    if (!api || !api.saveData) return;
+    state.folder = folder || '';
+    try { await api.saveData({ letterFolder: state.folder }); } catch (e) {}
+  }
+
+  function toggleSettings() {
+    if (!el.wrap) return;
+    var open = el.wrap.classList.toggle('bc-set-open');
+    if (open && el.folderInput) el.folderInput.value = state.folder || '';
+  }
+
+  function closeSettings() {
+    if (el.wrap) el.wrap.classList.remove('bc-set-open');
+  }
+
+  async function onFolderSave() {
+    var v = el.folderInput ? el.folderInput.value.trim() : '';
+    await saveConfig(v);
+    closeSettings();
+    if (state.letterOpen) fetchLetter();
   }
 
   var _drag = { y: 0, p: 0, moved: 0, id: null };
@@ -793,6 +991,10 @@ var __bamboo_module_curtain = (function () {
     _lastK = -1; // 重挂时让 fitStage 重新写一次，否则 stage 高度永远是 0
     state.pull = 0;
     state.dragging = false;
+    state.letter = null;
+    state.letterOpen = false;
+    state.letterLoading = false;
+    state.folder = '';
     _drag.y = 0;
     _drag.p = 0;
     _drag.moved = 0;
@@ -811,6 +1013,7 @@ var __bamboo_module_curtain = (function () {
       ensureStyle();
       render();
       applyTheme();
+      loadConfig();
       window.addEventListener('message', onThemeMessage);
       startDarkObserver(); // 主动观察沙箱 .dark，明暗切换即时生效（治本）
       window.addEventListener('resize', onReflow);
