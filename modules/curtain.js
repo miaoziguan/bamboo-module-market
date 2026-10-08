@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.15","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.16","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -193,6 +193,23 @@ var __bamboo_module_curtain = (function () {
       '<stop offset="0%" stop-color="' + foot + '" stop-opacity="0"/>' +
       '<stop offset="46%" stop-color="' + foot + '" stop-opacity="' + footOp + '"/>' +
       '<stop offset="100%" stop-color="' + foot + '" stop-opacity="0"/></linearGradient>';
+    // 水线柔化：水面自上缘渐入，不再是一条硬直边（原先实心矩形 = 一刀切）
+    s += '<linearGradient id="' + P + 'Water" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="' + water + '" stop-opacity="0"/>' +
+      '<stop offset="16%" stop-color="' + water + '" stop-opacity="1"/>' +
+      '<stop offset="100%" stop-color="' + water + '" stop-opacity="1"/></linearGradient>';
+    // 山脚柔化：每层一条 userSpaceOnUse 竖向渐变，让山体在基线附近自己渐隐 ——
+    // 山体原是「填到基线一刀切」，与下方留白/水的交界是一道硬直线。亮色下雾够亮，
+    // 把交界两端压得几乎等值（Δ≈2）故看不出；暗色雾压暗后 Δ≈8 就露成硬边。
+    // 用渐变把山脚化开，与雾的浓淡解耦：雾得以继续保持含蓄（见 v0.3.15 融入修复）。
+    // y1 只比基线高 0.01H（保住原山脊轮廓），y2 到基线下方 0.055H 才归零。
+    for (var fi = 0; fi < RANGES.length; fi++) {
+      var Rb = RANGES[fi].base * H;
+      var fc = 'hsl(' + ((h + RANGES[fi].dh) % 360) + ',' + RANGES[fi].s + '%,' + (dk ? RANGES[fi].dl : RANGES[fi].l) + '%)';
+      s += '<linearGradient id="' + P + 'RF' + fi + '" gradientUnits="userSpaceOnUse" x1="0" y1="' + f(Rb - H * 0.01) + '" x2="0" y2="' + f(Rb + H * 0.055) + '">' +
+        '<stop offset="0%" stop-color="' + fc + '" stop-opacity="1"/>' +
+        '<stop offset="100%" stop-color="' + fc + '" stop-opacity="0"/></linearGradient>';
+    }
     // 柔化：每层一个滤镜，stdDeviation 直接取 RANGES[i].blur（越远越糊）
     for (var bi = 0; bi < RANGES.length; bi++) {
       s += '<filter id="' + P + 'BR' + bi + '" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="' + RANGES[bi].blur + '"/></filter>';
@@ -212,14 +229,16 @@ var __bamboo_module_curtain = (function () {
     }
     // 水：一笔淡痕（山 + 水 = 山水），倒影在上头
     var wy = H * 0.735;
-    s += '<rect x="0" y="' + f(wy) + '" width="' + W + '" height="' + f(H - wy) + '" fill="' + water + '" opacity=".5"/>';
+    s += '<rect x="0" y="' + f(wy) + '" width="' + W + '" height="' + f(H - wy) + '" fill="url(#' + P + 'Water)" opacity=".5"/>';
 
     // 远 → 近三层，每层之间垫一道雾，山脚都埋进雾里，只剩峰浮着（各层包进 .bc-ridge 便于独立游动）
     for (var i = 0; i < RANGES.length; i++) {
       var R = RANGES[i];
-      var LL = dk ? R.dl : R.l, OO = dk ? R.do : R.o;
+      var OO = dk ? R.do : R.o;
       s += '<g class="bc-ridge" data-kind="ridge" data-depth="' + i + '">';
-      s += '<path d="' + ridge(W, H, R.prof, R.base * H, DRIFT_OS) + '" fill="hsl(' + ((h + R.dh) % 360) + ',' + R.s + '%,' + LL + '%)" opacity="' + OO + '" filter="url(#' + P + 'BR' + i + ')"/>';
+      // 山体填到基线下方 0.06H：多出那段落在渐变全透明区（看不见），
+      // 只为让「渐隐到 0」在填充范围内走完，交界处不再留硬边。
+      s += '<path d="' + ridge(W, H, R.prof, R.base * H + H * 0.06, DRIFT_OS) + '" fill="url(#' + P + 'RF' + i + ')" opacity="' + OO + '" filter="url(#' + P + 'BR' + i + ')"/>';
       var fy = R.base * H, fh = H * 0.11;
       s += '<rect x="' + f(-DRIFT_OS * W) + '" y="' + f(fy - fh / 2) + '" width="' + f(W * (1 + 2 * DRIFT_OS)) + '" height="' + f(fh) + '" fill="url(#' + P + 'Fog)"/>';
       s += '</g>';
