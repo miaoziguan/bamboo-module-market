@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.16","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.17","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -165,15 +165,18 @@ var __bamboo_module_curtain = (function () {
     // 合成后比背景(~28%)高出约 15 个点，在层与层之间拉出一道道浅色横条 —— 那是切层
     // 不是融层。故暗色雾要「暗且淡」，压到与亮色同档的 +6。
     // 山更暗（近山成剪影、远山化进雾里）。
-    var top, low, fog, water, fogOp, foot, footOp;
+    var top, low, mid, fog, water, fogOp, foot, footOp;
     if (dk) {
-      top = 'hsl(' + h + ',20%,19%)'; low = 'hsl(' + h + ',22%,32%)';
+      // 星空压暗（v0.3.17「狠一点」那档）：天顶 19%→14%，并在 34% 处加 22% 停靠点，
+      // 让深夜多维持一段再向地平线升到 32%。只压天顶、不压 low：远端山 dl≈28 仍与
+      // 绢底（y≈0.42 处约 27%）等值，不会重新浮起（见 v0.3.15 融入修复）。
+      top = 'hsl(' + h + ',20%,14%)'; low = 'hsl(' + h + ',22%,32%)'; mid = 'hsl(' + h + ',22%,22%)';
       fog = 'hsl(' + h + ',16%,42%)'; water = 'hsl(' + h + ',18%,27%)'; fogOp = 0.42;
       // 画底在暗色下要「沉进暗」，不能照搬亮色的「化入亮雾」—— 否则底部糊出一条
       // 奶白亮带。亮色是化入留白，暗色的等价做法是化入暗，故单独一支渐变。
       foot = 'hsl(' + h + ',22%,20%)'; footOp = 0.55;
     } else {
-      top = 'hsl(' + h + ',10%,95%)'; low = 'hsl(' + h + ',12%,88%)';
+      top = 'hsl(' + h + ',10%,95%)'; low = 'hsl(' + h + ',12%,88%)'; mid = top;
       fog = 'hsl(' + h + ',16%,97%)'; water = 'hsl(' + h + ',14%,90%)'; fogOp = 0.9;
       foot = fog; footOp = fogOp; // 亮色画底就是化入留白（= 雾）
     }
@@ -181,6 +184,7 @@ var __bamboo_module_curtain = (function () {
     s += '<defs>';
     s += '<linearGradient id="' + P + 'Paper" x1="0" y1="0" x2="0" y2="1">' +
       '<stop offset="0%" stop-color="' + top + '"/>' +
+      '<stop offset="34%" stop-color="' + mid + '"/>' +
       '<stop offset="58%" stop-color="' + low + '"/>' +
       '<stop offset="100%" stop-color="' + low + '"/></linearGradient>';
     // 雾：上透明→中满→下透明，用来把层与层切开、把山脚埋进去
