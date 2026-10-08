@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.14","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.15","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -112,9 +112,11 @@ var __bamboo_module_curtain = (function () {
   // 同一幅永远复现。
   var RANGES = [
     // 最远：山脊压得极低、几乎只剩一线，埋在雾里 —— 纵深就是从这两层开始的
-    { base: 0.42, dh: 13, s: 11, l: 90, o: 0.30, dl: 32, do: 0.40, blur: 6.0,
+    // dl 是暗色明度：绢底在该层高度约 28.4%，原先 32 反而比天亮 3.6 个点，
+    // 成了浮在天上的浅脊；压到 28 才与天等值、真正化进天里（亮色 l=90 与绢底≈等值同理）
+    { base: 0.42, dh: 13, s: 11, l: 90, o: 0.30, dl: 28, do: 0.40, blur: 6.0,
       prof: [ [0,0.42],[0.24,0.406],[0.46,0.40],[0.62,0.39],[0.8,0.356],[0.92,0.378],[1,0.402] ] },
-    { base: 0.47, dh: 10, s: 13, l: 87, o: 0.38, dl: 29, do: 0.42, blur: 5.0,
+    { base: 0.47, dh: 10, s: 13, l: 87, o: 0.38, dl: 28, do: 0.42, blur: 5.0,
       prof: [ [0,0.455],[0.14,0.43],[0.3,0.398],[0.44,0.385],[0.58,0.40],[0.72,0.425],[0.86,0.445],[1,0.462] ] },
     { base: 0.53, dh:  8, s: 12, l: 86, o: 0.42, dl: 27, do: 0.42, blur: 4.6,
       prof: [ [0,0.505],[0.12,0.468],[0.25,0.44],[0.38,0.468],[0.5,0.47],[0.66,0.42],[0.8,0.45],[0.9,0.472],[1,0.495] ] },
@@ -158,15 +160,22 @@ var __bamboo_module_curtain = (function () {
     var P = 'bc' + (++_uid) + '_'; // 唯一前缀：同文档内两幅画不会抢同一批 id
     var h = ((THEME.hue % 360) + 360) % 360;
     var dk = !!THEME.isDark;
-    // 绢底 / 雾 / 水：浅暗两套，同一色相只换明度。暗色下雾要更亮（夜雾反光），
-    // 山更暗（近山成剪影、远山化进雾里），反差靠明度而非饱和。
-    var top, low, fog, water, fogOp;
+    // 绢底 / 雾 / 水：浅暗两套，同一色相只换明度。反差靠明度而非饱和。
+    // 雾的「融入」判据是合成后相对背景的明度差：亮色那档约 +6，暗色原本 52%/.62
+    // 合成后比背景(~28%)高出约 15 个点，在层与层之间拉出一道道浅色横条 —— 那是切层
+    // 不是融层。故暗色雾要「暗且淡」，压到与亮色同档的 +6。
+    // 山更暗（近山成剪影、远山化进雾里）。
+    var top, low, fog, water, fogOp, foot, footOp;
     if (dk) {
       top = 'hsl(' + h + ',20%,19%)'; low = 'hsl(' + h + ',22%,32%)';
-      fog = 'hsl(' + h + ',14%,52%)'; water = 'hsl(' + h + ',18%,27%)'; fogOp = 0.62;
+      fog = 'hsl(' + h + ',16%,42%)'; water = 'hsl(' + h + ',18%,27%)'; fogOp = 0.42;
+      // 画底在暗色下要「沉进暗」，不能照搬亮色的「化入亮雾」—— 否则底部糊出一条
+      // 奶白亮带。亮色是化入留白，暗色的等价做法是化入暗，故单独一支渐变。
+      foot = 'hsl(' + h + ',22%,20%)'; footOp = 0.55;
     } else {
       top = 'hsl(' + h + ',10%,95%)'; low = 'hsl(' + h + ',12%,88%)';
       fog = 'hsl(' + h + ',16%,97%)'; water = 'hsl(' + h + ',14%,90%)'; fogOp = 0.9;
+      foot = fog; footOp = fogOp; // 亮色画底就是化入留白（= 雾）
     }
     var s = '<svg class="bc-art" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">';
     s += '<defs>';
@@ -179,6 +188,11 @@ var __bamboo_module_curtain = (function () {
       '<stop offset="0%" stop-color="' + fog + '" stop-opacity="0"/>' +
       '<stop offset="46%" stop-color="' + fog + '" stop-opacity="' + fogOp + '"/>' +
       '<stop offset="100%" stop-color="' + fog + '" stop-opacity="0"/></linearGradient>';
+    // 画底化入用：亮色化入留白（= 雾），暗色化入暗（单独一支）
+    s += '<linearGradient id="' + P + 'Foot" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="' + foot + '" stop-opacity="0"/>' +
+      '<stop offset="46%" stop-color="' + foot + '" stop-opacity="' + footOp + '"/>' +
+      '<stop offset="100%" stop-color="' + foot + '" stop-opacity="0"/></linearGradient>';
     // 柔化：每层一个滤镜，stdDeviation 直接取 RANGES[i].blur（越远越糊）
     for (var bi = 0; bi < RANGES.length; bi++) {
       s += '<filter id="' + P + 'BR' + bi + '" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="' + RANGES[bi].blur + '"/></filter>';
@@ -214,7 +228,7 @@ var __bamboo_module_curtain = (function () {
     var last = RANGES[RANGES.length - 1];
     s += '<g transform="translate(0,' + f(wy * 2) + ') scale(1,-1)" opacity=".12" filter="url(#' + P + 'BRr)"><path d="' + ridge(W, H, last.prof, last.base * H) + '" fill="hsl(' + ((h + last.dh) % 360) + ',' + last.s + '%,' + (dk ? last.dl : last.l) + '%)"/></g>';
     // 画底化入留白，不留一道硬口
-    s += '<rect x="0" y="' + f(H * 0.80) + '" width="' + W + '" height="' + f(H * 0.20) + '" fill="url(#' + P + 'Fog)"/>';
+    s += '<rect x="0" y="' + f(H * 0.80) + '" width="' + W + '" height="' + f(H * 0.20) + '" fill="url(#' + P + 'Foot)"/>';
     s += '</svg>';
     return s;
   }
