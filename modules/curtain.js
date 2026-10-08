@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.17","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.18","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -363,18 +363,25 @@ var __bamboo_module_curtain = (function () {
       '.bc-wrap.bc-dark{' +
         // 窗洞：比叶色深一档的暗绿虚空，贴近主题 bg-gradient-end（hue+2,30%,9%）
         '--bc-cav-l:11%;--bc-cav-s:26%;' +
-        // 叶片四档明度沿主题竹调铺开：顶光≈bm-primary 受光面，底暗≈bamboo-dark
-        '--bc-l1:hsl(calc(var(--bc-hue) + 2),33%,49%);' +
-        '--bc-l2:hsl(calc(var(--bc-hue) + 3),34%,38%);' +
-        '--bc-l3:hsl(calc(var(--bc-hue) + 5),34%,29%);' +
-        '--bc-l4:hsl(calc(var(--bc-hue) + 6),35%,22%);' +
-        '--bc-line:hsl(calc(var(--bc-hue) + 6),35%,15%);' +
+        // 叶片四档：严格复刻主题暗调竹绿那条「越亮越收饱和、越暗才越浓」的斜线 ——
+        // bm-primary(h+2,25%,47%) → bamboo-deep(h+5,34%,26%) → bamboo-dark(h+6,35%,25%)。
+        // 旧版把受光面抬到 33% 饱和（比 bm-primary 高 8 点），亮处的绿就冲出主题、泛出
+        // 「塑料假绿」；主题恰恰相反：亮处收着、暗处才浓。故顶光对齐 bm-primary 的 25%。
+        '--bc-l1:hsl(calc(var(--bc-hue) + 2),26%,47%);' +
+        '--bc-l2:hsl(calc(var(--bc-hue) + 3),29%,37%);' +
+        '--bc-l3:hsl(calc(var(--bc-hue) + 5),32%,28%);' +
+        '--bc-l4:hsl(calc(var(--bc-hue) + 6),34%,21%);' +
+        '--bc-line:hsl(calc(var(--bc-hue) + 6),35%,13%);' +
         '--bc-lam-op:.62;' +
-        '--bc-lam-rim:rgba(228,248,242,.66);' +
+        // 棱光收一档并去掉青味：原来的青白高光（228,248,242）逐叶叠出塑料反光，
+        // 换成更柔的暖白，只留一道「月光落在竹面上」的薄光。
+        '--bc-lam-rim:rgba(236,240,234,.46);' +
         '--bc-glass:blur(2px);' +
         '--bc-veil-bg:linear-gradient(180deg,rgba(206,232,222,.10) 0%,rgba(170,200,190,.04) 100%);' +
         '--bc-veil-glow:rgba(206,232,222,.08);' +
-        '--bc-glow2:rgba(200,228,218,.24);' +
+        // 叶下投影：亮色是深暖色（真阴影），暗色旧版却写成亮青 rgba(200,228,218,.24)
+        // —— 亮色阴影＝发光，逐叶叠成一层「塑料辉光」。改回真阴影，叶缝才有真实遮挡。
+        '--bc-glow2:rgba(3,20,17,.5);' +
         // 白玉：暗色下整体压亮（filter 在 .bc-sill），玉调也往主题青白靠一点
         '--bc-j1:hsl(var(--bc-jh),11%,58%);' +
         '--bc-j2:hsl(var(--bc-jh),10%,49%);' +
@@ -508,6 +515,9 @@ var __bamboo_module_curtain = (function () {
       '.bc-lam:after{content:"";position:absolute;left:2px;right:2px;top:24%;height:22%;' +
         'border-radius:1px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.34),' +
         'rgba(255,255,255,0));}',
+      // 暗色下那道横向白高光是「塑料反光」的主源（逐叶重复），压淡收窄，只留一线微光。
+      '.bc-wrap.bc-dark .bc-lam:after{top:26%;height:16%;background:linear-gradient(90deg,' +
+        'rgba(255,255,255,0),rgba(255,255,255,.15),rgba(255,255,255,0));}',
       // 帘面左右压暗 + 包边：竹帘两缘有收边，收边同时把帘「框」成一件东西
       '.bc-curtain:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none;' +
         'background:' +
