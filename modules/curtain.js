@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.19","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.20","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -382,12 +382,13 @@ var __bamboo_module_curtain = (function () {
         // 叶下投影：亮色是深暖色（真阴影），暗色旧版却写成亮青 rgba(200,228,218,.24)
         // —— 亮色阴影＝发光，逐叶叠成一层「塑料辉光」。改回真阴影，叶缝才有真实遮挡。
         '--bc-glow2:rgba(3,20,17,.5);' +
-        // 白玉：暗色下整体压亮（filter 在 .bc-sill），玉调也往主题青白靠一点
-        '--bc-j1:hsl(var(--bc-jh),11%,58%);' +
-        '--bc-j2:hsl(var(--bc-jh),10%,49%);' +
-        '--bc-j3:hsl(var(--bc-jh),10%,41%);' +
-        '--bc-j4:hsl(var(--bc-jh),12%,32%);' +
-        '--bc-j5:hsl(var(--bc-jh),14%,24%);' +
+        // 白玉（暗色）：玉调整体下沉一档，成为夜色里一块安静的暗玉 ——
+        // 配合下方 .bc-wrap.bc-dark .bc-sill 的专用配光（去掉亮色的字面白，改青玉光）。
+        '--bc-j1:hsl(var(--bc-jh),11%,42%);' +
+        '--bc-j2:hsl(var(--bc-jh),10%,34%);' +
+        '--bc-j3:hsl(var(--bc-jh),10%,27%);' +
+        '--bc-j4:hsl(var(--bc-jh),12%,20%);' +
+        '--bc-j5:hsl(var(--bc-jh),14%,13%);' +
         '--bc-shadow:rgba(2,18,16,.55);' +
         '--bc-goose:hsl(var(--bc-hue),12%,82%);--bc-seal:hsl(6,50%,60%);' +
         '--bc-paper:hsl(var(--bc-hue),14%,24%);--bc-paper-edge:hsl(var(--bc-hue),14%,32%);}',
@@ -469,9 +470,28 @@ var __bamboo_module_curtain = (function () {
         // 通体微透，避免大面积白平涂成一张白纸
         'inset 0 0 13px rgba(255,255,255,.28),' +
         'inset 7px 0 11px -7px rgba(20,40,34,.16),inset -7px 0 11px -7px rgba(20,40,34,.16);}',
-      // 暗色下玉台要退下去：它的白是靠几层不透明白叠出来的，光调 --bc-j* 压不住，
-      // 直接整体降亮 —— 夜色里它该是一块「月下玉」，不是全窗最亮的一根白条。
-      '.bc-wrap.bc-dark .bc-sill{filter:brightness(.66) saturate(.9);}',
+      // 暗色窗台：原实现只是 filter:brightness(.66) 压亮色的白 —— 但台面的白是几层「字面白」
+      // （rgba(255,255,255,…)/rgba(255,253,247,…)）叠出来的，filter 压不掉，于是塌成一根亮灰条，
+      // 在深绿里最跳、还发灰离题（用户：「一条很明显的线，多余」）。改为不再复用亮色的白：
+      // 白晕与白高光全部换成极淡的青玉光、只留一道柔和的月光上棱，去掉 filter，褪成夜色里一块暗玉。
+      '.bc-wrap.bc-dark .bc-sill{filter:none;' +
+        'background:' +
+        'linear-gradient(90deg,hsla(var(--bc-jh),18%,62%,.10),hsla(var(--bc-jh),18%,62%,0) 19%,' +
+        'hsla(var(--bc-jh),18%,62%,0) 81%,hsla(var(--bc-jh),18%,62%,.10)),' +
+        'radial-gradient(62% 98% at 24% 44%,hsla(var(--bc-jh),16%,56%,.10),hsla(var(--bc-jh),16%,56%,0) 72%),' +
+        'radial-gradient(50% 84% at 73% 58%,hsla(var(--bc-jh),16%,52%,.07),hsla(var(--bc-jh),16%,52%,0) 74%),' +
+        'radial-gradient(40% 66% at 54% 62%,hsla(var(--bc-jh),18%,44%,.16),hsla(var(--bc-jh),18%,44%,0) 74%),' +
+        'linear-gradient(180deg,' +
+        'var(--bc-j1) 0px,var(--bc-j2) 3.5px,' +
+        'hsla(var(--bc-jh),18%,54%,.34) 5.5px,' +
+        'hsla(var(--bc-jh),16%,50%,.10) 7px,' +
+        'var(--bc-j2) 8px,var(--bc-j3) 10px,' +
+        'var(--bc-j4) 12px,var(--bc-j5) ' + SILL_H + 'px);' +
+        'box-shadow:0 7px 13px var(--bc-shadow),' +
+        'inset 0 1px 0 hsla(var(--bc-jh),24%,62%,.26),' +
+        'inset 0 -2px 4px hsla(var(--bc-jh),16%,46%,.14),' +
+        'inset 0 0 13px hsla(var(--bc-jh),16%,52%,.06),' +
+        'inset 7px 0 11px -7px rgba(20,40,34,.16),inset -7px 0 11px -7px rgba(20,40,34,.16);}',
 
       // —— 拉开后：满窗的青绿山水立轴。画自带绢底与远山近水，铺满整个窗洞；
       // 窗框只在最外圈压一道内影（见 .bc-frame），像画嵌在窗里，不是居中明信片。
