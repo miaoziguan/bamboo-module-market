@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.20","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
+/* __bamboo_module_ {"id":"curtain","name":"竹林卷帘窗","version":"0.3.21","fab":{"icon":"blinds","label":"窗台"},"location":"left"} */
 /**
  * 竹林模块 · 竹林卷帘窗 v0.2
  *
@@ -158,50 +158,31 @@ var __bamboo_module_curtain = (function () {
   function landSvg() {
     var W = FRAME_W, H = FRAME_H;
     var P = 'bc' + (++_uid) + '_'; // 唯一前缀：同文档内两幅画不会抢同一批 id
-    var h = ((THEME.hue % 360) + 360) % 360;
-    var dk = !!THEME.isDark;
-    // 绢底 / 雾 / 水：浅暗两套，同一色相只换明度。反差靠明度而非饱和。
-    // 雾的「融入」判据是合成后相对背景的明度差：亮色那档约 +6，暗色原本 52%/.62
-    // 合成后比背景(~28%)高出约 15 个点，在层与层之间拉出一道道浅色横条 —— 那是切层
-    // 不是融层。故暗色雾要「暗且淡」，压到与亮色同档的 +6。
-    // 山更暗（近山成剪影、远山化进雾里）。
-    var top, low, mid, fog, water, fogOp, foot, footOp;
-    if (dk) {
-      // 星空压暗（v0.3.17「狠一点」那档）：天顶 19%→14%，并在 34% 处加 22% 停靠点，
-      // 让深夜多维持一段再向地平线升到 32%。只压天顶、不压 low：远端山 dl≈28 仍与
-      // 绢底（y≈0.42 处约 27%）等值，不会重新浮起（见 v0.3.15 融入修复）。
-      top = 'hsl(' + h + ',20%,14%)'; low = 'hsl(' + h + ',22%,32%)'; mid = 'hsl(' + h + ',22%,22%)';
-      fog = 'hsl(' + h + ',16%,42%)'; water = 'hsl(' + h + ',18%,27%)'; fogOp = 0.42;
-      // 画底在暗色下要「沉进暗」，不能照搬亮色的「化入亮雾」—— 否则底部糊出一条
-      // 奶白亮带。亮色是化入留白，暗色的等价做法是化入暗，故单独一支渐变。
-      foot = 'hsl(' + h + ',22%,20%)'; footOp = 0.55;
-    } else {
-      top = 'hsl(' + h + ',10%,95%)'; low = 'hsl(' + h + ',12%,88%)'; mid = top;
-      fog = 'hsl(' + h + ',16%,97%)'; water = 'hsl(' + h + ',14%,90%)'; fogOp = 0.9;
-      foot = fog; footOp = fogOp; // 亮色画底就是化入留白（= 雾）
-    }
+    // 山水配色不再写死：全部走 CSS 变量（见 .bc-wrap / .bc-wrap.bc-dark 里的 --bc-art-*），
+    // 由 --bc-hue 与明暗类驱动 —— 拖动宿主色相/明度滑块时只换 CSS 变量、不再重建整幅 SVG，
+    // 漂移动画不被打断，也就不会跳动抖动（v0.3.21 修复）。此处只搭结构，不落具体颜色。
     var s = '<svg class="bc-art" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">';
     s += '<defs>';
     s += '<linearGradient id="' + P + 'Paper" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="' + top + '"/>' +
-      '<stop offset="34%" stop-color="' + mid + '"/>' +
-      '<stop offset="58%" stop-color="' + low + '"/>' +
-      '<stop offset="100%" stop-color="' + low + '"/></linearGradient>';
+      '<stop offset="0%" style="stop-color:var(--bc-art-top)"/>' +
+      '<stop offset="34%" style="stop-color:var(--bc-art-mid)"/>' +
+      '<stop offset="58%" style="stop-color:var(--bc-art-low)"/>' +
+      '<stop offset="100%" style="stop-color:var(--bc-art-low)"/></linearGradient>';
     // 雾：上透明→中满→下透明，用来把层与层切开、把山脚埋进去
     s += '<linearGradient id="' + P + 'Fog" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="' + fog + '" stop-opacity="0"/>' +
-      '<stop offset="46%" stop-color="' + fog + '" stop-opacity="' + fogOp + '"/>' +
-      '<stop offset="100%" stop-color="' + fog + '" stop-opacity="0"/></linearGradient>';
+      '<stop offset="0%" style="stop-color:var(--bc-art-fog)" stop-opacity="0"/>' +
+      '<stop offset="46%" style="stop-color:var(--bc-art-fog);stop-opacity:var(--bc-art-fog-op)"/>' +
+      '<stop offset="100%" style="stop-color:var(--bc-art-fog)" stop-opacity="0"/></linearGradient>';
     // 画底化入用：亮色化入留白（= 雾），暗色化入暗（单独一支）
     s += '<linearGradient id="' + P + 'Foot" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="' + foot + '" stop-opacity="0"/>' +
-      '<stop offset="46%" stop-color="' + foot + '" stop-opacity="' + footOp + '"/>' +
-      '<stop offset="100%" stop-color="' + foot + '" stop-opacity="0"/></linearGradient>';
+      '<stop offset="0%" style="stop-color:var(--bc-art-foot)" stop-opacity="0"/>' +
+      '<stop offset="46%" style="stop-color:var(--bc-art-foot);stop-opacity:var(--bc-art-foot-op)"/>' +
+      '<stop offset="100%" style="stop-color:var(--bc-art-foot)" stop-opacity="0"/></linearGradient>';
     // 水线柔化：水面自上缘渐入，不再是一条硬直边（原先实心矩形 = 一刀切）
     s += '<linearGradient id="' + P + 'Water" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="' + water + '" stop-opacity="0"/>' +
-      '<stop offset="16%" stop-color="' + water + '" stop-opacity="1"/>' +
-      '<stop offset="100%" stop-color="' + water + '" stop-opacity="1"/></linearGradient>';
+      '<stop offset="0%" style="stop-color:var(--bc-art-water)" stop-opacity="0"/>' +
+      '<stop offset="16%" style="stop-color:var(--bc-art-water);stop-opacity:1"/>' +
+      '<stop offset="100%" style="stop-color:var(--bc-art-water);stop-opacity:1"/></linearGradient>';
     // 山脚柔化：每层一条 userSpaceOnUse 竖向渐变，让山体在基线附近自己渐隐 ——
     // 山体原是「填到基线一刀切」，与下方留白/水的交界是一道硬直线。亮色下雾够亮，
     // 把交界两端压得几乎等值（Δ≈2）故看不出；暗色雾压暗后 Δ≈8 就露成硬边。
@@ -209,10 +190,9 @@ var __bamboo_module_curtain = (function () {
     // y1 只比基线高 0.01H（保住原山脊轮廓），y2 到基线下方 0.055H 才归零。
     for (var fi = 0; fi < RANGES.length; fi++) {
       var Rb = RANGES[fi].base * H;
-      var fc = 'hsl(' + ((h + RANGES[fi].dh) % 360) + ',' + RANGES[fi].s + '%,' + (dk ? RANGES[fi].dl : RANGES[fi].l) + '%)';
       s += '<linearGradient id="' + P + 'RF' + fi + '" gradientUnits="userSpaceOnUse" x1="0" y1="' + f(Rb - H * 0.01) + '" x2="0" y2="' + f(Rb + H * 0.055) + '">' +
-        '<stop offset="0%" stop-color="' + fc + '" stop-opacity="1"/>' +
-        '<stop offset="100%" stop-color="' + fc + '" stop-opacity="0"/></linearGradient>';
+        '<stop offset="0%" style="stop-color:var(--bc-art-r' + fi + ');stop-opacity:1"/>' +
+        '<stop offset="100%" style="stop-color:var(--bc-art-r' + fi + ');stop-opacity:0"/></linearGradient>';
     }
     // 柔化：每层一个滤镜，stdDeviation 直接取 RANGES[i].blur（越远越糊）
     for (var bi = 0; bi < RANGES.length; bi++) {
@@ -223,13 +203,11 @@ var __bamboo_module_curtain = (function () {
     s += '</defs>';
 
     s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#' + P + 'Paper)"/>';
-    // 满天星（只暗色）
-    if (dk) {
-      for (var si = 0; si < STARS.length; si++) {
-        var st = STARS[si];
-        s += '<circle cx="' + f(st[0] * W) + '" cy="' + f(st[1] * H) + '" r="' + f(st[2]) +
-          '" fill="#eef4fb" opacity="' + (st[3] * 0.85).toFixed(2) + '" filter="url(#' + P + 'BStar)"/>';
-      }
+    // 满天星：始终绘制，亮色下由 .bc-star 的 CSS 隐藏（亮色不画星），色相/明度滑块不再触发重建
+    for (var si = 0; si < STARS.length; si++) {
+      var st = STARS[si];
+      s += '<circle class="bc-star" cx="' + f(st[0] * W) + '" cy="' + f(st[1] * H) + '" r="' + f(st[2]) +
+        '" fill="#eef4fb" opacity="' + (st[3] * 0.85).toFixed(2) + '" filter="url(#' + P + 'BStar)"/>';
     }
     // 水：一笔淡痕（山 + 水 = 山水），倒影在上头
     var wy = H * 0.735;
@@ -238,18 +216,18 @@ var __bamboo_module_curtain = (function () {
     // 远 → 近三层，每层之间垫一道雾，山脚都埋进雾里，只剩峰浮着（各层包进 .bc-ridge 便于独立游动）
     for (var i = 0; i < RANGES.length; i++) {
       var R = RANGES[i];
-      var OO = dk ? R.do : R.o;
-      s += '<g class="bc-ridge" data-kind="ridge" data-depth="' + i + '">';
+      // 每层不透明度走 CSS 变量（浅/暗两套，由明暗类切换），避免为换明暗重建 SVG
+      s += '<g class="bc-ridge" data-kind="ridge" data-depth="' + i + '" style="opacity:var(--bc-art-r' + i + '-op)">';
       // 山体填到基线下方 0.06H：多出那段落在渐变全透明区（看不见），
       // 只为让「渐隐到 0」在填充范围内走完，交界处不再留硬边。
-      s += '<path d="' + ridge(W, H, R.prof, R.base * H + H * 0.06, DRIFT_OS) + '" fill="url(#' + P + 'RF' + i + ')" opacity="' + OO + '" filter="url(#' + P + 'BR' + i + ')"/>';
+      s += '<path d="' + ridge(W, H, R.prof, R.base * H + H * 0.06, DRIFT_OS) + '" fill="url(#' + P + 'RF' + i + ')" filter="url(#' + P + 'BR' + i + ')"/>';
       var fy = R.base * H, fh = H * 0.11;
       s += '<rect x="' + f(-DRIFT_OS * W) + '" y="' + f(fy - fh / 2) + '" width="' + f(W * (1 + 2 * DRIFT_OS)) + '" height="' + f(fh) + '" fill="url(#' + P + 'Fog)"/>';
       s += '</g>';
     }
     // 近山倒影：淡淡一笔，暗示水
     var last = RANGES[RANGES.length - 1];
-    s += '<g transform="translate(0,' + f(wy * 2) + ') scale(1,-1)" opacity=".12" filter="url(#' + P + 'BRr)"><path d="' + ridge(W, H, last.prof, last.base * H) + '" fill="hsl(' + ((h + last.dh) % 360) + ',' + last.s + '%,' + (dk ? last.dl : last.l) + '%)"/></g>';
+    s += '<g transform="translate(0,' + f(wy * 2) + ') scale(1,-1)" opacity=".12" filter="url(#' + P + 'BRr)"><path d="' + ridge(W, H, last.prof, last.base * H) + '" style="fill:var(--bc-art-r4)"/></g>';
     // 画底化入留白，不留一道硬口
     s += '<rect x="0" y="' + f(H * 0.80) + '" width="' + W + '" height="' + f(H * 0.20) + '" fill="url(#' + P + 'Foot)"/>';
     s += '</svg>';
@@ -258,7 +236,7 @@ var __bamboo_module_curtain = (function () {
 
   function paintLand() {
     if (el.insert) el.insert.innerHTML = '<div class="bc-art-wrap">' + landSvg() + '</div>';
-    collectDrift(); // 远山/云重建后重抓可动元素（主题切换会重建整幅 SVG）
+    collectDrift(); // 初次绘制后抓可动元素；主题变更不再重建 SVG（见 v0.3.21），漂移不被打断
   }
 
   // ── 开窗后远山/云游动：视差漂移（远山小慢、近山大快，云更慢更大，各自随机相位错峰不重叠）──
@@ -352,6 +330,18 @@ var __bamboo_module_curtain = (function () {
         '--bc-j3:hsl(var(--bc-jh),11%,79%);' +
         '--bc-j4:hsl(var(--bc-jh),13%,69%);' +
         '--bc-j5:hsl(var(--bc-jh),15%,57%);' +
+        // 山水配色（亮色）—— 与 blinds 同思路：颜色全走变量，色相挂 --bc-hue，明暗两套由明暗类切换。
+        // 拖动色相/明度滑块只换 --bc-hue 与 .bc-dark 类，绝不重建 SVG，漂移不被打断（见 v0.3.21）。
+        '--bc-art-top:hsl(var(--bc-hue),10%,95%);--bc-art-mid:hsl(var(--bc-hue),10%,95%);' +
+        '--bc-art-low:hsl(var(--bc-hue),12%,88%);' +
+        '--bc-art-fog:hsl(var(--bc-hue),16%,97%);--bc-art-fog-op:.9;' +
+        '--bc-art-water:hsl(var(--bc-hue),14%,90%);' +
+        '--bc-art-foot:hsl(var(--bc-hue),16%,97%);--bc-art-foot-op:.9;' +
+        '--bc-art-r0:hsl(calc(var(--bc-hue) + 13),11%,90%);--bc-art-r0-op:.30;' +
+        '--bc-art-r1:hsl(calc(var(--bc-hue) + 10),13%,87%);--bc-art-r1-op:.38;' +
+        '--bc-art-r2:hsl(calc(var(--bc-hue) + 8),12%,86%);--bc-art-r2-op:.42;' +
+        '--bc-art-r3:hsl(calc(var(--bc-hue) + 3),16%,74%);--bc-art-r3-op:.54;' +
+        '--bc-art-r4:hsl(calc(var(--bc-hue) - 3),15%,68%);--bc-art-r4-op:.52;' +
         // 投影也带青 —— 中性灰的影子会把附近的绿抽成脏灰
         '--bc-shadow:rgba(14,52,44,.3);}',
       // 暗色重写（治本）：原暗块写死 18% 饱和 + 色相不偏（hue+0~2），而「竹林星光」暗调的竹绿是
@@ -389,6 +379,17 @@ var __bamboo_module_curtain = (function () {
         '--bc-j3:hsl(var(--bc-jh),10%,27%);' +
         '--bc-j4:hsl(var(--bc-jh),12%,20%);' +
         '--bc-j5:hsl(var(--bc-jh),14%,13%);' +
+        // 山水配色（暗色）—— 见亮色同名变量；明度阶下沉、雾更暗更淡（融入见 v0.3.15）。
+        '--bc-art-top:hsl(var(--bc-hue),20%,14%);--bc-art-mid:hsl(var(--bc-hue),22%,22%);' +
+        '--bc-art-low:hsl(var(--bc-hue),22%,32%);' +
+        '--bc-art-fog:hsl(var(--bc-hue),16%,42%);--bc-art-fog-op:.42;' +
+        '--bc-art-water:hsl(var(--bc-hue),18%,27%);' +
+        '--bc-art-foot:hsl(var(--bc-hue),22%,20%);--bc-art-foot-op:.55;' +
+        '--bc-art-r0:hsl(calc(var(--bc-hue) + 13),11%,28%);--bc-art-r0-op:.40;' +
+        '--bc-art-r1:hsl(calc(var(--bc-hue) + 10),13%,28%);--bc-art-r1-op:.42;' +
+        '--bc-art-r2:hsl(calc(var(--bc-hue) + 8),12%,27%);--bc-art-r2-op:.42;' +
+        '--bc-art-r3:hsl(calc(var(--bc-hue) + 3),16%,21%);--bc-art-r3-op:.52;' +
+        '--bc-art-r4:hsl(calc(var(--bc-hue) - 3),15%,18%);--bc-art-r4-op:.46;' +
         '--bc-shadow:rgba(2,18,16,.55);' +
         '--bc-goose:hsl(var(--bc-hue),12%,82%);--bc-seal:hsl(6,50%,60%);' +
         '--bc-paper:hsl(var(--bc-hue),14%,24%);--bc-paper-edge:hsl(var(--bc-hue),14%,32%);}',
@@ -492,6 +493,8 @@ var __bamboo_module_curtain = (function () {
         'inset 0 -2px 4px hsla(var(--bc-jh),16%,46%,.14),' +
         'inset 0 0 13px hsla(var(--bc-jh),16%,52%,.06),' +
         'inset 7px 0 11px -7px rgba(20,40,34,.16),inset -7px 0 11px -7px rgba(20,40,34,.16);}',
+      // 亮色不画星：星点始终绘制，亮色下隐藏，避免明暗切换/色相滑块触发 SVG 重建
+      '.bc-wrap:not(.bc-dark) .bc-star{opacity:0!important;}',
 
       // —— 拉开后：满窗的青绿山水立轴。画自带绢底与远山近水，铺满整个窗洞；
       // 窗框只在最外圈压一道内影（见 .bc-frame），像画嵌在窗里，不是居中明信片。
@@ -830,14 +833,14 @@ var __bamboo_module_curtain = (function () {
 
   var _repaintRaf = 0;
 
-  // 重绘只排一帧：主题切换动画期间宿主会连发 theme:changed，
-  // 每条都重建整幅 SVG（5 层高斯模糊 + 72 星点）会明显掉帧。
+  // 主题变更只排一帧、只换 CSS 变量（--bc-hue 与 .bc-dark 类），绝不重建 SVG：
+  // 山水配色已全部改为 CSS 变量（--bc-art-*），由 --bc-hue 与明暗类即时驱动重着色，
+  // 漂移动画因此不被打断 —— 这正是拖动色相/明度滑块时风景不再抖动的根因修复（v0.3.21）。
   function scheduleRepaint() {
     if (_repaintRaf) return;
     _repaintRaf = requestAnimationFrame(function () {
       _repaintRaf = 0;
       applyTheme();
-      paintLand();
     });
   }
 
