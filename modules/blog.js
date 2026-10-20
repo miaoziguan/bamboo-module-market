@@ -28,7 +28,9 @@ var __bamboo_module_blog = (function () {
   var STYLE_ID = 'bamboo-blog-module-style';
   var BAMBOO = 'var(--bw-bamboo)';
   var BAMBOO_DEEP = 'var(--bw-bamboo-deep)';
-  var SEARCH_ICON = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234a7c59' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>";
+  // 搜索图标改成纯黑描边（作 mask 源），颜色交由 background-color 用主题令牌 --bw-bamboo 驱动，
+  // 这样图标随「色相」滑块变化，不再写死 #4a7c59（暗色下也无需 brightness 硬提亮）
+  var SEARCH_ICON = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>";
 
   var state = {
     profile: {
@@ -142,10 +144,10 @@ var __bamboo_module_blog = (function () {
       '.top-panel{position:absolute;left:26px;right:26px;top:26px;height:76px;border-radius:22px;z-index:3;display:flex;align-items:center;padding:0 calc(11px * var(--bm-inv,1));background:linear-gradient(180deg,#d3d1ce 0%,#e0ded9 22%,#ecebe7 55%,#f6f5f3 100%);box-shadow:inset 0 6px 16px rgba(var(--bm-shade),.24),inset 0 -3px 5px rgba(255,255,255,.92),inset 0 0 0 1px rgba(255,255,255,.35),0 1px 0 rgba(255,255,255,.9);}',
       // 凹槽里的搜索格 —— 内嵌控件：上缘暗、下缘亮，与凹槽面板同一套光影语言
       '.top-panel .bm-search-wrap{position:relative;flex:1 1 auto;}',
-      '.top-panel .bm-search-wrap::before{content:"";position:absolute;left:calc(12px * var(--bm-inv,1));top:50%;width:calc(15px * var(--bm-inv,1));height:calc(15px * var(--bm-inv,1));transform:translateY(-50%);background:url("' + SEARCH_ICON + '") no-repeat center;opacity:.42;pointer-events:none;}',
+      '.top-panel .bm-search-wrap::before{content:"";position:absolute;left:calc(12px * var(--bm-inv,1));top:50%;width:calc(15px * var(--bm-inv,1));height:calc(15px * var(--bm-inv,1));transform:translateY(-50%);background-color:var(--bw-bamboo);-webkit-mask:url("' + SEARCH_ICON + '") no-repeat center / contain;mask:url("' + SEARCH_ICON + '") no-repeat center / contain;opacity:.5;pointer-events:none;}',
       '.bm-search{width:100%;box-sizing:border-box;height:calc(35px * var(--bm-inv,1));padding:0 calc(33px * var(--bm-inv,1));border-radius:calc(12px * var(--bm-inv,1));font:inherit;font-size:calc(13px * var(--bm-inv-t,1));border:1px solid rgba(146,143,138,.40);background:linear-gradient(180deg,#f6f5f2 0%,#faf9f7 42%,#fefefd 100%);color:inherit;box-shadow:inset 0 3px 6px rgba(var(--bm-shade),.18),inset 0 -2px 3px rgba(255,255,255,.95),0 1px 0 rgba(255,255,255,.85);transition:border-color .12s,box-shadow .12s;}',
       '.bm-search::placeholder{color:#9c9a95;}',
-      '.bm-search:focus{outline:none;border-color:' + BAMBOO + ';box-shadow:inset 0 2px 5px rgba(var(--bm-shade),.15),inset 0 -2px 3px rgba(255,255,255,.95),0 0 0 3px rgba(74,124,89,.16),0 1px 0 rgba(255,255,255,.85);}',
+      '.bm-search:focus{outline:none;border-color:' + BAMBOO + ';box-shadow:inset 0 2px 5px rgba(var(--bm-shade),.15),inset 0 -2px 3px rgba(255,255,255,.95),0 0 0 3px hsla(var(--accent-hue),50%,calc(70% + var(--accent-lightness-offset,0%)),.16),0 1px 0 rgba(255,255,255,.85);}',
       '.bm-search-clear{position:absolute;right:calc(9px * var(--bm-inv,1));top:50%;transform:translateY(-50%);width:calc(22px * var(--bm-inv,1));height:calc(22px * var(--bm-inv,1));padding:0;border:none;border-radius:50%;background:none;cursor:pointer;opacity:.5;font-size:calc(15px * var(--bm-inv,1));color:inherit;line-height:1;}',
       '.bm-search-clear:hover{opacity:1;background:rgba(128,120,110,.14);}',
       '.bm-search-clear.is-hidden{visibility:hidden;}',
@@ -169,7 +171,7 @@ var __bamboo_module_blog = (function () {
       '.lens-glass{position:absolute;inset:24px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 18%,hsl(var(--accent-hue),38%,calc(58% + var(--accent-lightness-offset,0%))) 0%,hsl(var(--accent-hue),40%,calc(34% + var(--accent-lightness-offset,0%))) 22%,hsl(var(--accent-hue),42%,calc(19% + var(--accent-lightness-offset,0%))) 50%,hsl(var(--accent-hue),44%,calc(12% + var(--accent-lightness-offset,0%))) 76%,hsl(var(--accent-hue),46%,calc(7% + var(--accent-lightness-offset,0%))) 100%);box-shadow:inset 0 10px 20px rgba(var(--bm-shade),.80),inset 0 -6px 12px rgba(255,255,255,.12),inset 7px 0 15px rgba(var(--bm-shade),.42),inset -7px 0 15px rgba(var(--bm-shade),.42),0 0 0 1px rgba(255,255,255,.12);-webkit-backface-visibility:hidden;backface-visibility:hidden;}',
       // 头像占住参考稿 iris 的位置：在 18px 基础上略放大到 inset:14px（74 → 82px），黑圈相应收到 14px，
       // 仅比原值多让出 4px，幅度克制；内投影维持原样（5px 12px / .60）保留镜头凹陷景深
-      '.bm-avatar{position:absolute;inset:14px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#e3ecdd 0%,#cfe0c8 100%);color:' + BAMBOO_DEEP + ';font-size:36px;font-weight:700;box-shadow:inset 0 0 0 1px rgba(150,175,215,.24),inset 0 5px 12px rgba(var(--bm-shade),.60);}',
+      '.bm-avatar{position:absolute;inset:14px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,hsl(var(--accent-hue),34%,calc(90% + var(--accent-lightness-offset,0%))) 0%,hsl(var(--accent-hue),34%,calc(82% + var(--accent-lightness-offset,0%))) 100%);color:' + BAMBOO_DEEP + ';font-size:36px;font-weight:700;box-shadow:inset 0 0 0 1px hsla(var(--accent-hue),30%,calc(60% + var(--accent-lightness-offset,0%)),.22),inset 0 5px 12px rgba(var(--bm-shade),.60);}',
       '.bm-avatar img{width:100%;height:100%;object-fit:cover;image-rendering:auto;-webkit-backface-visibility:hidden;backface-visibility:hidden;}',
       // 镜片眩光：原 126deg 斜向 + 底部两团蓝光（70% 76% / 28% 72%）等于光从下方/侧方反射，
       // 违反 ⑥。改为正上方顶光：一道竖向高光带 + 顶部居中的柔蓝晕
@@ -372,8 +374,8 @@ var __bamboo_module_blog = (function () {
       // 暗色：凹槽面板里的搜索格同样保持「上缘暗、下缘亮」的内嵌感
       ':is(.theme-dark,.dark) .bm-search{background:linear-gradient(180deg,#1b1c17 0%,#21221c 45%,#27281f 100%);border-color:rgba(255,255,255,.10);color:#e6e4dd;box-shadow:inset 0 3px 6px rgba(0,0,0,.60),inset 0 -2px 3px rgba(255,255,255,.06),0 1px 0 rgba(255,255,255,.06);}',
       ':is(.theme-dark,.dark) .bm-search::placeholder{color:#8b8880;}',
-      ':is(.theme-dark,.dark) .bm-search:focus{border-color:var(--bw-bamboo);box-shadow:inset 0 2px 5px rgba(0,0,0,.50),inset 0 -2px 3px rgba(255,255,255,.06),0 0 0 3px rgba(143,197,159,.18),0 1px 0 rgba(255,255,255,.06);}',
-      ':is(.theme-dark,.dark) .top-panel .bm-search-wrap::before{filter:brightness(1.7) saturate(.75);}',
+      ':is(.theme-dark,.dark) .bm-search:focus{border-color:var(--bw-bamboo);box-shadow:inset 0 2px 5px rgba(0,0,0,.50),inset 0 -2px 3px rgba(255,255,255,.06),0 0 0 3px hsla(var(--accent-hue),52%,calc(74% + var(--accent-lightness-offset,0%)),.22),0 1px 0 rgba(255,255,255,.06);}',
+      ':is(.theme-dark,.dark) .top-panel .bm-search-wrap::before{background-color:var(--bw-bamboo-light);opacity:.72;}',
       ':is(.theme-dark,.dark) .bm-search-clear:hover{background:rgba(255,255,255,.10);}',
       // 暗色镜座：渐变改 180deg 竖向顶光，删左/右横向内高光与内阴影（遵守 ⑥）
       ':is(.theme-dark,.dark) .lens-unit{background:linear-gradient(180deg,hsl(var(--accent-hue),10%,calc(25% + var(--accent-lightness-offset,0%))) 0%,hsl(var(--accent-hue),10%,calc(29% + var(--accent-lightness-offset,0%))) 20%,hsl(var(--accent-hue),12%,calc(20% + var(--accent-lightness-offset,0%))) 58%,hsl(var(--accent-hue),12%,calc(16% + var(--accent-lightness-offset,0%))) 80%,hsl(var(--accent-hue),10%,calc(23% + var(--accent-lightness-offset,0%))) 100%);box-shadow:0 11px 18px -8px rgba(0,0,0,.55),0 6px 11px -5px rgba(0,0,0,.45),0 3px 5px -2px rgba(0,0,0,.35),inset 0 6px 12px rgba(255,255,255,.18),inset 0 -6px 12px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.12);}',

@@ -207,7 +207,7 @@ var __bamboo_module_curtain = (function () {
     for (var si = 0; si < STARS.length; si++) {
       var st = STARS[si];
       s += '<circle class="bc-star" cx="' + f(st[0] * W) + '" cy="' + f(st[1] * H) + '" r="' + f(st[2]) +
-        '" fill="#eef4fb" opacity="' + (st[3] * 0.85).toFixed(2) + '" filter="url(#' + P + 'BStar)"/>';
+        '" opacity="' + (st[3] * 0.85).toFixed(2) + '" filter="url(#' + P + 'BStar)"/>';
     }
     // 水：一笔淡痕（山 + 水 = 山水），倒影在上头
     var wy = H * 0.735;
@@ -299,8 +299,8 @@ var __bamboo_module_curtain = (function () {
     st.textContent = [
       '.bc-wrap{position:relative;padding:34px 4px 18px;box-sizing:border-box;' +
         '--bc-hue:152;' + // 与 THEME.hue 的兜底值一致（挂载后即由 applyTheme 覆盖）
-        '--bc-cav-l:96%;--bc-cav-s:16%;' +
-        '--bc-goose:hsl(var(--bc-hue),18%,28%);--bc-seal:hsl(6,55%,48%);' +
+        '--bc-cav-l:96%;--bc-cav-s:16%;--bc-star:hsl(var(--bc-hue),20%,92%);' +
+        '--bc-goose:hsl(var(--bc-hue),18%,28%);' +
         '--bc-paper:hsl(var(--bc-hue),22%,96%);--bc-paper-edge:hsl(var(--bc-hue),20%,86%);' +
         // 提饱和、同时把最暗一档抬起来：发浑＝低饱和＋中明度。
         // 上轮为了「减重」把饱和一路压到 23~30%，正好落进浑浊带，整片糊成灰绿。
@@ -312,14 +312,13 @@ var __bamboo_module_curtain = (function () {
         '--bc-line:hsl(var(--bc-hue),22%,57%);' +
         // 天光用「暖」而非跟着强调色走：冷绿叶 + 暖光才有通透。
         // 全场一个色相才会糊 —— 暖冷对冲颜色才立得住；日光本来也不是主题色。
-        '--bc-glow1:hsl(44,42%,94%);' +
         // 亮色下投影也得半透：不透明会糊进叶缝、把缝填成浅条，挡掉后面的山水
-        '--bc-glow2:hsla(40,22%,44%,.30);' +
+        '--bc-glow2:hsla(var(--bc-hue),22%,30%,.30);' +
         // 纱的底色 / 纱的辉光 / 叶的不透明度 / 叶顶那道棱光 / 帘后磨砂。
         // 五样都做成变量 —— 暗色要的那点「玻璃」，全靠在这五个值上换，不动任何结构。
         '--bc-lam-op:.62;' +
         '--bc-lam-rim:rgba(255,255,255,.45);' +
-        '--bc-veil-bg:linear-gradient(180deg,rgba(255,253,247,.45) 0%,rgba(255,253,247,0) 48%,rgba(146,158,150,0) 100%);' +
+        '--bc-veil-bg:linear-gradient(180deg,rgba(255,253,247,.45) 0%,rgba(255,253,247,0) 48%,transparent 100%);' +
         '--bc-veil-glow:rgba(255,253,247,.26);' +
         '--bc-glass:blur(2px);' +
         // 白玉：几乎无色，饱和只留 11~15% 的一点青白底，全靠明度塑形。
@@ -343,7 +342,7 @@ var __bamboo_module_curtain = (function () {
         '--bc-art-r3:hsl(calc(var(--bc-hue) + 3),16%,74%);--bc-art-r3-op:.54;' +
         '--bc-art-r4:hsl(calc(var(--bc-hue) - 3),15%,68%);--bc-art-r4-op:.52;' +
         // 投影也带青 —— 中性灰的影子会把附近的绿抽成脏灰
-        '--bc-shadow:rgba(14,52,44,.3);}',
+        '--bc-shadow:hsla(var(--bc-hue),42%,13%,.3);}',
       // 暗色重写（治本）：原暗块写死 18% 饱和 + 色相不偏（hue+0~2），而「竹林星光」暗调的竹绿是
       // --bamboo-dark:hue+6/35%/25%、--bamboo-deep:hue+5/34%/26%、--bm-primary:hue+2/25%/47%、
       // --bamboo-light:hue/39%/65% —— 整整低一档饱和、也没那 +5/+6 色相偏移，于是发灰、对不上主题暗绿。
@@ -365,13 +364,13 @@ var __bamboo_module_curtain = (function () {
         '--bc-lam-op:.62;' +
         // 棱光收一档并去掉青味：原来的青白高光（228,248,242）逐叶叠出塑料反光，
         // 换成更柔的暖白，只留一道「月光落在竹面上」的薄光。
-        '--bc-lam-rim:rgba(240,233,222,.46);' +
+        '--bc-lam-rim:hsla(var(--bc-hue),30%,92%,.46);' +
         '--bc-glass:blur(2px);' +
-        '--bc-veil-bg:linear-gradient(180deg,rgba(206,232,222,.10) 0%,rgba(170,200,190,.04) 100%);' +
-        '--bc-veil-glow:rgba(206,232,222,.08);' +
+        '--bc-veil-bg:linear-gradient(180deg,hsla(var(--bc-hue),30%,88%,.10) 0%,hsla(var(--bc-hue),28%,78%,.04) 100%);' +
+        '--bc-veil-glow:hsla(var(--bc-hue),30%,88%,.08);' +
         // 叶下投影：亮色是深暖色（真阴影），暗色旧版却写成亮青 rgba(200,228,218,.24)
         // —— 亮色阴影＝发光，逐叶叠成一层「塑料辉光」。改回真阴影，叶缝才有真实遮挡。
-        '--bc-glow2:rgba(3,20,17,.5);' +
+        '--bc-glow2:hsla(var(--bc-hue),45%,6%,.5);' +
         // 白玉（暗色）：玉调整体下沉一档，成为夜色里一块安静的暗玉 ——
         // 配合下方 .bc-wrap.bc-dark .bc-sill 的专用配光（去掉亮色的字面白，改青玉光）。
         '--bc-j1:hsl(var(--bc-jh),11%,42%);' +
@@ -390,8 +389,8 @@ var __bamboo_module_curtain = (function () {
         '--bc-art-r2:hsl(calc(var(--bc-hue) + 8),12%,27%);--bc-art-r2-op:.42;' +
         '--bc-art-r3:hsl(calc(var(--bc-hue) + 3),16%,21%);--bc-art-r3-op:.52;' +
         '--bc-art-r4:hsl(calc(var(--bc-hue) - 3),15%,18%);--bc-art-r4-op:.46;' +
-        '--bc-shadow:rgba(2,18,16,.55);' +
-        '--bc-goose:hsl(var(--bc-hue),12%,82%);--bc-seal:hsl(6,50%,60%);' +
+        '--bc-shadow:hsla(var(--bc-hue),45%,6%,.55);' +
+        '--bc-goose:hsl(var(--bc-hue),12%,82%);' +
         '--bc-paper:hsl(var(--bc-hue),14%,24%);--bc-paper-edge:hsl(var(--bc-hue),14%,32%);}',
 
       // 裁掉 .bc-win 那截未缩放的布局盒：transform 不参与布局，absolute 的窗口
@@ -436,8 +435,8 @@ var __bamboo_module_curtain = (function () {
         'px;overflow:hidden;box-sizing:border-box;border-radius:2px;' +
         'border:4px solid var(--bc-l4);' +
         'background:hsl(calc(var(--bc-hue) + 3),var(--bc-cav-s,16%),var(--bc-cav-l));' +
-        'box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 3px 6px rgba(4,30,26,.24),' +
-        'inset 6px 0 12px rgba(4,30,26,.16),inset -6px 0 12px rgba(4,30,26,.16),' +
+        'box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 3px 6px hsla(var(--bc-hue),40%,10%,.24),' +
+        'inset 6px 0 12px hsla(var(--bc-hue),40%,10%,.16),inset -6px 0 12px hsla(var(--bc-hue),40%,10%,.16),' +
         '0 10px 22px var(--bc-shadow);}',
 
       // —— 窗台：一块白玉，横压在窗底、两端探出窗框。
@@ -470,7 +469,7 @@ var __bamboo_module_curtain = (function () {
         'inset 0 -2px 4px rgba(255,255,255,.42),' +
         // 通体微透，避免大面积白平涂成一张白纸
         'inset 0 0 13px rgba(255,255,255,.28),' +
-        'inset 7px 0 11px -7px rgba(20,40,34,.16),inset -7px 0 11px -7px rgba(20,40,34,.16);}',
+        'inset 7px 0 11px -7px hsla(var(--bc-jh),30%,12%,.16),inset -7px 0 11px -7px hsla(var(--bc-jh),30%,12%,.16);}',
       // 暗色窗台：原实现只是 filter:brightness(.66) 压亮色的白 —— 但台面的白是几层「字面白」
       // （rgba(255,255,255,…)/rgba(255,253,247,…)）叠出来的，filter 压不掉，于是塌成一根亮灰条，
       // 在深绿里最跳、还发灰离题（用户：「一条很明显的线，多余」）。改为不再复用亮色的白：
@@ -492,9 +491,9 @@ var __bamboo_module_curtain = (function () {
         'inset 0 1px 0 hsla(var(--bc-jh),24%,62%,.26),' +
         'inset 0 -2px 4px hsla(var(--bc-jh),16%,46%,.14),' +
         'inset 0 0 13px hsla(var(--bc-jh),16%,52%,.06),' +
-        'inset 7px 0 11px -7px rgba(20,40,34,.16),inset -7px 0 11px -7px rgba(20,40,34,.16);}',
+        'inset 7px 0 11px -7px hsla(var(--bc-jh),30%,12%,.16),inset -7px 0 11px -7px hsla(var(--bc-jh),30%,12%,.16);}',
       // 亮色不画星：星点始终绘制，亮色下隐藏，避免明暗切换/色相滑块触发 SVG 重建
-      '.bc-wrap:not(.bc-dark) .bc-star{opacity:0!important;}',
+      '.bc-wrap:not(.bc-dark) .bc-star{opacity:0!important;}.bc-star{fill:var(--bc-star);}',
 
       // —— 拉开后：满窗的青绿山水立轴。画自带绢底与远山近水，铺满整个窗洞；
       // 窗框只在最外圈压一道内影（见 .bc-frame），像画嵌在窗里，不是居中明信片。
@@ -540,21 +539,21 @@ var __bamboo_module_curtain = (function () {
         'rgba(255,255,255,0));}',
       // 暗色下那道横向白高光是「塑料反光」的主源（逐叶重复），压淡收窄，只留一线微光。
       '.bc-wrap.bc-dark .bc-lam:after{top:26%;height:16%;background:linear-gradient(90deg,' +
-        'rgba(255,255,255,0),rgba(255,246,233,.15),rgba(255,255,255,0));}',
+        'rgba(255,255,255,0),hsla(var(--bc-hue),30%,92%,.15),rgba(255,255,255,0));}',
       // 帘面左右压暗 + 包边：竹帘两缘有收边，收边同时把帘「框」成一件东西
       '.bc-curtain:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none;' +
         'background:' +
-        'linear-gradient(90deg,rgba(9,58,50,.16) 0,rgba(9,58,50,.06) 3px,' +
-        'rgba(9,58,50,0) 7px,rgba(9,58,50,0) calc(100% - 7px),' +
-        'rgba(9,58,50,.06) calc(100% - 3px),rgba(9,58,50,.15) 100%),' +
-        'linear-gradient(90deg,rgba(9,58,50,.12) 0%,rgba(9,58,50,.03) 14%,' +
-        'rgba(255,255,255,.08) 46%,rgba(9,58,50,.03) 86%,rgba(9,58,50,.11) 100%);}',
+        'linear-gradient(90deg,hsla(var(--bc-hue),40%,13%,.16) 0,hsla(var(--bc-hue),40%,13%,.06) 3px,' +
+        'transparent 7px,transparent calc(100% - 7px),' +
+        'hsla(var(--bc-hue),40%,13%,.06) calc(100% - 3px),hsla(var(--bc-hue),40%,13%,.15) 100%),' +
+        'linear-gradient(90deg,hsla(var(--bc-hue),40%,13%,.12) 0%,hsla(var(--bc-hue),40%,13%,.03) 14%,' +
+        'rgba(255,255,255,.08) 46%,hsla(var(--bc-hue),40%,13%,.03) 86%,hsla(var(--bc-hue),40%,13%,.11) 100%);}',
       // 帘顶：贴着卷筒那一段必然最暗（光被筒挡住）
       '.bc-curtain:before{content:"";position:absolute;left:0;top:0;right:0;height:12px;z-index:4;' +
-        'pointer-events:none;background:linear-gradient(180deg,rgba(6,40,36,.3),rgba(6,40,36,0));}',
+        'pointer-events:none;background:linear-gradient(180deg,hsla(var(--bc-hue),45%,10%,.3),transparent);}',
       // 提绳：百叶是被两根绳串起来的，少了纵向的绳就只剩一堆横片
       '.bc-twine{position:absolute;top:0;bottom:0;width:1.5px;z-index:3;' +
-        'background:linear-gradient(90deg,rgba(10,52,45,.4),rgba(232,246,238,.4),rgba(10,52,45,.38));}',
+        'background:linear-gradient(90deg,hsla(var(--bc-hue),42%,12%,.4),hsla(var(--bc-hue),30%,94%,.4),hsla(var(--bc-hue),42%,12%,.38));}',
 
       // 配重横杆：细竹条，两端略出头。卷帘的识别度有一半靠它 ——
       // 少了这根杆，帘子只是一片贴在窗上的席；有它，才是一挂「能卷起来」的帘。
