@@ -60,3 +60,32 @@ bamboo-module-market/
 
 2. 在 `manifest.json` 的 `modules` 数组追加一项（注意 `url` 指向本仓库 raw 地址）。
 3. 提交并推送到 `main` 分支，插件侧「模块市场」即可看到并安装。
+
+## 版本一致性（机制保证）
+
+模块版本号在**两处**出现，必须始终一致，否则市场「可更新」判定 / 已安装版本展示会出现漂移：
+
+1. `manifest.json` → `modules[i].version`
+2. `modules/<id>.js` 顶部 `__bamboo_module_ {…"version":…}`
+
+为避免「manifest 已 bump、文件头忘改」这类问题，本仓库提供：
+
+- **校验**：`npm run check:versions`（`scripts/check-versions.mjs`）——逐条比对 manifest 与文件头版本，
+  并反向检查 `modules/` 下的 `.js` 是否都已登记在 manifest。不一致即非零退出。
+- **同步 bump**：`npm run bump -- <id> --patch`（也支持 `<id> <x.y.z>` / `--minor` / `--major`）
+  ——一条命令同时修改 manifest 与文件头，从源头消除「双写」。
+- **CI**：`.github/workflows/check-versions.yml` 在 `push` / `PR` 时自动跑校验。
+- **本地 pre-commit**：`.githooks/pre-commit` 提交前拦截。一次性启用：
+
+  ```sh
+  git config core.hooksPath .githooks
+  ```
+
+### 发布流程（推荐）
+
+```sh
+npm run bump -- blog --patch     # 同步 bump manifest + 文件头（自动 patch+1）
+# 手动补充 manifest 里该模块 description 的变更说明
+npm run check:versions           # 复核一致性
+git add -A && git commit -m "module: blog vX.Y.Z —— …" && git push origin main
+```
