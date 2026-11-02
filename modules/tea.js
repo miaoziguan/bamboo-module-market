@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如喝茶去","version":"0.8.2","fab":{"icon":"coffee","label":"喝茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如喝茶去","version":"0.8.3","fab":{"icon":"coffee","label":"喝茶"},"location":"left"} */
 /**
  * 不如喝茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如喝茶去';
-  var VERSION = '0.8.1';
+  var VERSION = '0.8.3';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -84,7 +84,11 @@
     for (var q2 = 1; q2 < n; q2++) {
       cum.push(cum[q2 - 1] + Math.hypot(P[q2][0] - P[q2 - 1][0], P[q2][1] - P[q2 - 1][1]));
     }
-    /* 再把 v 归一到「看得见的墙面」：从圈足最低点到口沿，贴图的整幅高度正好铺满这段墙 */
+    /* 再把 v 归一到「看得见的墙面」：从圈足最低点到口沿，贴图的整幅高度正好铺满这段墙。
+       归一后**不钳位**：口沿之后继续按弧长累加（v>1），由贴图在 v 方向无缝平铺接住。
+       早先这里把 i>rim 一律钳到 1，整段口沿+内壁因此挤在贴图最后一行 —— 既拉成横条，
+       又逼得 shader 用「朝外程度」把纹样挡掉（口沿顶面法线朝上，会被误判成内壁），
+       结果就是杯口那一圈没有冰裂。 */
     /* v 的起点：默认取剖面最低点（碗足、盘心），把足底的圆盘排除在纹样之外；
        茶盖的外表面从盖钮顶端起算，故可切 start。 */
     var foot = 0, minY = 1e9;
@@ -103,10 +107,11 @@
         pos.push(r * s, y, r * c);
         nrm.push(ty * s, -tr, ty * c);
         /* cfg.full：闭合壳体（茶托、茶盖）按整条剖面弧长归一，v 连续铺满上下两面。
-           默认只在「足底→口沿」这段墙面上铺满，盘沿之后一律 v=1 —— 对碗是对的（内壁要留素瓷），
-           但对茶托就是灾难：整个盘面与圈足都落在贴图最后一行，出来的是一圈圈横条。 */
+           默认只在「足底→口沿」这段墙面上归一，口沿之后的弧长继续累加（v>1）——
+           贴图在 v 方向也是无缝平铺的（见 paintCrackle），多出来的部分自然接住，
+           不会像钳到 1 那样把口沿与碗内拉成一圈横条。 */
         if (withUV) uv.push(j / segments, cfg.full ? cum[i] / (cum[n - 1] || 1)
-          : (i <= rim ? (cum[i] - cumFoot) / wallLen : 1));
+          : (cum[i] - cumFoot) / wallLen);
       }
     }
     var row = segments + 1;
@@ -156,9 +161,9 @@
 
 
   /* ══ 纹样：画在 2D 画布上再上传成贴图 ══
-     u 是环向（左右循环），v 是剖面弧长（0=足底/盖钮，1=口沿/盖沿）。
-     碗只印外壁（内壁 v 被钳到 1，靠「朝外程度」淡出）；盖与托整器外表面都印。
-     三种都非轴对称 —— 这也让自转第一次「看得见」。 */
+     u 是环向（左右循环），v 是剖面弧长（0=足底/盖钮，1=口沿/盖沿，越过口沿后继续累加而不是钳住）。
+     三件瓷整器都印；越界的那一段靠贴图在两个方向都无缝平铺来消化（见 paintCrackle）。
+     冰裂非轴对称 —— 这也让自转第一次「看得见」。 */
   /* 512×256 而不是 1024×512：碗在屏幕上横向只有约 300px，
      贴图再大也会被缩小采样，1px 的开片线平均完就看不见了。 */
   var PAT_W = 512, PAT_H = 256;
@@ -177,7 +182,8 @@
      做法：距离场。每个像素只查 3×3 邻域里的种子（不是全部种子，所以够快），
      取最近距离 d1 与次近距离 d2，d2−d1 落在带宽内即裂纹 ——
      三叉交汇、宽窄变化都是这个算法的自然产物，不用手画。
-     横向按模数环绕，保证 u 方向接缝连续。 */
+     两个方向都按环面算（种子按模数环绕 + 距离走近路），所以整张图是四方连续的 ——
+     贴图在 u 上绕一圈、在 v 上可以越过 1 继续铺（口沿之后的弧长就靠它接住）。 */
   var CRACK_COLOR = [50, 64, 68];     // 墨色（偏青的深灰，参考图里就是这条色）
 
   function paintCrackle(ctx) {
@@ -197,7 +203,6 @@
           sy[gy * nx + gx] = (gy + 0.5) * ch + (rndNext() - 0.5) * ch * 0.70;
         }
       }
-      var w2 = w * w * 4;
       for (var y = 0; y < H; y++) {
         var cy = Math.min(ny - 1, (y / ch) | 0);
         var rowBase = y * W;
@@ -205,14 +210,17 @@
           var cx = Math.min(nx - 1, (x / cw) | 0);
           var d1 = 1e18, d2 = 1e18;
           for (var oy = -1; oy <= 1; oy++) {
-            var jy = cy + oy;
-            if (jy < 0 || jy >= ny) continue;
+            var jy = ((cy + oy) % ny + ny) % ny;    // 纵向环绕 → v 也无缝（贴图 WRAP_T=REPEAT）
             for (var ox = -1; ox <= 1; ox++) {
               var jx = cx + ox;
               jx = ((jx % nx) + nx) % nx;           // 横向环绕 → u 无缝
               var si = jy * nx + jx;
-              var dx = sx[si] - x, dy = sy[si] - y;
-              var dd = dx * dx + dy * dy;
+              /* 距离按环面算（跨到画布另一侧的种子走近路）：
+                 少了这一步，即使种子按模数环绕，u=0 / v=0 两条接缝上的裂纹仍会断开 */
+              var ddx = sx[si] - x, ddy = sy[si] - y;
+              if (ddx > W * 0.5) ddx -= W; else if (ddx < -W * 0.5) ddx += W;
+              if (ddy > H * 0.5) ddy -= H; else if (ddy < -H * 0.5) ddy += H;
+              var dd = ddx * ddx + ddy * ddy;
               if (dd < d1) { d2 = d1; d1 = dd; }
               else if (dd < d2) { d2 = dd; }
             }
@@ -295,13 +303,10 @@
   var VS_MAIN = [
     'attribute vec3 aPos; attribute vec3 aNrm; attribute vec2 aUv;',
     'uniform mat4 uMVP; uniform mat4 uModel;',
-    'varying vec3 vN; varying vec3 vW; varying vec2 vUv; varying float vOut;',
+    'varying vec3 vN; varying vec3 vW; varying vec2 vUv;',
     'void main(){',
     '  vec4 wp = uModel * vec4(aPos,1.0); vW = wp.xyz;',
     '  vec3 nw = mat3(uModel) * aNrm; vN = nw; vUv = aUv;',
-    // 朝外程度：纹样只印外壁，碗内是素瓷
-    '  float rl = length(wp.xz);',
-    '  vOut = rl > 1e-4 ? clamp(dot(normalize(nw), vec3(wp.x/rl, 0.0, wp.z/rl)), 0.0, 1.0) : 0.0;',
     '  gl_Position = uMVP * vec4(aPos,1.0); }'
   ].join('\n');
 
@@ -324,7 +329,7 @@
     'uniform float uRough; uniform vec3 uEye; uniform float uOpacity;',
     'uniform sampler2D uShadowTex; uniform mat4 uShadowMat; uniform float uShadowOn; uniform float uShSelf; uniform float uKeyK; uniform float uGlow; uniform float uBodyDim; uniform float uLineGlow; uniform float uNightK;',
     'uniform sampler2D uPattern; uniform float uPatternOn; uniform float uPatMask;',
-    'varying vec2 vUv; varying float vOut;',
+    'varying vec2 vUv;',
     'vec3 srgb2lin(vec3 c){ return mix(c/12.92, pow((c+0.055)/1.055, vec3(2.4)), step(vec3(0.04045), c)); }',
     'const float RPI = 0.3183098861837907;',
     'const float LIGHT_SCALE = 1.0;',
@@ -370,11 +375,10 @@
     '  float cov = 0.0;',
     '  if (uPatternOn > 0.5) {',
     '    vec4 pt = texture2D(uPattern, vUv);',
-    /* uPatMask: 0=不印 1=只印外壁（碗内素瓷） 2=整器外表面都印（盖、托）。
-       1 的门控是必需的：剖面在口沿/盖沿之后 v 一律被钳到 1，
-       若不挡，那一段会把贴图最后一行拉成条纹。2 的钳位段落在朝下的隐藏面上，无需门控。 */
-    '    float gate = uPatMask > 1.5 ? 1.0 : smoothstep(0.10, 0.45, vOut);',
-    '    cov = pt.a * min(uPatMask, 1.0) * gate;',
+    /* uPatMask: 0=不印（茶汤、叶底） 1=印（碗、盖、托）。
+       v 是连续弧长（见 buildLathe），口沿之后不再被钳住，越界的部分由无缝平铺接住 ——
+       所以这里不需要任何门控，冰裂才能自然翻过口沿、铺进碗内。 */
+    '    cov = pt.a * uPatMask;',
     '    dc = mix(dc, srgb2lin(pt.rgb), cov);',
     '  }',
     /* 无方向光：只留半球环境光。主光 1.5 + 补光 1.0 + 镜面会在曲面上画出明暗交界线，
@@ -751,11 +755,11 @@
       gl.activeTexture(gl.TEXTURE0);
       gl.uniform1f(U.uOpacity, 1);
 
-      /* [网格, 模型矩阵, 反照率, 是否绘制, 纹样遮罩] 0=素 1=只外壁 2=整器 */
+      /* [网格, 模型矩阵, 反照率, 是否绘制, 纹样遮罩] 0=素（茶汤、叶底） 1=印（三件瓷器） */
       var pieces = [
-        [M.saucer, yawM, state.porcelain, 1, 2],
+        [M.saucer, yawM, state.porcelain, 1, 1],
         [M.bowl, yawM, state.porcelain, 1, 1],
-        [M.lid, mul(yawM, lidM), state.porcelain, 1, 2],
+        [M.lid, mul(yawM, lidM), state.porcelain, 1, 1],
         [M.tea, yawM, state.teaColor, state.lift > 0.5 ? 1 : 0, 0],
         [M.leaves, yawM, state.leafColor, (state.lift > 0.5 && state.leaves) ? 1 : 0, 0]
       ];
@@ -1006,7 +1010,8 @@
           gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          // v 方向必须能越过 1 继续铺（口沿之后的弧长），贴图本身就是四方连续的
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
           gl.generateMipmap(gl.TEXTURE_2D);
