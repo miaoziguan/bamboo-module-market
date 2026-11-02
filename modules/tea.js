@@ -1,6 +1,6 @@
-/* __bamboo_module_ {"id":"tea","name":"不如喝茶去","version":"0.8.3","fab":{"icon":"coffee","label":"喝茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.0","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
- * 不如喝茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
+ * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
  * 器物不是画出来的，是原稿那套数值实时渲出来的：三组车削剖面、正交相机 (4,3.2,7)→(0,1.4,0)、
  * 主光 1.5@(5,10,7) + 补光 1.0@(-6,3,5)（方向与强度沿用原稿）、
@@ -16,8 +16,8 @@
   'use strict';
 
   var ID = 'tea';
-  var TITLE = '不如喝茶去';
-  var VERSION = '0.8.3';
+  var TITLE = '不如吃茶去';
+  var VERSION = '0.9.0';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -1261,6 +1261,261 @@
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  /* ══════════════════════ 瓷器音效（模态合成 · 零素材） ══════════════════════
+   *
+   * 为什么不用录音：模块沙箱禁 fetch、单文件自包含，一段 1 秒的瓷声采样
+   * base64 后就是 100KB 级的体积，且只能有「那一下」；而盖碗要响的是
+   * 开、合、擦、扣四种力度不同的接触。所以按模态合成（modal synthesis）现算：
+   *
+   *   ① 接触瞬态：白噪声过带通，1.2ms 起振、20~30ms 收干净
+   *      —— 瓷与瓷相碰那一下的「叮」的起音，缺了它后续模态就像风铃不像瓷。
+   *   ② 器体模态：3~5 个**非整数比**正弦，各自指数衰减
+   *      —— 瓷件的振动模态天生不成谐波列（这是它不像玻璃/金属/陶的关键）；
+   *      高频衰减快、低频拖得久，「先亮后暗」的听感就来自这个斜率差。
+   *   ③ 拍频：每个模态拆成两只相差 0.15% 的振荡器
+   *      —— 真实瓷件因椭圆度与壁厚不均，同一模态是劈开的两个邻近频率，
+   *      合起来是 4~8Hz 的强弱起伏；少了这层就像电子琴。
+   *   ④ 腔体闷响：低频正弦 + 快速下滑 —— 合盖时碗身压在茶托上的那声「笃」。
+   *   ⑤ 湿声：程序化 IR（0.3s 指数衰减噪声）走 13% —— 只给一点空气，不做大厅。
+   *
+   * 频点按「口径越小、音越高」定（实测参照一只 Ø7cm 薄胎盖碗）：
+   *   盖 1.98~5.31kHz（薄、亮、拖尾长）／碗身 1.18~2.21kHz（厚、短）／
+   *   茶托 1.42~2.96kHz 且更闷（垫在案上、阻尼最大）。
+   * 每次触发的频点与瞬态再叠 ±1.5% 的随机偏移 —— 手工落盖从不两次一样。
+   */
+
+  function createPorcelainAudio(LOG) {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    var ctx = null, master = null, room = null, wet = null, noiseBuf = null;
+    var enabled = true, broken = false;
+    var rub = null, rubGain = null, rubBp = null;
+
+    function makeNoise(sec) {
+      var n = Math.max(1, Math.floor(ctx.sampleRate * sec));
+      var b = ctx.createBuffer(1, n, ctx.sampleRate);
+      var d = b.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      return b;
+    }
+    /* 程序化 IR：0.3s 指数衰减噪声，等效一间三四十平米的屋子；不做大厅 */
+    function makeIR() {
+      var n = Math.max(1, Math.floor(ctx.sampleRate * 0.30));
+      var b = ctx.createBuffer(2, n, ctx.sampleRate);
+      for (var c = 0; c < 2; c++) {
+        var d = b.getChannelData(c);
+        for (var i = 0; i < n; i++) {
+          var k = 1 - i / n;
+          d[i] = (Math.random() * 2 - 1) * k * k * k * k * k * 0.7;
+        }
+      }
+      return b;
+    }
+    function ensure() {
+      if (ctx || broken) return ctx;
+      if (!AC) { broken = true; return null; }
+      try {
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = 0.85;
+        master.connect(ctx.destination);
+        room = ctx.createConvolver();
+        room.buffer = makeIR();
+        wet = ctx.createGain();
+        wet.gain.value = 0.13;
+        room.connect(wet);
+        wet.connect(master);
+        noiseBuf = makeNoise(0.6);
+      } catch (e) {
+        broken = true;
+        ctx = null;
+        LOG.warn('[' + ID + '] 音效初始化失败', e);
+      }
+      return ctx;
+    }
+    /* 浏览器要求音频上下文在用户手势里解锁：pointerdown / keydown 先过这里 */
+    function start() {
+      if (!enabled) return null;
+      var c = ensure();
+      if (!c) return null;
+      if (c.state === 'suspended') { try { c.resume(); } catch (e) { /* 忽略 */ } }
+      return c;
+    }
+    function unlock() {
+      var c = ensure();
+      if (!c) return;
+      if (c.state === 'suspended') { try { c.resume(); } catch (e) { /* 忽略 */ } }
+    }
+    /* 每条声音一根总线：总电平 + 声像；干湿并联 */
+    function bus(level, pan) {
+      var g = ctx.createGain();
+      g.gain.value = level;
+      if (ctx.createStereoPanner) {
+        var p = ctx.createStereoPanner();
+        p.pan.value = clamp(pan || 0, -0.6, 0.6);
+        g.connect(p);
+        p.connect(master);
+        p.connect(room);
+      } else {
+        g.connect(master);
+        g.connect(room);
+      }
+      return g;
+    }
+    function mode(out, t0, f, amp, decay, detune) {
+      var dt = detune == null ? 0.0015 : detune;
+      for (var i = 0; i < 2; i++) {
+        var k = i ? 1 + dt : 1 - dt;
+        var o = ctx.createOscillator();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(f * k, t0);
+        /* 音尾的轻微下沉：受迫振动衰减时刚度回弹，真实瓷件的延音不是平直的 */
+        o.frequency.exponentialRampToValueAtTime(f * k * 0.995, t0 + Math.min(0.12, decay * 0.6));
+        var g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(amp * (i ? 0.55 : 1), t0 + 0.0025);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + decay);
+        o.connect(g);
+        g.connect(out);
+        o.start(t0);
+        o.stop(t0 + decay + 0.02);
+      }
+    }
+    function transient(out, t0, fc, amp, decay, q) {
+      if (!noiseBuf) return;
+      var s = ctx.createBufferSource();
+      s.buffer = noiseBuf;
+      var bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = fc;
+      bp.Q.value = q == null ? 1 : q;
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(amp, t0 + 0.0012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + decay);
+      s.connect(bp);
+      bp.connect(g);
+      g.connect(out);
+      /* 每次从噪声里随机取一段：同一个索引反复触发，十几下之后耳朵就能听出「同一记」 */
+      s.start(t0, Math.random() * 0.5);
+      s.stop(t0 + decay + 0.02);
+    }
+    function thump(out, t0, f, amp, decay) {
+      var o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f * 1.12, t0);
+      o.frequency.exponentialRampToValueAtTime(f * 0.86, t0 + decay * 0.7);
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(amp, t0 + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + decay);
+      o.connect(g);
+      g.connect(out);
+      o.start(t0);
+      o.stop(t0 + decay + 0.02);
+    }
+
+    /* 合盖：盖裙落到口沿。盖的五个亮模态 + 碗身三个低频模态 + 28ms 后裙沿回弹的第二记。
+       strength 由「这一下掉了多远」决定 —— 指尖轻放就轻，整只盖放下来就重。 */
+    function seat(pan, strength) {
+      var c = start();
+      if (!c) return;
+      var t0 = c.currentTime + 0.002;
+      var s = clamp(strength == null ? 1 : strength, 0.3, 1.12);
+      var d = 1 + (Math.random() - 0.5) * 0.03;
+      var out = bus(0.95, pan);
+      transient(out, t0, 3400 * d, 0.09 * s, 0.026, 0.9);
+      thump(out, t0, 520 * d, 0.03 * s, 0.08);
+      var lid = [[1980, 0.040, 0.30], [2690, 0.030, 0.24], [3490, 0.022, 0.19],
+                 [4270, 0.014, 0.14], [5310, 0.009, 0.10]];
+      for (var i = 0; i < lid.length; i++) {
+        mode(out, t0, lid[i][0] * d, lid[i][1] * s, lid[i][2], 0.0018);
+      }
+      var body = [[1180, 0.024, 0.26], [1640, 0.018, 0.21], [2210, 0.012, 0.17]];
+      for (var j = 0; j < body.length; j++) {
+        mode(out, t0, body[j][0] * d, body[j][1] * s, body[j][2], 0.0012);
+      }
+      transient(out, t0 + 0.028, 2600 * d, 0.030 * s, 0.018, 1.1);
+    }
+
+    /* 揭盖：盖裙离开口沿。分离远比落盖轻，所以不给碗身低频，总电平也只有它的四分之三 */
+    function unseat(pan) {
+      var c = start();
+      if (!c) return;
+      var t0 = c.currentTime + 0.001;
+      var d = 1 + (Math.random() - 0.5) * 0.03;
+      var out = bus(0.75, pan);
+      transient(out, t0, 5000 * d, 0.085, 0.015, 1.2);
+      /* 揭起瞬间口沿相擦的那一点毛刺：极短的高频噪声拖尾，别长，长了就成「嘶」 */
+      transient(out, t0 + 0.010, 7000, 0.020, 0.05, 0.8);
+      var m = [[3150, 0.042, 0.09], [4380, 0.028, 0.07], [5980, 0.016, 0.05]];
+      for (var i = 0; i < m.length; i++) mode(out, t0, m[i][0] * d, m[i][1], m[i][2], 0.002);
+    }
+
+    /* 扣茶托（换纹样）：口径最大、垫在案上，阻尼最大 —— 最闷的那一声 */
+    function tap(pan) {
+      var c = start();
+      if (!c) return;
+      var t0 = c.currentTime + 0.001;
+      var d = 1 + (Math.random() - 0.5) * 0.03;
+      var out = bus(0.72, pan);
+      transient(out, t0, 2400 * d, 0.10, 0.020, 1.0);
+      thump(out, t0, 900 * d, 0.028, 0.05);
+      var m = [[1420, 0.048, 0.13], [2080, 0.034, 0.11], [2960, 0.020, 0.08]];
+      for (var i = 0; i < m.length; i++) mode(out, t0, m[i][0] * d, m[i][1], m[i][2], 0.0014);
+    }
+
+    /* 拖动摩擦：只在盖子还贴着口沿（lift 很低）时成立 —— 盖一离口，
+       手里就是空气，再出声就是假的。gain 跟着这一下的位移速度走。 */
+    function rubStart() {
+      var c = start();
+      if (!c || rub) return;
+      rub = c.createBufferSource();
+      rub.buffer = noiseBuf;
+      rub.loop = true;
+      rubBp = c.createBiquadFilter();
+      rubBp.type = 'bandpass';
+      rubBp.frequency.value = 2200;
+      rubBp.Q.value = 0.7;
+      rubGain = c.createGain();
+      rubGain.gain.value = 0.0001;
+      rub.connect(rubBp);
+      rubBp.connect(rubGain);
+      rubGain.connect(master);
+      try { rub.start(); } catch (e) { rub = null; }   // 旧内核不给 start() 时就当没有
+    }
+    function rubMove(speed, nearRim) {
+      if (!rubGain || !rubBp || !ctx) return;
+      var t = ctx.currentTime;
+      var v = nearRim ? clamp(speed * 0.0018, 0.0001, 0.035) : 0.0001;
+      rubGain.gain.setTargetAtTime(v, t, 0.02);
+      rubBp.frequency.setTargetAtTime(1700 + Math.min(2800, speed * 14), t, 0.04);
+    }
+    function rubStop() {
+      if (!rub) return;
+      var s = rub;
+      rub = null;
+      if (rubGain && ctx) { try { rubGain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.015); } catch (e) { /* 忽略 */ } }
+      rubGain = null;
+      rubBp = null;
+      setTimeout(function () { try { s.stop(); } catch (e) { /* 已停 */ } }, 90);
+    }
+
+    function setEnabled(v) {
+      enabled = !!v;
+      if (!enabled) rubStop();
+    }
+    function destroy() {
+      rubStop();
+      if (ctx) { try { ctx.close(); } catch (e) { /* 已关闭 */ } }
+      ctx = null; master = null; room = null; wet = null; noiseBuf = null;
+    }
+    return {
+      unlock: unlock, seat: seat, unseat: unseat, tap: tap,
+      rubStart: rubStart, rubMove: rubMove, rubStop: rubStop,
+      setEnabled: setEnabled, destroy: destroy
+    };
+  }
+
   /* ══════════════════════ 模块 ══════════════════════ */
   var instance = null;
 
@@ -1276,10 +1531,14 @@
     var _tyRef = { v: 0 };
     var state = {
       open: false, lift: 0, tea: null, types: [], steam: true, pattern: 'crackle', night: 'body', nightFx: { body: 0.5, crackle: 0.5 }, cabinet: [],
-      spin: !reduceMotion, spinUserSet: false
+      spin: !reduceMotion, spinUserSet: false, sound: true
     };
     var el = {};
     var gl = null;
+    /* 揭盖音效的两块状态必须与 state 同时就位：syncMetrics() 在 mount 早期就会调 applyLift()，
+       那时若 _lidSeated 还是 undefined，会被判成「盖未贴合」而凭空响一记合盖声。 */
+    var _lidSeated = true;   // 盖沿是否贴在口沿上（初始：盖着）
+    var _pan = 0;            // 当前声音的声像，按指针横向位置取
     var _revealTimer = null;
     var _snapCfg = null;
     var _themeRaf = 0;
@@ -1309,7 +1568,7 @@
         '<div class="tea-verse v-bot"><span>吃茶去</span></div>' +
         '<div class="tea-count"><span></span></div>' +
 '<div class="tea-tools">' +
-                '<button class="tea-gear" type="button" aria-label="喝茶设置">' +
+                '<button class="tea-gear" type="button" aria-label="吃茶设置">' +
         '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" ' +
         'stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/>' +
         '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' +
@@ -1341,7 +1600,7 @@
             '<button type="button" class="tea-pg" data-pg="1" aria-label="下一页">›</button>' +
           '</div>' +
         '</div>' +
-        '<div class="tea-dialog" role="dialog" aria-modal="true" aria-label="喝茶设置">' +
+        '<div class="tea-dialog" role="dialog" aria-modal="true" aria-label="吃茶设置">' +
           '<div class="tea-title">今天想喝什么</div>' +
           '<div class="tea-hint">不选就整柜都算，选了就只从这几类里抽</div>' +
           '<div class="tea-chips">' +
@@ -1365,6 +1624,8 @@
             '<input type="checkbox" class="tea-steam-input" /><span class="track" aria-hidden="true"></span></label>' +
           '<label class="tea-switch"><span class="tea-switch-label">缓慢自转</span>' +
             '<input type="checkbox" class="tea-spin-input" /><span class="track" aria-hidden="true"></span></label>' +
+          '<label class="tea-switch"><span class="tea-switch-label">瓷器音效</span>' +
+            '<input type="checkbox" class="tea-sound-input" /><span class="track" aria-hidden="true"></span></label>' +
           '<button type="button" class="tea-link" data-act="open-cab">' +
             '<span class="tea-link-text">我的茶柜</span><span class="tea-link-arrow">›</span>' +
           '</button>' +
@@ -1434,6 +1695,7 @@
     el.range = wrap.querySelector('.tea-range');
     el.steamInput = wrap.querySelector('.tea-steam-input');
     el.spinInput = wrap.querySelector('.tea-spin-input');
+    el.soundInput = wrap.querySelector('.tea-sound-input');
     el.saveBtn = wrap.querySelector('[data-act="save"]');
     el.cancelBtn = wrap.querySelector('[data-act="cancel"]');
 
@@ -1452,6 +1714,11 @@
       return makeApi();
     }
     wrap.classList.add('tea-gl');
+
+    /* 音效引擎是懒初始化的：AudioContext 只在第一次真实接触（pointerdown/keydown）时才建，
+       否则每次打开侧栏都凭空起一条音频线程、还要吃一次浏览器的自动播放告警。 */
+    var audio = createPorcelainAudio(LOG);
+    audio.setEnabled(state.sound);
 
     function syncMetrics() {
       if (!gl) return;
@@ -1605,6 +1872,8 @@
         };
       }
       if (raw && typeof raw.spin === 'boolean') { state.spin = raw.spin; state.spinUserSet = true; }
+      /* 音效默认开：老配置里没有这个字段，不能因为 undefined 就判成关 */
+      state.sound = !(raw && raw.sound === false);
       wrap.classList.toggle('tea-no-steam', !state.steam);
       /* 异步到达时 UI 已按默认值画过一遍：各处按真值补刷 */
       setPattern(state.pattern, false);
@@ -1612,12 +1881,14 @@
       renderChips();
       if (el.steamInput) el.steamInput.checked = state.steam;
       if (el.spinInput) el.spinInput.checked = state.spin;
+      if (el.soundInput) el.soundInput.checked = state.sound;
+      if (audio) audio.setEnabled(state.sound);
       if (gl && gl.setSpin) gl.setSpin(state.spin);
       paintCount(); paintSaveBtn();
     }
     function saveConfig() {
       try {
-        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice() });
+        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice() });
       } catch (e) { LOG.warn('[' + ID + '] 保存设置失败', e); }
     }
 
@@ -1812,13 +2083,35 @@
     }
 
     /* ── 揭盖 ── */
+    /* 声像：按指针在画布里的横向位置摆，器物在左就声在左 —— 一毫米的定位感，成本为零 */
+    function panOf(e) {
+      if (!gl || !gl.canvas || !e || e.clientX == null) return 0;
+      var r = gl.canvas.getBoundingClientRect();
+      if (!r.width) return 0;
+      return clamp(((e.clientX - r.left) / r.width - 0.5) * 0.9, -0.45, 0.45);
+    }
+    /* 盖沿接触状态机：声音跟「盖沿到底贴没贴住口沿」走，而不是跟 open/close 这两个动作走——
+       拖到一半又拖回去，该响的两声一声不少；拖到 0.5 停住不撒手，也不会凭空多响。
+       迟滞 0.04（0.02 判合、0.06 判开）吃掉手抖与触控板的亚像素噪声。
+       _lidSeated 在 mount 顶部随 state 一起初始化（见那里的注释）。 */
     function applyLift(v) {
+      var prev = state.lift;
       state.lift = clamp(v, 0, 1);
       if (gl) gl.setLift(state.lift);
       /* 命中区跟着盖走：与渲染器同一套投影，位移 1.30 / 1.02 世界单位 */
       if (el.hitArea && M.pxPerWorldY) {
         el.hitArea.style.transform = 'translate(' + (1.05 * state.lift * M.pxPerWorldY).toFixed(1) +
           'px,' + (-0.95 * state.lift * M.pxPerWorldY).toFixed(1) + 'px)';
+      }
+      if (!audio) return;
+      /* 落盖的响度由「这一帧掉了多远」决定：拖到一半松手是轻轻放下，点按开合是整只盖落下来 */
+      var drop = Math.abs(state.lift - prev);
+      if (_lidSeated && state.lift > 0.06) {
+        _lidSeated = false;
+        audio.unseat(_pan);
+      } else if (!_lidSeated && state.lift <= 0.02) {
+        _lidSeated = true;
+        audio.seat(_pan, clamp(drop * 1.6, 0.35, 1.1));
       }
     }
     var _tipTimer = null;
@@ -1875,6 +2168,8 @@
     function cyclePattern() {
       var i = PATTERNS.indexOf(state.pattern);
       setPattern(PATTERNS[(i + 1) % PATTERNS.length], true);
+      /* 换纹样是「指尖扣了一下茶托」这个动作：给它一声最闷的扣响 */
+      if (audio) { audio.unlock(); audio.tap(_pan); }
       saveConfig();
     }
 
@@ -1936,6 +2231,11 @@
       _g.part = part;
       _g.kind = part === 3 ? 'lid' : 'orbit';
       _g.x = e.clientX; _g.y = e.clientY; _g.moved = 0;
+      _pan = panOf(e);
+      if (audio) {
+        audio.unlock();                                  // 手势里解锁音频上下文
+        if (_g.kind === 'lid') audio.rubStart();          // 摩擦底噪只在按住盖子期间存在
+      }
       wrap.classList.add(_g.kind === 'lid' ? 'is-dragging' : 'is-orbiting');
       try { if (el.stage.setPointerCapture) el.stage.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
     }
@@ -1947,6 +2247,7 @@
       _g.moved += Math.abs(dx) + Math.abs(dy);
       if (_g.kind === 'lid') {
         applyLift(state.lift - (dy / Math.max(0.001, M.pxPerWorldY)) / 0.95);
+        if (audio) audio.rubMove(Math.abs(dy), state.lift < 0.16);
       } else {
         gl.orbitBy(dx, dy);
       }
@@ -1955,6 +2256,7 @@
     function onPointerUp() {
       if (!_g.active) return;
       _g.active = false;
+      if (audio) audio.rubStop();
       wrap.classList.remove('is-dragging', 'is-orbiting');
       var tap = _g.moved <= 4;
       if (_g.kind === 'lid') {
@@ -1981,10 +2283,11 @@
     /* 键盘：Enter/空格 开合，P 换纹样 */
     if (el.kbd) {
       el.kbd.addEventListener('keydown', function (e) {
+        if (audio) audio.unlock();
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggle(); }
         else if (e.key === 'p' || e.key === 'P') { e.preventDefault(); cyclePattern(); }
       });
-      el.kbd.addEventListener('click', function () { toggle(); });
+      el.kbd.addEventListener('click', function () { if (audio) audio.unlock(); toggle(); });
     }
 
     /* ── 设置 ── */
@@ -1995,12 +2298,13 @@
       }
     }
     function openSettings() {
-      _snapCfg = { types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, pattern: state.pattern };
+      _snapCfg = { types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, pattern: state.pattern };
       renderNightChips();
       renderChips();
       syncRange();
       if (el.steamInput) el.steamInput.checked = !!state.steam;
       if (el.spinInput) el.spinInput.checked = !!state.spin;
+      if (el.soundInput) el.soundInput.checked = !!state.sound;
       wrap.classList.add('is-set');
       syncSpinState();
     }
@@ -2012,6 +2316,9 @@
         renderNightChips();
         state.steam = _snapCfg.steam;
         state.spin = _snapCfg.spin;
+        state.sound = _snapCfg.sound;
+        if (el.soundInput) el.soundInput.checked = state.sound;
+        if (audio) audio.setEnabled(state.sound);
         wrap.classList.toggle('tea-no-steam', !state.steam);
         syncSpin();
         setPattern(_snapCfg.pattern, false);
@@ -2126,6 +2433,14 @@
         syncSpin();
       });
     }
+    if (el.soundInput) {
+      el.soundInput.addEventListener('change', function () {
+        state.sound = !!el.soundInput.checked;
+        audio.setEnabled(state.sound);
+        /* 打开开关时给一记扣托：让人当场听见「开的是什么声音」，比文字说明省一行 */
+        if (state.sound) { audio.unlock(); audio.tap(0); }
+      });
+    }
     if (el.maskEl) el.maskEl.addEventListener('click', function (e) { if (e.target === el.maskEl) cancelSettings(); });
     if (el.saveBtn) {
       el.saveBtn.addEventListener('click', function () {
@@ -2154,6 +2469,9 @@
       if (_darkObs) { _darkObs.disconnect(); _darkObs = null; }
       if (_visObs) { _visObs.disconnect(); _visObs = null; }
       if (_ro) { _ro.disconnect(); _ro = null; }
+      /* 音频线程要显式关：AudioContext 不会随 DOM 一起回收，
+         侧栏反复开关模块时会一路累积（每个都占着一条实时音频线程） */
+      if (audio) { try { audio.destroy(); } catch (e) { /* 已关闭 */ } audio = null; }
       if (gl) { try { gl.dispose(); } catch (e) { /* 已销毁 */ } gl = null; }
       if (el.wrap && el.wrap.parentNode) el.wrap.parentNode.removeChild(el.wrap);
       el = {};
