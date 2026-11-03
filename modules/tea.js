@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.0","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.1","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.0';
+  var VERSION = '0.9.1';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -329,6 +329,10 @@
     'uniform float uRough; uniform vec3 uEye; uniform float uOpacity;',
     'uniform sampler2D uShadowTex; uniform mat4 uShadowMat; uniform float uShadowOn; uniform float uShSelf; uniform float uKeyK; uniform float uGlow; uniform float uBodyDim; uniform float uLineGlow; uniform float uNightK;',
     'uniform sampler2D uPattern; uniform float uPatternOn; uniform float uPatMask;',
+    /* 青玉（第二套釉色）：不走「半球环境光 × 反照率」，而按参考稿的四段结构单独着色 */
+    'uniform float uJade;',
+    'uniform vec3 uJadeDeep; uniform vec3 uJadeMid; uniform vec3 uJadeLite; uniform vec3 uJadeCool;',
+    'uniform float uJadeGain;',
     'varying vec2 vUv;',
     'vec3 srgb2lin(vec3 c){ return mix(c/12.92, pow((c+0.055)/1.055, vec3(2.4)), step(vec3(0.04045), c)); }',
     'const float RPI = 0.3183098861837907;',
@@ -365,6 +369,43 @@
        故盖子改为不参与自身遮挡（uShSelf=0，见绘制循环），盖子本身恒为受光。 */
     '  return smoothstep(0.0, 0.0035, sd - (p.z - 0.0010));',
     '}',
+    /* 青玉釉：参考稿是一只碧玉盖碗，按它的实际结构拆成五层 ——
+       ① 一条方向明确的主光（世界坐标的「镜头前上方偏左」），只做连续渐变、不做明暗交界；
+       ② 受光面推向浅黄绿（玉的「水头」）；
+       ③ 背光面与贴近案面的底部掺冷青（远侧那道薄荷色，是「玉」而非「瓷」的关键）；
+       ④ 宽高光 + 窄高光两道（峰太尖像塑料，没有则像陶）；
+       ⑤ 只在轮廓最后一圈起亮的边缘光（参考稿口沿、托沿那条亮边）。
+       器物是回转体：绕竖轴自转不改变这条光在屏幕上的位置。 */
+    'vec3 jadeBody(vec3 n, vec3 V, vec3 wp){',
+    '  vec3 L = normalize(vec3(-0.28, 0.57, 0.77));',
+    '  float ndl = sat(dot(n, L));',
+    '  float nv = sat(dot(n, V));',
+    '  float ny = sat(n.y);',
+    '  float k = 0.92 + 0.45 * ndl + 0.12 * ny;',
+    '  vec3 base = uJadeMid * k;',
+    /* ② 受光面推浅：玉的「水头」在这一层，少了它整器像哑光塑料 */
+    '  base = mix(base, uJadeLite, pow(ndl, 2.0) * 0.55);',
+    /* ③ 冷调只给两处真出处：背光面（天空填充是冷的）与贴近案面的底部（自遮挡最重）。
+       不能按 n.y 判 —— 喇叭形碗壁的法线天生朝外下方（n.y≈-0.56），按「朝下掺青」
+       会把整圈墙刷成青绿塑料（首版实测就是这样）。 */
+    '  float back = pow(1.0 - ndl, 3.0);',
+    '  float under = smoothstep(0.40, -0.05, wp.y);',
+    '  base = mix(base, uJadeCool, clamp(back * 0.26 + under * 0.24, 0.0, 0.50));',
+    '  base *= 1.0 - 0.22 * under;',
+    /* ④ 高光：一条宽的（水头）+ 一条窄的（釉面点）。峰太尖像塑料，没有则像陶 */
+    '  vec3 H = normalize(L + V);',
+    '  float dnh = sat(dot(n, H));',
+    '  float spec = pow(dnh, 10.0) * 0.40 + pow(dnh, 90.0) * 0.35;',
+    '  base += mix(uJadeLite, vec3(1.0), 0.55) * spec;',
+    /* ⑤ 边缘光：只在轮廓最后一圈起亮（指数高、幅度大），参考稿口沿与托沿就是这样一条亮边 */
+    '  float rim = pow(1.0 - nv, 6.0);',
+    '  base += uJadeLite * rim * 0.85;',
+    '  return base;',
+    '}',
+    /* 青玉的收尾不走 ACES：ACES 的输入矩阵会把「只有绿通道亮」的颜色摊到三通道，
+       高饱和绿经它一压就变成灰橄榄（实测 mid 从 (48,180,48) 掉到 (123,148,61)）。
+       这里换成轻压缩 c/(1+0.55c)：保住色相与饱和，只在真正的高光处软收。 */
+    'vec3 toneJade(vec3 c){ c = max(c, vec3(0.0)); return c / (1.0 + 0.55 * c); }',
     'void main(){',
     '  vec3 n = normalize(vN);',
     '  vec3 V = normalize(uEye - vW);',
@@ -385,22 +426,31 @@
        配合投影，在近乎单色的青瓷上就读作「一块一块」。半球光只随法线 y 连续变化，
        没有交界线、没有投影、没有高光；uAmbient 已按实测中位亮度重新标定。 */
     '  vec3 irr = vec3(uAmbient) + mix(uGround, uSky, 0.5 + 0.5*n.y);',
-    '  vec3 col = irr * dc * RPI;',
+    '  vec3 col;',
+    '  if (uJade > 0.5) {',
+    '    col = jadeBody(n, V, vW) * uJadeGain;',
+    /* 冰裂在玉上读作「深脉」而不是「印上去的白线」：直接压暗，不参与反照率混合 */
+    '    col *= mix(1.0, 0.30, cov);',
+    '    dc = mix(uJadeMid, uJadeLite, 0.25);',
+    '  } else {',
+    '    col = irr * dc * RPI;',
     /* 弱主光：只为一件事——让形体可读。纯半球光在可见面（n.y 0.3~1）里只差 15%，
        经 ACES 压缩后几乎为零，盖碗会糊成剪影。0.35 只有原来的 1/4，
        产生的是连续渐变，没有交界线；配 sh=1 与无镜面，也就没有任何投影与亮斑。 */
-    '  col += sat(dot(n, uKeyDir)) * uKeyK * dc * RPI;',
+    '    col += sat(dot(n, uKeyDir)) * uKeyK * dc * RPI;',
+    '  }',
     /* 夜色效果两种：
        ① 周身微光（uBodyDim=1、uGlow>0）：整体发光，边缘更亮；
        ② 裂纹发光（uBodyDim<1、uLineGlow>0）：器身压暗，只让冰裂纹亮起来。
        两者都写在 ACES 之前，且都无方向性，不会引入明暗交界。 */
     '  col *= uBodyDim;',
-    '  col += uLineGlow * cov * uAlbedo;',
+    /* 纹光的着色基准用 dc：白瓷时等于反照率，青玉时是玉色（否则玉上会亮出一层白线） */
+    '  col += uLineGlow * cov * dc;',
     '  float rim = pow(1.0 - sat(dot(n, V)), 2.2);',
     /* uNightK：瓷器=1、茶汤/叶底=0 —— 三种夜色效果（压暗/纹光/周身微光）都不作用于汤色，
        汤色是内容常数，跨主题可比（PATCH-48） */
     '  col += uGlow * dc * (0.45 + 1.35 * rim) * uNightK;',
-    '  col = aces(col);',
+    '  col = (uJade > 0.5) ? toneJade(col) : aces(col);',
     '  gl_FragColor = vec4(lin2srgb(col) * uOpacity, uOpacity);',   // 预乘：与 canvas 的 premultipliedAlpha 一致
 
     '}'
@@ -591,7 +641,8 @@
     /* 统一量 */
     var U = {};
     ['uMVP', 'uModel', 'uAlbedo', 'uKeyDir', 'uFillDir', 'uSky', 'uGround', 'uAmbient', 'uRough', 'uEye',
-      'uOpacity', 'uShadowTex', 'uShadowMat', 'uShadowOn', 'uShSelf', 'uKeyK', 'uGlow', 'uBodyDim', 'uLineGlow', 'uNightK', 'uPattern', 'uPatternOn', 'uPatMask'].forEach(function (k) {
+      'uOpacity', 'uShadowTex', 'uShadowMat', 'uShadowOn', 'uShSelf', 'uKeyK', 'uGlow', 'uBodyDim', 'uLineGlow', 'uNightK', 'uPattern', 'uPatternOn', 'uPatMask',
+      'uJade', 'uJadeDeep', 'uJadeMid', 'uJadeLite', 'uJadeCool', 'uJadeGain'].forEach(function (k) {
       U[k] = gl.getUniformLocation(progMain, k);
     });
     var D = {
@@ -626,7 +677,11 @@
     var state = {
       w: 0, h: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
       yaw: 0, lift: 0, bob: 0, pattern: 'crackle', spin: opts.spin !== false,
-      teaColor: [0.7, 0.5, 0.2], leaves: true, leafColor: LEAF_COLOR, porcelain: [1, 1, 1], glow: 0, bodyDim: 1, lineGlow: 0, last: 0, raf: 0, alive: true
+      teaColor: [0.7, 0.5, 0.2], leaves: true, leafColor: LEAF_COLOR, porcelain: [1, 1, 1], glow: 0, bodyDim: 1, lineGlow: 0, last: 0, raf: 0, alive: true,
+      /* 釉色：'porcelain' 白瓷（半球光 × 反照率）/ 'jade' 青玉（四段结构单独着色） */
+      mat: opts.mat === 'jade' ? 'jade' : 'porcelain',
+      jade: { deep: [0.02, 0.06, 0.02], mid: [0.10, 0.30, 0.06], lite: [0.42, 0.62, 0.20], cool: [0.12, 0.32, 0.34] },
+      jadeGain: (typeof opts.jadeGain === 'number' && opts.jadeGain > 0) ? opts.jadeGain : 1
     };
 
     /** 包围球取景：轨道转到任何角度都不裁（用球而不是盒，避免转动时画面忽大忽小） */
@@ -742,6 +797,17 @@
       gl.uniform1f(U.uLineGlow, state.lineGlow);
       /* 釉面高光：原 0.65 使 alpha=0.4225、镜面峰值仅漫反射的 3%。取 0.35（alpha=0.1225）。 */
       gl.uniform1f(U.uRough, 0.35);
+      /* 青玉是另一条着色路径：四色 + 单独标定的曝光（白瓷那条 ~4.4 的曝光套过来会全糊成白）。
+         uJade 不在这里下发 —— 必须逐件给：茶汤与叶底是「内容」不是器身，
+         要保持各自的固有色（与 PATCH-48 同一条原则：汤色跨主题可比）。 */
+      var jadeOn = state.mat === 'jade';
+      if (jadeOn) {
+        gl.uniform3fv(U.uJadeDeep, state.jade.deep);
+        gl.uniform3fv(U.uJadeMid, state.jade.mid);
+        gl.uniform3fv(U.uJadeLite, state.jade.lite);
+        gl.uniform3fv(U.uJadeCool, state.jade.cool);
+        gl.uniform1f(U.uJadeGain, state.jadeGain);
+      }
       gl.uniform3fv(U.uEye, EYE);
       gl.uniformMatrix4fv(U.uShadowMat, false, LIGHT_MAT);
       gl.uniform1f(U.uShadowOn, 1);
@@ -777,6 +843,8 @@
            汤色必须与浅色主题完全一致——否则深色茶在暗处根本读不出色，
            「裂纹发光」的对照物（发亮的纹 vs 沉着的汤）也就不存在了。 */
         var isPorcelain = (pc[0] !== M.tea && pc[0] !== M.leaves);
+        /* 只有瓷器走青玉釉；汤色与叶底恒走白瓷那条（含 ACES）—— 换釉色不该换了一杯茶 */
+        gl.uniform1f(U.uJade, (jadeOn && isPorcelain) ? 1 : 0);
         gl.uniform1f(U.uBodyDim, isPorcelain ? state.bodyDim : 1);
         gl.uniform1f(U.uLineGlow, isPorcelain ? state.lineGlow : 0);
         gl.uniform1f(U.uNightK, isPorcelain ? 1 : 0);
@@ -1090,6 +1158,19 @@
         state.porcelain = hex2linArray(hex);
         render();
       },
+      /** 釉色：'porcelain' 白瓷 / 'jade' 青玉。jade 传四个 hex（deep/mid/lite/cool），由 jadeHex() 派生；
+       *  gain 可单独给（暗色主题要压一档，否则玉在黑底上会亮成荧光） */
+      setMaterial: function (mode, jade, gain) {
+        state.mat = mode === 'jade' ? 'jade' : 'porcelain';
+        if (jade) {
+          state.jade = {
+            deep: hex2linArray(jade.deep), mid: hex2linArray(jade.mid),
+            lite: hex2linArray(jade.lite), cool: hex2linArray(jade.cool)
+          };
+        }
+        if (typeof gain === 'number' && gain > 0) state.jadeGain = gain;
+        render();
+      },
       setSpin: function (on) {
         state.spin = !!on;
         if (on) { state.last = 0; if (!state.raf) state.raf = requestAnimationFrame(loop); }
@@ -1197,6 +1278,7 @@
   var TYPES = ['绿茶', '白茶', '黄茶', '青茶', '红茶', '黑茶', '花茶', '调味'];
   var PATTERNS = ['none', 'crackle'];
   var PATTERN_NAMES = { none: '素瓷', crackle: '冰裂' };
+  var MAT_NAMES = { porcelain: '白瓷', jade: '青玉' };
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
@@ -1227,6 +1309,9 @@
   var PORC_L = 80;       // 瓷面明度：这是「能留住颜色」的关键，别往 90 以上调
   /* 夜色效果的上限；实际值 = 强度滑杆 × 上限。
      强度 50% 恰好等于原先调好的那一档（微光 0.09 / 器身 0.15 / 裂纹 0.85）。 */
+  /* 青玉的曝光：白瓷走的是 irr × albedo × RPI × ACES(≈4.4) 那条链，青玉自己求和、自己标定。
+     0.55 是实测值（见 v0.9.1 记录）：低于 0.45 发闷像墨玉，高于 0.65 高光糊成一片白。 */
+  var JADE_GAIN = 1.34;
   var GLOW_MAX = 0.18;    // 微光：整体自发光上限
   var DIM_MAX = 0.30;     // 裂纹：器身压暗上限（强度越高越暗）
   var LINE_MAX = 1.70;    // 裂纹：裂纹自发光上限
@@ -1254,6 +1339,28 @@
     var l = PORC_L + (lo || 0) * 0.6 - (isDark ? 6 : 0);
     /* 暗色下略提饱和：瓷面本身压深一点，才有「自己发光」的对比 */
     return hslToHex(hue, PORC_SAT + (isDark ? 5 : 0), clamp(l, 68, 92));
+  }
+
+  /* 青玉：参考稿是一只碧玉盖碗 —— 饱和度高、上浅下深、凹处泛青。
+     四个端点全部从主题色相派生；只有「冷反光」按 3:1 偏向青蓝：
+     那是天光的颜色，不该跟着器物一起变色（橙釉的碗，反光仍是青的）。 */
+  function mixHue(a, b, t) {
+    var d = ((b - a) % 360 + 540) % 360 - 180;
+    return ((a + d * t) % 360 + 360) % 360;
+  }
+  function jadeHex(hue, lo, isDark) {
+    var h = ((hue % 360) + 360) % 360;
+    var l = (lo || 0) * 0.6;
+    var dk = isDark ? 1 : 0;
+    /* 四个端点是照参考稿逐像素量出来的（见 v0.9.1 记录）：
+       器身 hsl(102,54%,53%)、亮部 hsl(80,83%,65%)、暗部 hsl(114,55%,34%)、远侧薄青 hsl(172,38%,70%)。
+       青玉整体比主题色相往黄绿偏 22° —— 碧玉本来就不是纯绿，这一档偏移正是「玉」与「瓷」的分界。 */
+    return {
+      deep: hslToHex(mixHue(h, h - 6, 1), 55, clamp(34 + l * 0.6 - dk * 8, 20, 44)),
+      mid: hslToHex(mixHue(h, h - 22, 1), 56 - dk * 4, clamp(52 + l * 0.6 - dk * 8, 36, 62)),
+      lite: hslToHex(mixHue(h, h - 38, 1), 80, clamp(66 + l * 0.5 - dk * 14, 48, 78)),
+      cool: hslToHex(mixHue(h, h + 52, 1), 38, clamp(70 + l * 0.4 - dk * 10, 54, 78))
+    };
   }
 
   function esc(s) {
@@ -1531,7 +1638,9 @@
     var _tyRef = { v: 0 };
     var state = {
       open: false, lift: 0, tea: null, types: [], steam: true, pattern: 'crackle', night: 'body', nightFx: { body: 0.5, crackle: 0.5 }, cabinet: [],
-      spin: !reduceMotion, spinUserSet: false, sound: true
+      spin: !reduceMotion, spinUserSet: false, sound: true,
+      /* 釉色：'porcelain' 白瓷（默认）/ 'jade' 青玉（参考稿的碧玉盖碗） */
+      mat: 'porcelain'
     };
     var el = {};
     var gl = null;
@@ -1611,6 +1720,11 @@
             '<button type="button" class="tea-chip pat" data-p="none">素瓷</button>' +
             '<button type="button" class="tea-chip pat" data-p="crackle">冰裂</button>' +
           '</div>' +
+          '<div class="tea-sub">釉色</div>' +
+          '<div class="tea-chips" data-row="mat">' +
+            '<button type="button" class="tea-chip mat" data-m="porcelain">白瓷</button>' +
+            '<button type="button" class="tea-chip mat" data-m="jade">青玉</button>' +
+          '</div>' +
           '<div class="tea-sub">夜色效果</div>' +
           '<div class="tea-chips" data-row="night">' +
             '<button type="button" class="tea-chip night" data-n="body">微光</button>' +
@@ -1689,8 +1803,9 @@
     el.tip = wrap.querySelector('.tea-tip');
     el.gear = wrap.querySelector('.tea-gear');
     el.maskEl = wrap.querySelector('.tea-mask');
-    el.chips = wrap.querySelector('.tea-chips:not([data-row="pattern"])');
+    el.chips = wrap.querySelector('.tea-chips:not([data-row])');
     el.patChips = wrap.querySelector('.tea-chips[data-row="pattern"]');
+    el.matChips = wrap.querySelector('.tea-chips[data-row="mat"]');
     el.nightChips = wrap.querySelector('.tea-chips[data-row="night"]');
     el.range = wrap.querySelector('.tea-range');
     el.steamInput = wrap.querySelector('.tea-steam-input');
@@ -1703,7 +1818,7 @@
 
     /* ── 渲染器 ── */
     try {
-      gl = GaiwanMount(el.stage, { spin: state.spin, tyRef: _tyRef });
+      gl = GaiwanMount(el.stage, { spin: state.spin, tyRef: _tyRef, mat: state.mat, jadeGain: JADE_GAIN });
     } catch (e) {
       LOG.warn('[' + ID + '] WebGL 初始化失败', e);
       gl = null;
@@ -1779,6 +1894,7 @@
       wrap.classList.toggle('tea-no-steam', !state.steam);
       if (gl) {
         try { gl.setPorcelain(porcelainHex(THEME.hue, THEME.lo, THEME.isDark)); } catch (e) { LOG.warn('[' + ID + '] 瓷色更新失败', e); }
+        try { gl.setMaterial(state.mat, jadeHex(THEME.hue, THEME.lo, THEME.isDark), JADE_GAIN * (THEME.isDark ? 0.82 : 1)); } catch (e) { LOG.warn('[' + ID + '] 釉色更新失败', e); }
         try {
           var cr = state.night === 'crackle';
           var t = clamp(state.nightFx[state.night] == null ? 0.5 : state.nightFx[state.night], 0, 1);
@@ -1858,6 +1974,7 @@
       var types = (raw && raw.types) || [];
       state.types = types.filter(function (t) { return TYPES.indexOf(t) >= 0; });
       state.steam = !(raw && raw.steam === false);
+      state.mat = (raw && raw.mat === 'jade') ? 'jade' : 'porcelain';
       state.pattern = (raw && PATTERNS.indexOf(raw.pattern) >= 0) ? raw.pattern : 'crackle';
       state.night = (raw && raw.night === 'crackle') ? 'crackle' : 'body';
       if (raw && raw.cabinet && raw.cabinet.length) {
@@ -1888,7 +2005,7 @@
     }
     function saveConfig() {
       try {
-        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice() });
+        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, mat: state.mat, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice() });
       } catch (e) { LOG.warn('[' + ID + '] 保存设置失败', e); }
     }
 
@@ -2132,6 +2249,13 @@
         list[i].classList.toggle('on', list[i].getAttribute('data-p') === state.pattern);
       }
     }
+    function renderMatChips() {
+      if (!el.matChips) return;
+      var list = el.matChips.querySelectorAll('.tea-chip');
+      for (var i = 0; i < list.length; i++) {
+        list[i].classList.toggle('on', list[i].getAttribute('data-m') === state.mat);
+      }
+    }
     function renderNightChips() {
       if (!el.nightChips) return;
       var list = el.nightChips.querySelectorAll('.tea-chip');
@@ -2164,6 +2288,15 @@
       if (gl) gl.setPattern(state.pattern);
       renderPatChips();
       if (announce) flashTip(PATTERN_NAMES[state.pattern]);
+    }
+    /* 釉色：白瓷（半球光 × 反照率）/ 青玉（四段结构单独着色，见 jadeBody） */
+    function setMaterial(kind, announce) {
+      state.mat = kind === 'porcelain' ? 'porcelain' : 'jade';
+      wrap.dataset.mat = state.mat;
+      /* 暗色主题压一档曝光：同一套色值放在黑底上会显得比纸底亮两成 */
+      if (gl) gl.setMaterial(state.mat, jadeHex(THEME.hue, THEME.lo, THEME.isDark), JADE_GAIN * (THEME.isDark ? 0.82 : 1));
+      renderMatChips();
+      if (announce) flashTip(MAT_NAMES[state.mat]);
     }
     function cyclePattern() {
       var i = PATTERNS.indexOf(state.pattern);
@@ -2298,9 +2431,10 @@
       }
     }
     function openSettings() {
-      _snapCfg = { types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, pattern: state.pattern };
+      _snapCfg = { types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, pattern: state.pattern, mat: state.mat };
       renderNightChips();
       renderChips();
+      renderMatChips();
       syncRange();
       if (el.steamInput) el.steamInput.checked = !!state.steam;
       if (el.spinInput) el.spinInput.checked = !!state.spin;
@@ -2322,6 +2456,7 @@
         wrap.classList.toggle('tea-no-steam', !state.steam);
         syncSpin();
         setPattern(_snapCfg.pattern, false);
+        setMaterial(_snapCfg.mat || 'porcelain', false);
         _snapCfg = null;
       }
       closeSettings();
@@ -2348,6 +2483,13 @@
         var chip = e.target && e.target.closest ? e.target.closest('.tea-chip') : null;
         if (!chip) return;
         setPattern(chip.getAttribute('data-p'), false);
+      });
+    }
+    if (el.matChips) {
+      el.matChips.addEventListener('click', function (e) {
+        var chip = e.target && e.target.closest ? e.target.closest('.tea-chip') : null;
+        if (!chip) return;
+        setMaterial(chip.getAttribute('data-m'), false);
       });
     }
     if (el.save) el.save.addEventListener('click', toggleCabinet);
@@ -2504,7 +2646,9 @@
       'color:hsl(var(--th),10%,92%);' +
     '}' +
 
-    '.tea-stage{position:relative;flex:1 1 auto;min-height:0;touch-action:none;}' +
+    /* z-index:0 让舞台自成层叠上下文：蒸汽才能用负层压到画布（器物）后面，
+       同时不影响工具行、命中区这些 z-index:auto 的定位子元素（它们仍在画布之上） */
+    '.tea-stage{position:relative;z-index:0;flex:1 1 auto;min-height:0;touch-action:none;}' +
     /* 命中区：盖子在视口里的投影（相机固定 → 比例固定） */
     '.tea-kbd{position:absolute;left:0;top:0;width:100%;height:100%;padding:0;border:0;background:transparent;' +
       'opacity:0;pointer-events:none;}' +
@@ -2512,13 +2656,16 @@
       'border-radius:var(--radius-md,14px);}' +
     '.tea-sub{margin-top:var(--space-14);font-size:var(--type-xs);color:var(--text-tertiary,currentColor);' +
       'opacity:.9;letter-spacing:.04em;}' +
-    '.tea-chips[data-row=pattern]{grid-template-columns:repeat(2,1fr);margin-top:var(--space-8);}' +
-    '.tea-steam{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;' +
+    '.tea-chips[data-row=pattern],.tea-chips[data-row=mat]{grid-template-columns:repeat(2,1fr);margin-top:var(--space-8);}' +
+    /* 负层：热气从盖碗「后面」升起，下半截被器身挡住（它本来就是从碗口往外冒的） */
+    '.tea-steam{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:-1;' +
       'opacity:0;transition:opacity var(--duration-slow) var(--ease-cn);}' +
     '.tea-wrap.is-open .tea-steam{opacity:1;transition-delay:var(--duration-normal);}' +
     '.tea-wrap.tea-no-steam .tea-steam{display:none;}' +
     '.tea-dark .tea-wisp{stroke:hsla(var(--th),20%,96%,.26);}' +
-    '.tea-wisp{fill:none;stroke:hsla(0,0%,100%,.55);stroke-width:3.2;stroke-linecap:round;' +
+    /* 浅色主题下蒸汽必须压到器物后面之后，白描边就落在纸底上了 —— 白对白等于没有。
+       改用主题色相的柔灰（像烟雾），深色主题仍走浅色雾（见下一条）。 */
+    '.tea-wisp{fill:none;stroke:hsla(var(--th),12%,64%,.40);stroke-width:3.2;stroke-linecap:round;' +
       'transform-box:fill-box;transform-origin:50% 100%;}' +
     '.tea-wrap.is-open .tea-wisp{animation:tea-rise 5.6s ease-in-out infinite;}' +
     '.tea-wrap.is-open .w2{animation-duration:6.8s;animation-delay:-2.1s;}' +
