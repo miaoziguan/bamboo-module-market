@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.5","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.6","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.5';
+  var VERSION = '0.9.6';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -42,10 +42,11 @@
   var LEAF_COLOR = [0.20, 0.26, 0.10];  // 叶底（线性色）
   /* 汤色亮度低于此值就不画叶底：深色茶汤浮绿叶是假的 */
   var LEAF_MIN_Y = 0.36;
-  /* P2 釉面三系数（质感档专用，实机标定就改这里，别散落到 shader 里）：
+  /* P2/P3 釉面系数（质感档专用，实机标定就改这里，别散落到 shader 里）：
      spec = Cook-Torrance GGX 基础镜面；coat = 透明釉的第二层窄高光 + 掠射亮边；
-     sss  = 薄胎背光透射。全部是 ACES 之前的线性加性量，uFx=0 时整块跳过、回到原稿。 */
-  var FX_PBR = { spec: 0.08, coat: 0.28, sss: 0.10 };
+     sss  = 薄胎背光透射；env = 窗光环境反射强度。
+     全部是 ACES 之前的线性加性量，uFx=0 时整块跳过、回到原稿。 */
+  var FX_PBR = { spec: 0.08, coat: 0.28, sss: 0.10, env: 0.42 };
 
   /* ══ 曲线：逐字复刻 five 的 CatmullRomCurve3(...,'catmullrom',0.1).getPoints(150) ══ */
   function crAxis(x0, x1, x2, x3, tension, t) {
@@ -172,6 +173,43 @@
      贴图再大也会被缩小采样，1px 的开片线平均完就看不见了。 */
   var PAT_W = 512, PAT_H = 256;
   var PATTERNS = ['none', 'crackle'];
+
+  /* ── P3 窗光环境（釉面映出的那排窗棂）──
+     512×32 的横向条带：u = 反射向量的方位角 0..1（GL_REPEAT 环绕），
+     v = 反射向量高度（上=天光、下=案面）。三扇柔边窗格 + 两道低频「竹影」扰动，
+     纯 2D canvas 逐像素现算，不加载任何外部贴图（模块沙箱禁 fetch/import）。
+     用世界反射向量采样：相机绕器物走（水平拖）时 V 变 → R 变 → 窗光沿釉面游走，
+     这才是「映环境」的物理正确做法；贴到 vUv 上会变成环境跟着杯子转，是错的。 */
+  var ENV_W = 512, ENV_H = 32;
+  function makeEnvCanvas() {
+    var c = document.createElement('canvas');
+    c.width = ENV_W; c.height = ENV_H;
+    var ctx = c.getContext('2d');
+    var img = ctx.createImageData(ENV_W, ENV_H);
+    var d = img.data;
+    var centers = [0.12, 0.46, 0.80];
+    for (var y = 0; y < ENV_H; y++) {
+      var vy = y / (ENV_H - 1);
+      var sky = 1.0 - 0.55 * vy;                  // 上亮下暗
+      for (var x = 0; x < ENV_W; x++) {
+        var u = x / ENV_W, win = 0;
+        for (var i = 0; i < centers.length; i++) {
+          var dx = Math.abs(u - centers[i]);
+          dx = Math.min(dx, 1 - dx);             // 环面距离，首尾无缝
+          win += Math.exp(-Math.pow(dx / 0.045, 2));
+        }
+        var bamboo = 0.06 * Math.sin(u * 6.2831853 * 7.0) + 0.04 * Math.sin(u * 6.2831853 * 13.0 + 1.1);
+        var v = Math.min(1, Math.max(0, (win * 0.92 + 0.06 + bamboo) * sky));
+        var k = (y * ENV_W + x) * 4;
+        d[k] = Math.round(255 * v);
+        d[k + 1] = Math.round(250 * v);
+        d[k + 2] = Math.round(235 * v);
+        d[k + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  }
 
   function patCanvas() {
     var c = document.createElement('canvas');
@@ -338,6 +376,8 @@
     'uniform float uFx; uniform float uFxKind; uniform float uTime;',
     /* P2：x=GGX镜面 y=clearcoat z=薄胎透光，由 JS 的 FX_PBR 统一下发 */
     'uniform vec3 uFxPbr;',
+    /* P3：程序化窗光环境贴图（TEXTURE2）与反射强度 */
+    'uniform sampler2D uEnvTex; uniform float uEnvK;',
     /* 青玉（第二套釉色）：不走「半球环境光 × 反照率」，而按参考稿的四段结构单独着色 */
     'uniform float uJade;',
     'uniform vec3 uJadeDeep; uniform vec3 uJadeMid; uniform vec3 uJadeLite; uniform vec3 uJadeCool;',
@@ -503,6 +543,16 @@
     '    vec3 trans = (uJade > 0.5) ? uJadeLite : (dc * vec3(1.0, 0.72, 0.48));',
     '    col += trans * back * uFxPbr.z * jadeK;',
     '    col += trans * pow(1.0 - dnv, 5.0) * uFxPbr.y * 0.30 * jadeK;',
+    /* ⑤ P3 窗光：按**世界反射向量**采样环境条带，Schlick 让反射只在掠射角起来。
+       相机绕器物走（水平拖）时 V 变 → R 变 → 窗光沿釉面游走，水平旋转终于看得见。
+       注意不能用 vUv 采样 —— 那等于环境跟着杯子转，物理上是错的。
+       回转体自转不改变世界法线场，自转的可见性仍靠冰裂/叶底，这是几何决定的、改不了。 */
+    '    vec3 R = reflect(-V, n);',
+    '    float phi = atan(R.z, R.x) * 0.1591549431 + 0.5;',
+    '    float ev = clamp(R.y * 0.5 + 0.5, 0.0, 1.0);',
+    '    vec3 env = texture2D(uEnvTex, vec2(phi, 1.0 - ev)).rgb;',
+    '    float envF = F_Schlick(vec3(0.04), 1.0, dnv).r;',
+    '    col += env * envF * uEnvK * jadeK;',
     '  }',
     '  col = (uJade > 0.5) ? toneJade(col) : aces(col);',
     '  gl_FragColor = vec4(lin2srgb(col) * uOpacity, uOpacity);',   // 预乘：与 canvas 的 premultipliedAlpha 一致
@@ -632,6 +682,17 @@
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
+    /* P3 环境反射贴图：启动时生成一次、上传一次，不参与逐帧开销。
+       512×32 均为 2 的幂，u 方向才能用 GL_REPEAT 环绕成 360°。 */
+    var envTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, envTex);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, makeEnvCanvas());
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
     /* 点击拾取：1×1 目标 + 把点击点平移到画面中心的投影 */
     var pickTex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, pickTex);
@@ -697,7 +758,7 @@
     ['uMVP', 'uModel', 'uAlbedo', 'uKeyDir', 'uFillDir', 'uSky', 'uGround', 'uAmbient', 'uRough', 'uEye',
       'uOpacity', 'uShadowTex', 'uShadowMat', 'uShadowOn', 'uShSelf', 'uKeyK', 'uGlow', 'uBodyDim', 'uLineGlow', 'uNightK', 'uPattern', 'uPatternOn', 'uPatMask',
       'uJade', 'uJadeDeep', 'uJadeMid', 'uJadeLite', 'uJadeCool', 'uJadeGain',
-      'uFx', 'uFxKind', 'uTime', 'uFxPbr'].forEach(function (k) {
+      'uFx', 'uFxKind', 'uTime', 'uFxPbr', 'uEnvTex', 'uEnvK'].forEach(function (k) {
       U[k] = gl.getUniformLocation(progMain, k);
     });
     var D = {
@@ -874,14 +935,19 @@
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, patTex);
       gl.uniform1i(U.uPattern, 1);
+      /* P3 窗光环境贴图占 TEXTURE2（0 是停用的阴影图、1 是冰裂），逐帧只绑定不重传 */
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, envTex);
+      gl.uniform1i(U.uEnvTex, 2);
       gl.uniform1f(U.uPatternOn, state.pattern && state.pattern !== 'none' ? 1 : 0);
       gl.activeTexture(gl.TEXTURE0);
       gl.uniform1f(U.uOpacity, 1);
       /* 质感档总增益 + 液面时间相位（state.elapsed 随自转累加，关自转时定格） */
       gl.uniform1f(U.uFx, state.enhance ? 1 : 0);
       gl.uniform1f(U.uTime, state.elapsed || 0);
-      /* P2 釉面三系数：集中在文件顶部 FX_PBR，实机标定只改那一处 */
+      /* P2 釉面三系数 + P3 环境反射强度：集中在文件顶部 FX_PBR，实机标定只改那一处 */
       gl.uniform3f(U.uFxPbr, FX_PBR.spec, FX_PBR.coat, FX_PBR.sss);
+      gl.uniform1f(U.uEnvK, FX_PBR.env);
 
       /* [网格, 模型矩阵, 反照率, 是否绘制, 纹样遮罩] 0=素（茶汤、叶底） 1=印（三件瓷器） */
       var pieces = [
@@ -1257,6 +1323,8 @@
           gl.deleteFramebuffer(t.fb); gl.deleteRenderbuffer(t.depth); gl.deleteTexture(t.tex);
         });
         gl.deleteBuffer(quadBuf);
+        gl.deleteTexture(patTex);
+        gl.deleteTexture(envTex);
         [progMain, progDepth, progBlur].forEach(function (p) { gl.deleteProgram(p); });
         var lose = gl.getExtension('WEBGL_lose_context');
         if (lose) lose.loseContext();
