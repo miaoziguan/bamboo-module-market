@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.2","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.3","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.2';
+  var VERSION = '0.9.3';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -329,6 +329,9 @@
     'uniform float uRough; uniform vec3 uEye; uniform float uOpacity;',
     'uniform sampler2D uShadowTex; uniform mat4 uShadowMat; uniform float uShadowOn; uniform float uShSelf; uniform float uKeyK; uniform float uGlow; uniform float uBodyDim; uniform float uLineGlow; uniform float uNightK;',
     'uniform sampler2D uPattern; uniform float uPatternOn; uniform float uPatMask;',
+    /* P1 质感档：uFx 是总增益（0=原稿档），uFxKind 只对液面生效（1=茶汤 2=叶底 0=瓷器）。
+       瓷器像素恒走原链路，合盖状态的逐像素基线不受任何影响。 */
+    'uniform float uFx; uniform float uFxKind; uniform float uTime;',
     /* 青玉（第二套釉色）：不走「半球环境光 × 反照率」，而按参考稿的四段结构单独着色 */
     'uniform float uJade;',
     'uniform vec3 uJadeDeep; uniform vec3 uJadeMid; uniform vec3 uJadeLite; uniform vec3 uJadeCool;',
@@ -450,6 +453,24 @@
     /* uNightK：瓷器=1、茶汤/叶底=0 —— 三种夜色效果（压暗/纹光/周身微光）都不作用于汤色，
        汤色是内容常数，跨主题可比（PATCH-48） */
     '  col += uGlow * dc * (0.45 + 1.35 * rim) * uNightK;',
+    /* ── P1-c 液面：只在质感档 + 茶汤/叶底上跑，瓷器像素一个都不改 ──
+       ① 中心深、边缘浅（光程差）；② 掠射角 Fresnel 混天光，正视仍透汤色；
+       ③ 外圈弯月面亮边；④ 两道极缓波纹（半径相位 + 世界坐标相位，随自转缓缓游走）。
+       叶底只跟着明暗起伏，不动几何。全部乘 uFx，归零即回到原稿。 */
+    '  if (uFxKind > 0.5 && uFx > 0.0) {',
+    '    float rq = clamp(length(vW.xz) / 1.645, 0.0, 1.0);',
+    '    float fnv = sat(dot(n, V));',
+    '    float fres = pow(1.0 - fnv, 4.0);',
+    '    float wv = sin(rq*18.0 - uTime*1.15)*0.6 + sin(vW.x*5.0 + vW.z*3.0 + uTime*0.75)*0.4;',
+    '    if (uFxKind < 1.5) {',
+    '      col *= 1.0 - 0.16*(1.0-rq)*uFx;',
+    '      col = mix(col, mix(uSky, vec3(1.0), 0.35)*0.55, fres*0.55*uFx);',
+    '      col += vec3(0.95,0.97,1.0)*smoothstep(0.88,1.0,rq)*0.10*uFx;',
+    '      col *= 1.0 + 0.028*wv*uFx;',
+    '    } else {',
+    '      col *= 1.0 + 0.05*wv*uFx;',
+    '    }',
+    '  }',
     '  col = (uJade > 0.5) ? toneJade(col) : aces(col);',
     '  gl_FragColor = vec4(lin2srgb(col) * uOpacity, uOpacity);',   // 预乘：与 canvas 的 premultipliedAlpha 一致
 
@@ -642,7 +663,8 @@
     var U = {};
     ['uMVP', 'uModel', 'uAlbedo', 'uKeyDir', 'uFillDir', 'uSky', 'uGround', 'uAmbient', 'uRough', 'uEye',
       'uOpacity', 'uShadowTex', 'uShadowMat', 'uShadowOn', 'uShSelf', 'uKeyK', 'uGlow', 'uBodyDim', 'uLineGlow', 'uNightK', 'uPattern', 'uPatternOn', 'uPatMask',
-      'uJade', 'uJadeDeep', 'uJadeMid', 'uJadeLite', 'uJadeCool', 'uJadeGain'].forEach(function (k) {
+      'uJade', 'uJadeDeep', 'uJadeMid', 'uJadeLite', 'uJadeCool', 'uJadeGain',
+      'uFx', 'uFxKind', 'uTime'].forEach(function (k) {
       U[k] = gl.getUniformLocation(progMain, k);
     });
     var D = {
@@ -681,7 +703,9 @@
       /* 釉色：'porcelain' 白瓷（半球光 × 反照率）/ 'jade' 青玉（四段结构单独着色） */
       mat: opts.mat === 'jade' ? 'jade' : 'porcelain',
       jade: { deep: [0.02, 0.06, 0.02], mid: [0.10, 0.30, 0.06], lite: [0.42, 0.62, 0.20], cool: [0.12, 0.32, 0.34] },
-      jadeGain: (typeof opts.jadeGain === 'number' && opts.jadeGain > 0) ? opts.jadeGain : 1
+      jadeGain: (typeof opts.jadeGain === 'number' && opts.jadeGain > 0) ? opts.jadeGain : 1,
+      /* P0 质感档：false 时所有 P1 增强增益归零，逐像素退回 three 原稿基线 */
+      enhance: opts.enhance !== false
     };
 
     /** 包围球取景：轨道转到任何角度都不裁（用球而不是盒，避免转动时画面忽大忽小） */
@@ -820,6 +844,9 @@
       gl.uniform1f(U.uPatternOn, state.pattern && state.pattern !== 'none' ? 1 : 0);
       gl.activeTexture(gl.TEXTURE0);
       gl.uniform1f(U.uOpacity, 1);
+      /* P0/P1：质感档总增益 + 液面时间相位（state.elapsed 随自转累加，关自转时定格） */
+      gl.uniform1f(U.uFx, state.enhance ? 1 : 0);
+      gl.uniform1f(U.uTime, state.elapsed || 0);
 
       /* [网格, 模型矩阵, 反照率, 是否绘制, 纹样遮罩] 0=素（茶汤、叶底） 1=印（三件瓷器） */
       var pieces = [
@@ -848,6 +875,8 @@
         gl.uniform1f(U.uBodyDim, isPorcelain ? state.bodyDim : 1);
         gl.uniform1f(U.uLineGlow, isPorcelain ? state.lineGlow : 0);
         gl.uniform1f(U.uNightK, isPorcelain ? 1 : 0);
+        /* 液面标记：0=瓷器（恒走原链路） 1=茶汤 2=叶底 —— P1 增强只作用后两者 */
+        gl.uniform1f(U.uFxKind, pc[0] === M.tea ? 1 : (pc[0] === M.leaves ? 2 : 0));
         bindMesh(progMain, pc[0]);
         gl.drawElements(gl.TRIANGLES, pc[0].count, gl.UNSIGNED_SHORT, 0);
       }
@@ -1171,6 +1200,8 @@
         if (typeof gain === 'number' && gain > 0) state.jadeGain = gain;
         render();
       },
+      /** P0 质感档开关：关掉即把 uFx 归零，瓷器/合盖逐像素回到 three 原稿基线 */
+      setEnhance: function (on) { state.enhance = !!on; render(); },
       setSpin: function (on) {
         state.spin = !!on;
         if (on) { state.last = 0; if (!state.raf) state.raf = requestAnimationFrame(loop); }
@@ -1640,7 +1671,9 @@
       open: false, lift: 0, tea: null, types: [], steam: true, pattern: 'crackle', night: 'body', nightFx: { body: 0.5, crackle: 0.5 }, cabinet: [],
       spin: !reduceMotion, spinUserSet: false, sound: true,
       /* 釉色：'porcelain' 白瓷（默认）/ 'jade' 青玉（参考稿的碧玉盖碗） */
-      mat: 'porcelain'
+      mat: 'porcelain',
+      /* P0 质感档：默认开。关掉 = 原稿对照档（柔影/蒸汽脉冲/液面增强全退，逐像素回基线） */
+      enhance: true
     };
     var el = {};
     var gl = null;
@@ -1649,6 +1682,7 @@
     var _lidSeated = true;   // 盖沿是否贴在口沿上（初始：盖着）
     var _pan = 0;            // 当前声音的声像，按指针横向位置取
     var _revealTimer = null;
+    var _puffTimer = null;
     var _snapCfg = null;
     var _themeRaf = 0;
     var _darkObs = null;
@@ -1663,6 +1697,8 @@
     wrap.className = 'tea-wrap';
     wrap.innerHTML =
       '<div class="tea-stage">' +
+        /* P1-a 案上柔影：纯 DOM/CSS，压在器物之后、背景之上，不进 WebGL 不透明像素 */
+        '<div class="tea-ground" aria-hidden="true"></div>' +
         '<svg class="tea-steam" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
           '<g filter="url(#tea-steam-blur)">' +
             '<path class="tea-wisp w1" d="M44 42c-3-6 4-9 -1-15s3-8 0-13"/>' +
@@ -1734,6 +1770,9 @@
             '<span class="tea-slider-label">强度</span>' +
             '<input type="range" class="tea-range" min="0" max="100" step="1" aria-label="夜色效果强度" />' +
           '</div>' +
+          '<label class="tea-switch" title="关闭后回到与 three 原稿逐像素一致的对照画面"><span class="tea-switch-label">质感增强</span>' +
+            '<input type="checkbox" class="tea-enhance-input" aria-label="质感增强（关闭为原稿对照档）" />' +
+            '<span class="track" aria-hidden="true"></span></label>' +
           '<label class="tea-switch"><span class="tea-switch-label">蒸汽</span>' +
             '<input type="checkbox" class="tea-steam-input" /><span class="track" aria-hidden="true"></span></label>' +
           '<label class="tea-switch"><span class="tea-switch-label">缓慢自转</span>' +
@@ -1753,6 +1792,7 @@
 
     el.wrap = wrap;
     el.stage = wrap.querySelector('.tea-stage');
+    el.ground = wrap.querySelector('.tea-ground');
     el.kbd = wrap.querySelector('.tea-kbd');
     el.verseTop = wrap.querySelector('.tea-verse.v-top');
     el.verseBot = wrap.querySelector('.tea-verse.v-bot');
@@ -1808,6 +1848,7 @@
     el.matChips = wrap.querySelector('.tea-chips[data-row="mat"]');
     el.nightChips = wrap.querySelector('.tea-chips[data-row="night"]');
     el.range = wrap.querySelector('.tea-range');
+    el.enhanceInput = wrap.querySelector('.tea-enhance-input');
     el.steamInput = wrap.querySelector('.tea-steam-input');
     el.spinInput = wrap.querySelector('.tea-spin-input');
     el.soundInput = wrap.querySelector('.tea-sound-input');
@@ -1818,7 +1859,7 @@
 
     /* ── 渲染器 ── */
     try {
-      gl = GaiwanMount(el.stage, { spin: state.spin, tyRef: _tyRef, mat: state.mat, jadeGain: JADE_GAIN });
+      gl = GaiwanMount(el.stage, { spin: state.spin, tyRef: _tyRef, mat: state.mat, jadeGain: JADE_GAIN, enhance: state.enhance });
     } catch (e) {
       LOG.warn('[' + ID + '] WebGL 初始化失败', e);
       gl = null;
@@ -1829,16 +1870,45 @@
       return makeApi();
     }
     wrap.classList.add('tea-gl');
+    setEnhance(state.enhance);   // 质感档初值：写入蒸汽浓度变量与柔影尺寸
 
     /* 音效引擎是懒初始化的：AudioContext 只在第一次真实接触（pointerdown/keydown）时才建，
        否则每次打开侧栏都凭空起一条音频线程、还要吃一次浏览器的自动播放告警。 */
     var audio = createPorcelainAudio(LOG);
     audio.setEnabled(state.sound);
 
+    /* ── P0 质感档 ──
+       一处开关同时收拢三处增强：WebGL 液面增益（uFx）、DOM 柔影、蒸汽浓度/脉冲。
+       关掉时全部退回 v0.9.2 的形态，合盖逐像素与 three 原稿一致（茶汤本来只在开盖出现）。 */
+    function setEnhance(on) {
+      state.enhance = !!on;
+      wrap.classList.toggle('tea-reference', !state.enhance);
+      if (state.enhance) {
+        wrap.style.setProperty('--tea-steam-a', '.46');
+        wrap.style.setProperty('--tea-steam-a-dark', '.34');
+      } else {
+        wrap.style.removeProperty('--tea-steam-a');
+        wrap.style.removeProperty('--tea-steam-a-dark');
+        wrap.classList.remove('tea-puff');
+      }
+      if (el.enhanceInput) el.enhanceInput.checked = state.enhance;
+      if (gl && gl.setEnhance) gl.setEnhance(state.enhance);
+      updateGround();
+    }
+    /* P1-a 柔影随缩放联动：器物放大时影子同比例铺开、略更实；纯 CSS 变量，不触发 WebGL 重绘 */
+    function updateGround() {
+      if (!el.ground) return;
+      var z = 1;
+      try { z = (gl && gl.view ? gl.view().zoom : 1) || 1; } catch (e) { z = 1; }
+      el.ground.style.setProperty('--tea-ground-sx', (0.78 + 0.22 * z).toFixed(3));
+      el.ground.style.setProperty('--tea-ground-op', Math.min(1, 0.55 + 0.45 * z).toFixed(2));
+    }
+
     function syncMetrics() {
       if (!gl) return;
       try { var m = gl.metrics(); if (m) M = m; } catch (e) { return; }
       applyLift(state.lift);
+      updateGround();
       syncNarrow();
     }
     /* 侧栏可以窄到 100px 出头，两列列表在那种宽度下必然挤成一团 —— 降到单列 */
@@ -1991,11 +2061,14 @@
       if (raw && typeof raw.spin === 'boolean') { state.spin = raw.spin; state.spinUserSet = true; }
       /* 音效默认开：老配置里没有这个字段，不能因为 undefined 就判成关 */
       state.sound = !(raw && raw.sound === false);
+      /* 质感档默认开；老配置没有该字段时保持增强（不会莫名退回旧画面） */
+      state.enhance = !(raw && raw.enhance === false);
       wrap.classList.toggle('tea-no-steam', !state.steam);
       /* 异步到达时 UI 已按默认值画过一遍：各处按真值补刷 */
       setPattern(state.pattern, false);
       renderNightChips(); syncRange(); applyTheme();
       renderChips();
+      setEnhance(state.enhance);
       if (el.steamInput) el.steamInput.checked = state.steam;
       if (el.spinInput) el.spinInput.checked = state.spin;
       if (el.soundInput) el.soundInput.checked = state.sound;
@@ -2005,7 +2078,7 @@
     }
     function saveConfig() {
       try {
-        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, mat: state.mat, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice() });
+        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, mat: state.mat, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice(), enhance: !!state.enhance });
       } catch (e) { LOG.warn('[' + ID + '] 保存设置失败', e); }
     }
 
@@ -2320,6 +2393,13 @@
       state.open = true;
       state.tea = forced || pickTea();
       wrap.classList.add('is-open');
+      /* P1-b 开盖那一下「一股热气」：只给质感档 + 蒸汽开启时，.9s 后自动摘掉，
+         三条 wisp 的 tea-rise 错峰照常（脉冲只动容器，不改各条自身的动画）。 */
+      if (state.enhance && state.steam) {
+        wrap.classList.add('tea-puff');
+        if (_puffTimer) clearTimeout(_puffTimer);
+        _puffTimer = setTimeout(function () { wrap.classList.remove('tea-puff'); _puffTimer = null; }, 920);
+      }
       applyLift(1);
       syncSpin();
       if (el.tip) el.tip.textContent = '再揭一次，换一盏';
@@ -2333,6 +2413,8 @@
       if (!state.open) return;
       state.open = false;
       wrap.classList.remove('is-open');
+      if (_puffTimer) { clearTimeout(_puffTimer); _puffTimer = null; }
+      wrap.classList.remove('tea-puff');
       if (el.card) el.card.classList.remove('is-live');
       if (el.tip) el.tip.textContent = '揭盖看茶 · 拖动可转';
       applyLift(0);
@@ -2431,11 +2513,12 @@
       }
     }
     function openSettings() {
-      _snapCfg = { types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, pattern: state.pattern, mat: state.mat };
+      _snapCfg = { types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, pattern: state.pattern, mat: state.mat, enhance: !!state.enhance };
       renderNightChips();
       renderChips();
       renderMatChips();
       syncRange();
+      if (el.enhanceInput) el.enhanceInput.checked = !!state.enhance;
       if (el.steamInput) el.steamInput.checked = !!state.steam;
       if (el.spinInput) el.spinInput.checked = !!state.spin;
       if (el.soundInput) el.soundInput.checked = !!state.sound;
@@ -2457,6 +2540,7 @@
         syncSpin();
         setPattern(_snapCfg.pattern, false);
         setMaterial(_snapCfg.mat || 'porcelain', false);
+        setEnhance(_snapCfg.enhance !== false);
         _snapCfg = null;
       }
       closeSettings();
@@ -2563,6 +2647,12 @@
         setNight(chip.getAttribute('data-n'));
       });
     }
+    if (el.enhanceInput) {
+      el.enhanceInput.addEventListener('change', function () {
+        /* 与其它开关同口径：只改运行态，点「保存」才写盘；「取消」由 _snapCfg 回退 */
+        setEnhance(!!el.enhanceInput.checked);
+      });
+    }
     if (el.steamInput) {
       el.steamInput.addEventListener('change', function () {
         state.steam = !!el.steamInput.checked;
@@ -2598,6 +2688,7 @@
     /* ── 卸载 ── */
     function destroy() {
       if (_revealTimer) { clearTimeout(_revealTimer); _revealTimer = null; }
+      if (_puffTimer) { clearTimeout(_puffTimer); _puffTimer = null; }
       if (_themeRaf) { cancelAnimationFrame(_themeRaf); _themeRaf = 0; }
       window.removeEventListener('message', onThemeMessage);
       window.removeEventListener('pointermove', onMove);
@@ -2665,6 +2756,21 @@
       'color:hsl(var(--th),10%,92%);' +
     '}' +
 
+    /* ── P1-a 案上柔影 ──
+       v0.4.3 去掉整幅绢底后器物一直「悬空」：既没有 WebGL 柔影平面，也没有 CSS 地面投影。
+       这里用纯 DOM 椭圆柔影补上，压在器物之后（z-index:-1），不进 WebGL 不透明像素，
+       所以逐像素基线一个字节都不变；宽/浓随 zoom 由 updateGround() 写 CSS 变量。 */
+    '.tea-ground{position:absolute;left:50%;top:76%;width:64%;height:12%;' +
+      'transform:translateX(-50%) scale(var(--tea-ground-sx,1),1);' +
+      'border-radius:50%;pointer-events:none;z-index:-1;' +
+      'background:radial-gradient(ellipse at center,' +
+        'rgba(var(--black-rgb,0,0,0),.24) 0%,rgba(var(--black-rgb,0,0,0),.10) 42%,' +
+        'rgba(var(--black-rgb,0,0,0),0) 72%);' +
+      'opacity:var(--tea-ground-op,1);transition:opacity var(--duration-slow) var(--ease-cn);}' +
+    /* 暗色底本身已深，黑影几乎看不见：压到 35% 只留一点接地感，别糊成一块黑斑 */
+    '.tea-dark .tea-ground{opacity:calc(var(--tea-ground-op,1) * .35);}' +
+    '.tea-wrap.tea-reference .tea-ground{display:none;}' +
+
     /* z-index:0 让舞台自成层叠上下文：蒸汽才能用负层压到画布（器物）后面，
        同时不影响工具行、命中区这些 z-index:auto 的定位子元素（它们仍在画布之上） */
     '.tea-stage{position:relative;z-index:0;flex:1 1 auto;min-height:0;touch-action:none;}' +
@@ -2681,10 +2787,12 @@
       'opacity:0;transition:opacity var(--duration-slow) var(--ease-cn);}' +
     '.tea-wrap.is-open .tea-steam{opacity:1;transition-delay:var(--duration-normal);}' +
     '.tea-wrap.tea-no-steam .tea-steam{display:none;}' +
-    '.tea-dark .tea-wisp{stroke:hsla(var(--th),20%,96%,.26);}' +
+    /* P1-b 浓度可调：质感档由 JS 把 --tea-steam-a / -dark 提到 .46/.34，
+       原稿档移除变量回到 .40/.26（即 v0.9.2 的原值），不改任何既有色相。 */
+    '.tea-dark .tea-wisp{stroke:hsla(var(--th),20%,96%,var(--tea-steam-a-dark,.26));}' +
     /* 浅色主题下蒸汽必须压到器物后面之后，白描边就落在纸底上了 —— 白对白等于没有。
        改用主题色相的柔灰（像烟雾），深色主题仍走浅色雾（见下一条）。 */
-    '.tea-wisp{fill:none;stroke:hsla(var(--th),12%,64%,.40);stroke-width:3.2;stroke-linecap:round;' +
+    '.tea-wisp{fill:none;stroke:hsla(var(--th),12%,64%,var(--tea-steam-a,.40));stroke-width:3.2;stroke-linecap:round;' +
       'transform-box:fill-box;transform-origin:50% 100%;}' +
     '.tea-wrap.is-open .tea-wisp{animation:tea-rise 5.6s ease-in-out infinite;}' +
     '.tea-wrap.is-open .w2{animation-duration:6.8s;animation-delay:-2.1s;}' +
@@ -2695,6 +2803,14 @@
       '64%{opacity:.45;}' +
       '100%{opacity:0;transform:translateY(-4px) scaleX(1.15);}' +
     '}' +
+    /* P1-b 开盖那一下「一股热气」：只动容器 opacity/scale，三条 wisp 的 tea-rise 照常错峰 */
+    '.tea-wrap.tea-puff .tea-steam{animation:tea-puff .9s ease-out both;}' +
+    '@keyframes tea-puff{' +
+      '0%{opacity:0;transform:scaleY(.82);}' +
+      '38%{opacity:1;transform:scaleY(1);}' +
+      '100%{opacity:1;transform:scaleY(1);}' +
+    '}' +
+    '.tea-wrap.tea-reference .tea-steam{animation:none;}' +
     /* 上下两行题字：位置由 placeVerse() 按器物在屏幕上的实际边界算，不写死百分比 */
     /* 竖排：外层满宽只负责水平居中，内层 span 用 vertical-rl 把字竖着叠；
        高度随字数变化，故用 translateY(-50%) 以自身中心对齐 placeVerse() 给出的 y */
