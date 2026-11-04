@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.4","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.5","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.4';
+  var VERSION = '0.9.5';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -42,6 +42,10 @@
   var LEAF_COLOR = [0.20, 0.26, 0.10];  // 叶底（线性色）
   /* 汤色亮度低于此值就不画叶底：深色茶汤浮绿叶是假的 */
   var LEAF_MIN_Y = 0.36;
+  /* P2 釉面三系数（质感档专用，实机标定就改这里，别散落到 shader 里）：
+     spec = Cook-Torrance GGX 基础镜面；coat = 透明釉的第二层窄高光 + 掠射亮边；
+     sss  = 薄胎背光透射。全部是 ACES 之前的线性加性量，uFx=0 时整块跳过、回到原稿。 */
+  var FX_PBR = { spec: 0.08, coat: 0.28, sss: 0.10 };
 
   /* ══ 曲线：逐字复刻 five 的 CatmullRomCurve3(...,'catmullrom',0.1).getPoints(150) ══ */
   function crAxis(x0, x1, x2, x3, tension, t) {
@@ -329,9 +333,11 @@
     'uniform float uRough; uniform vec3 uEye; uniform float uOpacity;',
     'uniform sampler2D uShadowTex; uniform mat4 uShadowMat; uniform float uShadowOn; uniform float uShSelf; uniform float uKeyK; uniform float uGlow; uniform float uBodyDim; uniform float uLineGlow; uniform float uNightK;',
     'uniform sampler2D uPattern; uniform float uPatternOn; uniform float uPatMask;',
-    /* P1 质感档：uFx 是总增益（0=原稿档），uFxKind 只对液面生效（1=茶汤 2=叶底 0=瓷器）。
-       瓷器像素恒走原链路，合盖状态的逐像素基线不受任何影响。 */
+    /* 质感档：uFx 是总增益（0=原稿档，P1 液面 / P2 釉面一起归零）；
+       uFxKind 区分 0=瓷器 1=茶汤 2=叶底；三组增强互斥，互不叠加。 */
     'uniform float uFx; uniform float uFxKind; uniform float uTime;',
+    /* P2：x=GGX镜面 y=clearcoat z=薄胎透光，由 JS 的 FX_PBR 统一下发 */
+    'uniform vec3 uFxPbr;',
     /* 青玉（第二套釉色）：不走「半球环境光 × 反照率」，而按参考稿的四段结构单独着色 */
     'uniform float uJade;',
     'uniform vec3 uJadeDeep; uniform vec3 uJadeMid; uniform vec3 uJadeLite; uniform vec3 uJadeCool;',
@@ -470,6 +476,33 @@
     '    } else {',
     '      col *= 1.0 + 0.05*wv*uFx;',
     '    }',
+    '  }',
+    /* ── P2 釉面：只在质感档 + 瓷器上跑（与 P1 液面互斥）──
+       ① 把闲置的 Cook-Torrance BRDF_GGX 接回来：电介质 f0=0.04，NdotL 收背面；
+          强度不能沿用 uKeyK=0.35 那条极弱主光（原稿镜面峰值只有漫反射的 3%），
+          故用独立系数 uFxPbr.x 标定。
+       ② clearcoat：透明釉的第二层窄镜面（指数 180，远窄于 GGX），边缘按 Schlick 抬反射。
+       ③ 薄胎透光：背光侧掺透射色（白瓷暖 / 青玉浅黄绿），指数 2 只铺背光、不吃受光面。
+       ④ 掠射角亮边：釉口那一圈；青玉原本有 rim，白瓷此前完全没有。
+       青玉自带两道经验高光，全部乘 jadeK=0.45 压半档，避免叠成塑料。 */
+    '  if (uFxKind < 0.5 && uFx > 0.0) {',
+    '    vec3 L = normalize(uKeyDir);',
+    '    vec3 H = normalize(L + V);',
+    '    float dnl = sat(dot(n, L));',
+    '    float dnv = sat(dot(n, V));',
+    '    float dnh = sat(dot(n, H));',
+    '    float dvh = sat(dot(V, H));',
+    '    float jadeK = (uJade > 0.5) ? 0.45 : 1.0;',
+    '    vec3 ggx = BRDF_GGX(n, V, L, pow2(uRough)) * min(1.0, dnl * 1.4);',
+    '    col += ggx * uFxPbr.x * jadeK;',
+    '    float coat = pow(dnh, 180.0);',
+    '    vec3 cf = F_Schlick(vec3(0.04), 1.0, dvh);',
+    '    vec3 coatTint = (uJade > 0.5) ? mix(vec3(1.0), uJadeLite, 0.4) : vec3(1.0);',
+    '    col += coatTint * coat * cf * uFxPbr.y * jadeK;',
+    '    float back = pow(1.0 - dnl, 2.0);',
+    '    vec3 trans = (uJade > 0.5) ? uJadeLite : (dc * vec3(1.0, 0.72, 0.48));',
+    '    col += trans * back * uFxPbr.z * jadeK;',
+    '    col += trans * pow(1.0 - dnv, 5.0) * uFxPbr.y * 0.30 * jadeK;',
     '  }',
     '  col = (uJade > 0.5) ? toneJade(col) : aces(col);',
     '  gl_FragColor = vec4(lin2srgb(col) * uOpacity, uOpacity);',   // 预乘：与 canvas 的 premultipliedAlpha 一致
@@ -664,7 +697,7 @@
     ['uMVP', 'uModel', 'uAlbedo', 'uKeyDir', 'uFillDir', 'uSky', 'uGround', 'uAmbient', 'uRough', 'uEye',
       'uOpacity', 'uShadowTex', 'uShadowMat', 'uShadowOn', 'uShSelf', 'uKeyK', 'uGlow', 'uBodyDim', 'uLineGlow', 'uNightK', 'uPattern', 'uPatternOn', 'uPatMask',
       'uJade', 'uJadeDeep', 'uJadeMid', 'uJadeLite', 'uJadeCool', 'uJadeGain',
-      'uFx', 'uFxKind', 'uTime'].forEach(function (k) {
+      'uFx', 'uFxKind', 'uTime', 'uFxPbr'].forEach(function (k) {
       U[k] = gl.getUniformLocation(progMain, k);
     });
     var D = {
@@ -844,9 +877,11 @@
       gl.uniform1f(U.uPatternOn, state.pattern && state.pattern !== 'none' ? 1 : 0);
       gl.activeTexture(gl.TEXTURE0);
       gl.uniform1f(U.uOpacity, 1);
-      /* P0/P1：质感档总增益 + 液面时间相位（state.elapsed 随自转累加，关自转时定格） */
+      /* 质感档总增益 + 液面时间相位（state.elapsed 随自转累加，关自转时定格） */
       gl.uniform1f(U.uFx, state.enhance ? 1 : 0);
       gl.uniform1f(U.uTime, state.elapsed || 0);
+      /* P2 釉面三系数：集中在文件顶部 FX_PBR，实机标定只改那一处 */
+      gl.uniform3f(U.uFxPbr, FX_PBR.spec, FX_PBR.coat, FX_PBR.sss);
 
       /* [网格, 模型矩阵, 反照率, 是否绘制, 纹样遮罩] 0=素（茶汤、叶底） 1=印（三件瓷器） */
       var pieces = [
