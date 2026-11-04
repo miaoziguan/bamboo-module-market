@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.1","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.2","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.1';
+  var VERSION = '0.9.2';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -2635,12 +2635,31 @@
      只有器物自身的配光（色相派生）与茶汤是本地量。 */
   function css() {
     return '' +
+    /* 【主题底 · 与画中卷「香道」明暗统一】
+       香道的底不在 .scroll-incense（各层 transparent），而在宿主 .scroll-workbench 的
+       linear-gradient(165deg, --bg-gradient-start/mid1/mid2/end)，亮暗由 variables.css
+       的 :root（亮）/ :host(.dark)（暗）四个令牌切换。
+       模块视图是独立 iframe（ModuleView 用 blob URL 加载 module.html）：
+       :host 只在 Shadow DOM 生效 → :host::after 的整页渐变不绘制、:host(.dark) 的
+       暗色令牌也不切换，iframe 里恒取 :root 的亮色值 —— 看上去就是「没有背景」。
+       故这里自己铺同一条渐变，并补一条 :root.dark 覆盖（数值逐条对齐
+       obsidian-bamboo-review/webapp/assets/styles/variables.css 的暗色块），
+       明暗都与香道一致；宿主日后若修好 iframe 的令牌切换，这条覆盖值相同、无害。 */
+    ':root.dark{' +
+      '--bg-gradient-start:hsl(calc(var(--accent-hue,120) + 16),min(100%,calc(30% * var(--accent-saturation-ui,1))),min(18%,calc(13% + var(--accent-lightness-offset,0%))));' +
+      '--bg-gradient-mid1:hsl(calc(var(--accent-hue,120) + 6),min(100%,calc(34% * var(--accent-saturation-ui,1))),min(12%,calc(7% + var(--accent-lightness-offset,0%))));' +
+      '--bg-gradient-mid2:hsl(calc(var(--accent-hue,120) + 28),min(100%,calc(38% * var(--accent-saturation-ui,1))),min(18%,calc(16% + var(--accent-lightness-offset,0%))));' +
+      '--bg-gradient-end:hsl(calc(var(--accent-hue,120) + 2),min(100%,calc(30% * var(--accent-saturation-ui,1))),min(15%,calc(9% + var(--accent-lightness-offset,0%))));' +
+    '}' +
     '.tea-wrap{' +
       '--lo:var(--accent-lightness-offset,0%);' +
       'position:relative;height:100%;min-height:0;display:flex;flex-direction:column;' +
       'font-family:var(--font-family,-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif);' +
       'color:hsl(var(--th),18%,22%);overflow:hidden;user-select:none;-webkit-user-select:none;' +
-      /* 不铺底：与 blog / curtain 一致，坐在宿主的面上，只靠器物自身的明暗与案上柔影立形 */
+      'background:linear-gradient(165deg,' +
+        'var(--bg-gradient-start,#f7faf5) 0%,var(--bg-gradient-mid1,#f2f8f0) 20%,' +
+        'var(--bg-gradient-mid2,#eef6eb) 40%,var(--bg-gradient-mid1,#f2f8f0) 60%,' +
+        'var(--bg-gradient-end,#f6faf4) 80%,var(--bg-gradient-start,#f7faf5) 100%);' +
     '}' +
     '.tea-wrap.tea-dark{' +
       'color:hsl(var(--th),10%,92%);' +
