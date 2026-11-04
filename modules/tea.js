@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.3","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.4","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.3';
+  var VERSION = '0.9.4';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -1697,8 +1697,6 @@
     wrap.className = 'tea-wrap';
     wrap.innerHTML =
       '<div class="tea-stage">' +
-        /* P1-a 案上柔影：纯 DOM/CSS，压在器物之后、背景之上，不进 WebGL 不透明像素 */
-        '<div class="tea-ground" aria-hidden="true"></div>' +
         '<svg class="tea-steam" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
           '<g filter="url(#tea-steam-blur)">' +
             '<path class="tea-wisp w1" d="M44 42c-3-6 4-9 -1-15s3-8 0-13"/>' +
@@ -1792,7 +1790,6 @@
 
     el.wrap = wrap;
     el.stage = wrap.querySelector('.tea-stage');
-    el.ground = wrap.querySelector('.tea-ground');
     el.kbd = wrap.querySelector('.tea-kbd');
     el.verseTop = wrap.querySelector('.tea-verse.v-top');
     el.verseBot = wrap.querySelector('.tea-verse.v-bot');
@@ -1878,8 +1875,9 @@
     audio.setEnabled(state.sound);
 
     /* ── P0 质感档 ──
-       一处开关同时收拢三处增强：WebGL 液面增益（uFx）、DOM 柔影、蒸汽浓度/脉冲。
-       关掉时全部退回 v0.9.2 的形态，合盖逐像素与 three 原稿一致（茶汤本来只在开盖出现）。 */
+       一处开关同时收拢两处增强：WebGL 液面增益（uFx）、蒸汽浓度/脉冲。
+       关掉时全部退回 v0.9.2 的形态，合盖逐像素与 three 原稿一致（茶汤本来只在开盖出现）。
+       注：v0.9.3 的案上柔影已按作者意见移除（视觉价值不足、反而添乱），不再有 DOM 地面层。 */
     function setEnhance(on) {
       state.enhance = !!on;
       wrap.classList.toggle('tea-reference', !state.enhance);
@@ -1893,22 +1891,12 @@
       }
       if (el.enhanceInput) el.enhanceInput.checked = state.enhance;
       if (gl && gl.setEnhance) gl.setEnhance(state.enhance);
-      updateGround();
-    }
-    /* P1-a 柔影随缩放联动：器物放大时影子同比例铺开、略更实；纯 CSS 变量，不触发 WebGL 重绘 */
-    function updateGround() {
-      if (!el.ground) return;
-      var z = 1;
-      try { z = (gl && gl.view ? gl.view().zoom : 1) || 1; } catch (e) { z = 1; }
-      el.ground.style.setProperty('--tea-ground-sx', (0.78 + 0.22 * z).toFixed(3));
-      el.ground.style.setProperty('--tea-ground-op', Math.min(1, 0.55 + 0.45 * z).toFixed(2));
     }
 
     function syncMetrics() {
       if (!gl) return;
       try { var m = gl.metrics(); if (m) M = m; } catch (e) { return; }
       applyLift(state.lift);
-      updateGround();
       syncNarrow();
     }
     /* 侧栏可以窄到 100px 出头，两列列表在那种宽度下必然挤成一团 —— 降到单列 */
@@ -2755,21 +2743,6 @@
     '.tea-wrap.tea-dark{' +
       'color:hsl(var(--th),10%,92%);' +
     '}' +
-
-    /* ── P1-a 案上柔影 ──
-       v0.4.3 去掉整幅绢底后器物一直「悬空」：既没有 WebGL 柔影平面，也没有 CSS 地面投影。
-       这里用纯 DOM 椭圆柔影补上，压在器物之后（z-index:-1），不进 WebGL 不透明像素，
-       所以逐像素基线一个字节都不变；宽/浓随 zoom 由 updateGround() 写 CSS 变量。 */
-    '.tea-ground{position:absolute;left:50%;top:76%;width:64%;height:12%;' +
-      'transform:translateX(-50%) scale(var(--tea-ground-sx,1),1);' +
-      'border-radius:50%;pointer-events:none;z-index:-1;' +
-      'background:radial-gradient(ellipse at center,' +
-        'rgba(var(--black-rgb,0,0,0),.24) 0%,rgba(var(--black-rgb,0,0,0),.10) 42%,' +
-        'rgba(var(--black-rgb,0,0,0),0) 72%);' +
-      'opacity:var(--tea-ground-op,1);transition:opacity var(--duration-slow) var(--ease-cn);}' +
-    /* 暗色底本身已深，黑影几乎看不见：压到 35% 只留一点接地感，别糊成一块黑斑 */
-    '.tea-dark .tea-ground{opacity:calc(var(--tea-ground-op,1) * .35);}' +
-    '.tea-wrap.tea-reference .tea-ground{display:none;}' +
 
     /* z-index:0 让舞台自成层叠上下文：蒸汽才能用负层压到画布（器物）后面，
        同时不影响工具行、命中区这些 z-index:auto 的定位子元素（它们仍在画布之上） */
