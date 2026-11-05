@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.7","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.8","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.7';
+  var VERSION = '0.9.8';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -2654,6 +2654,12 @@
       syncSpinState();
     }
     function closeSettings() { wrap.classList.remove('is-set'); syncSpinState(); }
+    var _saveT = null;
+    function scheduleSave() {
+      if (_saveT) clearTimeout(_saveT);
+      /* 改动即自动写盘：用户无需点「保存」即可实时看到并被保留 */
+      _saveT = setTimeout(function () { _saveT = null; saveConfig(); }, 400);
+    }
     function cancelSettings() {
       if (_snapCfg) {
         state.types = _snapCfg.types.slice();
@@ -2670,6 +2676,8 @@
         setMaterial(_snapCfg.mat || 'porcelain', false);
         setEnhance(_snapCfg.enhance !== false);
         _snapCfg = null;
+        if (_saveT) clearTimeout(_saveT);
+        saveConfig();
       }
       closeSettings();
     }
@@ -2688,6 +2696,7 @@
         var i = state.types.indexOf(t);
         if (i >= 0) state.types.splice(i, 1); else state.types.push(t);
         chip.classList.toggle('on', i < 0);
+        scheduleSave();
       });
     }
     if (el.patChips) {
@@ -2695,6 +2704,7 @@
         var chip = e.target && e.target.closest ? e.target.closest('.tea-chip') : null;
         if (!chip) return;
         setPattern(chip.getAttribute('data-p'), false);
+        scheduleSave();
       });
     }
     if (el.matChips) {
@@ -2702,6 +2712,7 @@
         var chip = e.target && e.target.closest ? e.target.closest('.tea-chip') : null;
         if (!chip) return;
         setMaterial(chip.getAttribute('data-m'), false);
+        scheduleSave();
       });
     }
     if (el.save) el.save.addEventListener('click', toggleCabinet);
@@ -2766,6 +2777,7 @@
       el.range.addEventListener('input', function () {
         state.nightFx[state.night] = clamp(parseFloat(el.range.value) / 100 || 0, 0, 1);
         applyTheme();
+        scheduleSave();
       });
     }
     if (el.nightChips) {
@@ -2773,24 +2785,28 @@
         var chip = e.target && e.target.closest ? e.target.closest('.tea-chip') : null;
         if (!chip) return;
         setNight(chip.getAttribute('data-n'));
+        scheduleSave();
       });
     }
     if (el.enhanceInput) {
       el.enhanceInput.addEventListener('change', function () {
         /* 与其它开关同口径：只改运行态，点「保存」才写盘；「取消」由 _snapCfg 回退 */
         setEnhance(!!el.enhanceInput.checked);
+        scheduleSave();
       });
     }
     if (el.steamInput) {
       el.steamInput.addEventListener('change', function () {
         state.steam = !!el.steamInput.checked;
         wrap.classList.toggle('tea-no-steam', !state.steam);
+        scheduleSave();
       });
     }
     if (el.spinInput) {
       el.spinInput.addEventListener('change', function () {
         state.spin = !!el.spinInput.checked;
         syncSpin();
+        scheduleSave();
       });
     }
     if (el.soundInput) {
@@ -2799,6 +2815,7 @@
         audio.setEnabled(state.sound);
         /* 打开开关时给一记扣托：让人当场听见「开的是什么声音」，比文字说明省一行 */
         if (state.sound) { audio.unlock(); audio.tap(0); }
+        scheduleSave();
       });
     }
     if (el.maskEl) el.maskEl.addEventListener('click', function (e) { if (e.target === el.maskEl) cancelSettings(); });
@@ -3031,11 +3048,11 @@
 
     /* 面板贴底：居中会正好盖住盖碗，调参时看不到器物 */
     '.tea-mask{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;' +
-      'background:hsla(var(--th),20%,12%,.20);padding:12px;z-index:var(--z-layer-overlay,10000);}' +
+      'background:transparent;padding:12px;z-index:var(--z-layer-overlay,10000);pointer-events:auto;}' +
     '.tea-wrap.is-set .tea-mask,.tea-wrap.is-cab .tea-mask{display:flex;}' +
     /* ── 设置面板：尺寸全部写死像素，不再吃宿主的 --space-* ——
        那套令牌是给正文排版的，用在弹窗里会把每行都撑大，整体显笨。 */
-    '.tea-dialog,.tea-cab-panel{display:none;width:100%;max-width:296px;max-height:100%;overflow-y:auto;' +
+    '.tea-dialog,.tea-cab-panel{display:none;width:100%;max-width:296px;max-height:80%;overflow-y:auto;' +
       'scrollbar-width:none;-ms-overflow-style:none;' +
       'background:var(--overlay-surface,#fff);' +
       'border:var(--overlay-border,1px solid rgba(0,0,0,.08));border-radius:14px;' +
