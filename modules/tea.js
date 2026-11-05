@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.8","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.9","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.8';
+  var VERSION = '0.9.9';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -1920,10 +1920,6 @@
           '<button type="button" class="tea-link" data-act="open-cab">' +
             '<span class="tea-link-text">我的茶柜</span><span class="tea-link-arrow">›</span>' +
           '</button>' +
-          '<div class="tea-actions">' +
-            '<button type="button" class="tea-btn ghost" data-act="cancel">取消</button>' +
-            '<button type="button" class="tea-btn primary" data-act="save">保存</button>' +
-          '</div>' +
         '</div>' +
       '</div>';
     root.appendChild(wrap);
@@ -1989,8 +1985,6 @@
     el.steamInput = wrap.querySelector('.tea-steam-input');
     el.spinInput = wrap.querySelector('.tea-spin-input');
     el.soundInput = wrap.querySelector('.tea-sound-input');
-    el.saveBtn = wrap.querySelector('[data-act="save"]');
-    el.cancelBtn = wrap.querySelector('[data-act="cancel"]');
 
     loadConfig();
 
@@ -2818,17 +2812,7 @@
         scheduleSave();
       });
     }
-    if (el.maskEl) el.maskEl.addEventListener('click', function (e) { if (e.target === el.maskEl) cancelSettings(); });
-    if (el.saveBtn) {
-      el.saveBtn.addEventListener('click', function () {
-        var changed = typesChanged(_snapCfg);
-        _snapCfg = null;
-        saveConfig();
-        closeSettings();
-        if (changed) close();
-      });
-    }
-    if (el.cancelBtn) el.cancelBtn.addEventListener('click', cancelSettings);
+    if (el.maskEl) el.maskEl.addEventListener('click', function (e) { if (e.target === el.maskEl) closeSettings(); });
 
     /* ── 卸载 ── */
     function destroy() {
