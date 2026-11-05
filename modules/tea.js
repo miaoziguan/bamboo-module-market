@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.6","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.7","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.6';
+  var VERSION = '0.9.7';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -47,6 +47,9 @@
      sss  = 薄胎背光透射；env = 窗光环境反射强度。
      全部是 ACES 之前的线性加性量，uFx=0 时整块跳过、回到原稿。 */
   var FX_PBR = { spec: 0.08, coat: 0.28, sss: 0.10, env: 0.42 };
+  /* P4 口沿硬边：原始剖面控制点相邻两段夹角超过 50° 即判为折角（盘沿翻折、圈足、盖裙）。
+     调小会更「挺」但可能出现暗带，调大则只剩最尖的几处折返。 */
+  var HARD_EDGE_COS = Math.cos(50 * Math.PI / 180);
 
   /* ══ 曲线：逐字复刻 five 的 CatmullRomCurve3(...,'catmullrom',0.1).getPoints(150) ══ */
   function crAxis(x0, x1, x2, x3, tension, t) {
@@ -77,7 +80,7 @@
     var P = sampleProfile(profile, 150, 0.1), n = P.length;
     var sc = radialScale || 1;
     var cfg = uvCfg || {};
-    var pos = [], nrm = [], idx = [], uv = [];
+    var pos = [], nrm = [], nrmHard = [], idx = [], uv = [];
     /* 「外表面」到哪一点结束：默认取剖面最高点（碗口、盘沿）；
        茶盖的剖面从盖钮最高处往下盘，外表面终点是最低点（盖裙下沿），故可切 min。 */
     var rim = 0, ext = cfg.rim === 'min' ? 1e9 : -1e9;
@@ -102,15 +105,43 @@
     }
     var cumFoot = cum[foot] || 0;
     var wallLen = (cum[rim] - cumFoot) || 1;
+
+    /* ── P4 硬边法线（质感档专用，原稿档仍用下面的平滑 nrm）──
+       Catmull-Rom 把剖面控制点之间的折角全抹成了连续切线，于是口沿、圈足、盖裙
+       读起来像吹出来的圆润玻璃，没有瓷的挺括。这里不改拓扑（顶点/索引完全共用），
+       只在「原始控制点的大折角」对应的采样索引上，把前一点换成入段切线、
+       折角点换成出段切线 —— 相邻两个采样点法线骤变，光栅化时在这一个 quad 上
+       插值出一道极窄的亮边。151 点采样很密，视觉上就是一条硬折线。
+       控制点 k 对应采样索引 k*150/(l-1)（sampleProfile 的等参数采样）。 */
+    var tanHard = [];
+    for (var hq = 0; hq < n; hq++) {
+      var ha = P[Math.max(0, hq - 1)], hb = P[Math.min(n - 1, hq + 1)];
+      var htx = hb[0] - ha[0], hty = hb[1] - ha[1], htl = Math.hypot(htx, hty) || 1;
+      tanHard.push([htx / htl, hty / htl]);
+    }
+    var hlp = profile.length;
+    for (var hk = 1; hk < hlp - 1; hk++) {
+      var hax = profile[hk][0] - profile[hk - 1][0], hay = profile[hk][1] - profile[hk - 1][1];
+      var hbx = profile[hk + 1][0] - profile[hk][0], hby = profile[hk + 1][1] - profile[hk][1];
+      var hla = Math.hypot(hax, hay) || 1, hlb = Math.hypot(hbx, hby) || 1;
+      if ((hax * hbx + hay * hby) / (hla * hlb) < HARD_EDGE_COS) {
+        var hi = Math.round(hk * 150 / (hlp - 1));
+        if (hi > 0 && hi - 1 < n) tanHard[hi - 1] = [hax / hla, hay / hla];
+        if (hi < n) tanHard[hi] = [hbx / hlb, hby / hlb];
+      }
+    }
+
     for (var i = 0; i < n; i++) {
       var r = P[i][0] * sc, y = sc === 1 ? P[i][1] : (0.02 + (P[i][1] - 0.02) * sc);
       var a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)];
       var tr = b[0] - a[0], ty = b[1] - a[1];
       var tl = Math.hypot(tr, ty) || 1; tr /= tl; ty /= tl;
+      var htr = tanHard[i][0], hty = tanHard[i][1];
       for (var j = 0; j <= segments; j++) {
         var ang = j / segments * Math.PI * 2, s = Math.sin(ang), c = Math.cos(ang);
         pos.push(r * s, y, r * c);
         nrm.push(ty * s, -tr, ty * c);
+        nrmHard.push(hty * s, -htr, hty * c);
         /* cfg.full：闭合壳体（茶托、茶盖）按整条剖面弧长归一，v 连续铺满上下两面。
            默认只在「足底→口沿」这段墙面上归一，口沿之后的弧长继续累加（v>1）——
            贴图在 v 方向也是无缝平铺的（见 paintCrackle），多出来的部分自然接住，
@@ -126,7 +157,7 @@
         idx.push(A, C, B, B, C, D);
       }
     }
-    return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), idx: new Uint16Array(idx), uv: new Float32Array(uv) };
+    return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), nrmHard: new Float32Array(nrmHard), idx: new Uint16Array(idx), uv: new Float32Array(uv) };
   }
 
   function buildDisc(r, y, segments) {
@@ -714,6 +745,8 @@
     function mesh(m) {
       return {
         pos: buffer(gl, m.pos), posArr: m.pos, nrm: buffer(gl, m.nrm),
+        /* P4：三件瓷器各多一份硬边法线 buffer；茶汤/叶底没有，回落用平滑 */
+        nrmHard: m.nrmHard && m.nrmHard.length ? buffer(gl, m.nrmHard) : null,
         uv: m.uv && m.uv.length ? buffer(gl, m.uv) : null,
         idx: buffer(gl, m.idx, gl.ELEMENT_ARRAY_BUFFER),
         count: m.idx.length
@@ -735,7 +768,9 @@
       gl.vertexAttribPointer(aP, 3, gl.FLOAT, false, 0, 0);
       var aN = gl.getAttribLocation(prog, 'aNrm');
       if (aN >= 0) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, m.nrm);
+        /* P4：质感档用硬边法线，原稿档仍绑原来的平滑法线 —— 逐像素回退不靠 shader 分支，
+           而是直接换顶点属性 buffer，几何与着色链都不用改。 */
+        gl.bindBuffer(gl.ARRAY_BUFFER, (state.enhance && m.nrmHard) ? m.nrmHard : m.nrm);
         gl.enableVertexAttribArray(aN);
         gl.vertexAttribPointer(aN, 3, gl.FLOAT, false, 0, 0);
       }
@@ -1318,6 +1353,8 @@
         Object.keys(M).forEach(function (k) {
           var m = M[k];
           gl.deleteBuffer(m.pos); gl.deleteBuffer(m.nrm); gl.deleteBuffer(m.idx);
+          if (m.nrmHard) gl.deleteBuffer(m.nrmHard);
+          if (m.uv) gl.deleteBuffer(m.uv);
         });
         [shadowA, shadowB].forEach(function (t) {
           gl.deleteFramebuffer(t.fb); gl.deleteRenderbuffer(t.depth); gl.deleteTexture(t.tex);
