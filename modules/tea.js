@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.10","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.11","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.10';
+  var VERSION = '0.9.11';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -2097,7 +2097,7 @@
           });
         } catch (e) { LOG.warn('[' + ID + '] 夜色效果更新失败', e); }
       }
-      if (gl) render();   /* 主题色/夜色/强度变更后即时重绘，无需等面板关闭 */
+      if (gl) gl.render();   /* 主题色/夜色/强度变更后即时重绘，无需等面板关闭 */
     }
     (function initTheme() {
       var h = parseFloat(readVar('--accent-hue'));
