@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.11","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.12","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.11';
+  var VERSION = '0.9.12';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -2964,7 +2964,7 @@
     '.tea-narrow .tea-find{height:24px;line-height:24px;font-size:11px;margin-top:8px;}' +
     '.tea-narrow .tea-title{font-size:14px;}' +
     '.tea-narrow .tea-actions{padding-top:8px;margin-top:10px;}' +
-    '.tea-wrap.is-open .tea-tools{opacity:0;pointer-events:none;}' +
+    '' +
     '.tea-verse>span{display:inline-block;writing-mode:vertical-rl;text-orientation:mixed;' +
       'letter-spacing:.18em;margin-inline-end:-.18em;}' +
     '.tea-wrap:hover .tea-verse{opacity:.78;}' +
