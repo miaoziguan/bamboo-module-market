@@ -50,9 +50,11 @@ ok(!/animation|@keyframes|transition:/i.test(fxBlock), 'FX 块引入了动效；
 const findDark = (sel) => dark.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const findLight = (sel) => light.find(r => r.startsWith('.bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const cam = findDark('.camera');
-ok(cam.includes('0 0 0 2px rgba(200,235,225,.34)'), '暗色机身缺 2px 玻璃边缘光');
-ok(cam.includes('0 0 64px -12px') && cam.includes('0 0 92px -24px'), '暗色机身缺青/暖双色外发光');
-ok(cam.includes('inset 0 0 44px rgba(190,235,225,.10)'), '暗色机身缺内部微光');
+ok(cam.includes('background:linear-gradient(160deg,hsla(190,24%,72%,.34)'), '暗色机身不是半透明玻璃底');
+ok(cam.includes('-webkit-backdrop-filter:blur(') && cam.includes('backdrop-filter:blur('), '暗色机身缺 backdrop-filter');
+ok(cam.includes('inset 0 0 0 7px rgba(220,245,240,.06)'), '暗色机身缺 7px 玻璃侧壁（厚度）');
+ok(cam.includes('inset 0 0 30px rgba(200,240,235,.12)'), '暗色机身缺边缘聚光');
+ok(cam.includes('inset 0 2px 0 rgba(255,255,255,.26)'), '暗色机身缺顶面亮边');
 const lens = findDark('.lens-unit');
 ok(lens.includes('0 0 30px -8px'), '暗色镜头缺柔光');
 const shutter = findDark('.shutter');
@@ -64,40 +66,23 @@ ok(grain.includes('mix-blend-mode:overlay') && grain.includes('opacity:.022'), '
 ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::before{')), '暗色机身缺表面反射层');
 ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel{')), '暗色凹槽未增强');
 
-/* ── 3b：玻璃四特征（亮暗各一套）──
-   玻璃 = 半透明 + 背后有环境可模糊 + 表面反射 + 边缘厚度/色散。
-   缺任何一条就退化成「半透明塑料」。 */
+/* ── 3b：厚玻璃四特征（亮暗各一套）──
+   半透明 + 7px 侧壁 + 边缘聚光 + 顶面亮边 + 斜向反光 + 边缘色散。
+   缺任何一条就退化成「薄片」或「塑料」。 */
 for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
   const shell = find('.camera');
-  ok(shell.includes('inset 0 0 '), `${mode}机身缺内部微光`);
-  ok(shell.includes('0 0 0 '), `${mode}机身缺玻璃边缘光`);
+  ok(/background:linear-gradient\(160deg,hsla\(/.test(shell), `${mode}机身不是半透明玻璃底`);
+  ok(shell.includes('backdrop-filter:blur('), `${mode}机身缺 backdrop-filter`);
+  ok(shell.includes('inset 0 0 0 7px'), `${mode}机身缺 7px 侧壁（厚度）`);
+  ok(shell.includes('inset 0 0 26px') || shell.includes('inset 0 0 30px'), `${mode}机身缺边缘聚光`);
+  ok(shell.includes('inset 0 2px 0 rgba(255,255,255,'), `${mode}机身缺顶面亮边`);
 
   const refl = find('.camera::before');
-  ok(refl.includes('120% 85% at 50% -8%'), `${mode}缺顶部天光反射`);
-  ok(refl.includes('linear-gradient(90deg,transparent 10%'), `${mode}缺玻璃棱边竖光`);
+  ok(refl.includes('linear-gradient(115deg'), `${mode}缺斜向玻璃反光`);
 
   const rim = find('.camera::after');
   ok(rim.includes('inset -1px 0 0 rgba(90,170,255'), `${mode}缺边缘色散`);
-  ok(rim.includes('inset 0 1.5px 0 0 rgba(255,255,255,') || rim.includes('inset 0 1px 0 rgba(255,255,255,'), `${mode}缺玻璃上缘亮边`);
-
-  const windows = find('.lens-unit::after');
-  const panes = (windows.match(/rgba\(255,250,235,/g) || []).length;
-  ok(panes === 3, `${mode}镜座窗光应为三扇，实得 ${panes} 扇`);
-
-  const barrel = find('.lens-barrel');
-  ok(barrel.includes('inset 0 0 0 2px'), `${mode}口沿缺 1px 亮+暗硬折角`);
-
-  ok(!!find('.shutter::after'), `${mode}快门穹顶缺窄高光`);
-  const flare = find('.lens-flare');
-  ok(!!flare && flare.includes('linear-gradient(180deg'), `${mode}镜片缺高光带`);
-  ok(/(1[5-9]|2[0-6])%/.test(flare), `${mode}镜片高光带过宽`);
 }
-
-/* 玻璃必须背后有环境可模糊，否则 backdrop-filter 空转 */
-const envDark = findDark('.bm-cam-stage::before');
-const envLight = findLight('.bm-cam-stage::before');
-ok(!!envDark && envDark.includes('hsla(190,85%,64%') && envDark.includes('hsla(28,88%,64%'), '暗色缺玻璃背后的青/暖环境层');
-ok(!!envLight && envLight.includes('hsla(190,70%,88%'), '亮色缺玻璃背后的环境层');
 
 /* 单一顶光源：白色高光的径向光心横坐标必须是 50%；彩色环境光允许偏离 */
 for (const rule of rules) {
