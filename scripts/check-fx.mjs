@@ -50,10 +50,9 @@ ok(!/animation|@keyframes|transition:/i.test(fxBlock), 'FX 块引入了动效；
 const findDark = (sel) => dark.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const findLight = (sel) => light.find(r => r.startsWith('.bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const cam = findDark('.camera');
-ok(cam.includes('0 0 0 1px rgba(200,235,225,.22)'), '暗色机身缺玻璃轮廓光');
-ok(cam.includes('0 0 50px -14px') && cam.includes('0 0 40px -12px'), '暗色机身缺灯火/青光晕');
-ok(!/background:/.test(cam), '暗色机身不应覆盖底色（增强只加光，不换关闭态的材质底色）');
-ok(cam.includes('inset 0 0 40px rgba(190,235,225,.08)'), '暗色机身缺内部微光（玻璃通透感）');
+ok(cam.includes('-webkit-backdrop-filter:blur(') && cam.includes('backdrop-filter:blur('), '暗色机身缺 backdrop-filter（玻璃的核心）');
+ok(/background:linear-gradient\(160deg,hsla\(/.test(cam), '暗色机身不是半透明玻璃底');
+ok(cam.includes('inset 0 1px 0 rgba(255,255,255,.26)'), '暗色缺玻璃顶部厚边');
 const lens = findDark('.lens-unit');
 ok(lens.includes('0 0 30px -8px'), '暗色镜头缺柔光');
 const shutter = findDark('.shutter');
@@ -62,36 +61,45 @@ const paper = findDark('.bm-paper');
 ok(paper.includes('0 0 0 1px rgba(255,255,255,.06)'), '暗色纸带缺边缘亮线');
 const grain = findDark('.grain');
 ok(grain.includes('mix-blend-mode:overlay') && grain.includes('opacity:.022'), '暗色颗粒未改成「更细的材质感」');
-ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::before{')), '暗色机身高光/暗角未增强');
+ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::before{')), '暗色机身缺表面反射层');
 ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel{')), '暗色凹槽未增强');
 
-/* ── 3b：瓷器釉面五特征（迁移自 tea.js FX_PBR spec/coat/sss/env + P4 口沿）──
-   亮暗两套都必须齐；缺一条就退化回「普通塑料光影」。 */
+/* ── 3b：玻璃四特征（亮暗各一套）──
+   玻璃 = 半透明 + 背后有环境可模糊 + 表面反射 + 边缘厚度/色散。
+   缺任何一条就退化成「半透明塑料」。 */
 for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
-  const clearcoat = find('.camera::before');
-  ok(clearcoat.includes('ellipse 6%') && clearcoat.includes('at 50% 0%'),
-    `${mode}缺 clearcoat 极窄顶部高光（釉的第二层镜面）`);
-
   const shell = find('.camera');
-  ok(/rgba\(255,(?:190,132|186,126),/.test(shell),
-    `${mode}缺薄胎背光暖透射（tea 的 sss，白瓷暖 1.0/0.72/0.48）`);
-  ok(/0 0 0 (1(\.5)?|2)px rgba\(/.test(shell), `${mode}缺掠射釉口亮边`);
+  ok(shell.includes('backdrop-filter:blur('), `${mode}机身缺 backdrop-filter`);
+  ok(/background:linear-gradient\(160deg,hsla\(/.test(shell), `${mode}玻璃底不是半透明`);
+
+  const refl = find('.camera::before');
+  ok(refl.includes('120% 85% at 50% -8%'), `${mode}缺顶部天光反射`);
+  ok(refl.includes('linear-gradient(90deg,transparent 10%'), `${mode}缺玻璃棱边竖光`);
+
+  const rim = find('.camera::after');
+  ok(rim.includes('inset -1px 0 0 rgba(90,170,255'), `${mode}缺边缘色散`);
+  ok(rim.includes('inset 0 1.5px 0 0 rgba(255,255,255,') || rim.includes('inset 0 1px 0 rgba(255,255,255,'), `${mode}缺玻璃上缘亮边`);
 
   const windows = find('.lens-unit::after');
   const panes = (windows.match(/rgba\(255,250,235,/g) || []).length;
-  ok(panes === 3, `${mode}镜座窗光应为三扇（tea ENV centers 0.12/0.46/0.80），实得 ${panes} 扇`);
+  ok(panes === 3, `${mode}镜座窗光应为三扇，实得 ${panes} 扇`);
 
-  const rim = find('.lens-barrel');
-  ok(rim.includes('inset 0 0 0 2px'), `${mode}口沿缺 1px 亮+暗硬折角`);
+  const barrel = find('.lens-barrel');
+  ok(barrel.includes('inset 0 0 0 2px'), `${mode}口沿缺 1px 亮+暗硬折角`);
 
-  ok(!!find('.shutter::after'), `${mode}快门穹顶缺釉面窄高光`);
+  ok(!!find('.shutter::after'), `${mode}快门穹顶缺窄高光`);
   const flare = find('.lens-flare');
-  ok(!!flare && flare.includes('linear-gradient(180deg'), `${mode}镜片缺釉面高光带`);
-  ok(/(1[5-9]|2[0-6])%/.test(flare), `${mode}镜片高光带过宽（应收在 15~26% 内）`);
+  ok(!!flare && flare.includes('linear-gradient(180deg'), `${mode}镜片缺高光带`);
+  ok(/(1[5-9]|2[0-6])%/.test(flare), `${mode}镜片高光带过宽`);
 }
-/* 单一顶光源：**白色高光**的径向光心横坐标必须是 50%，
-   出现 at 14% 22%,rgba(255,255,255,…) 这类左上白光就等于多了一个光源。
-   彩色 hsla 光斑是环境反射（虹彩），允许偏离 —— 它们不提供方向性照明。 */
+
+/* 玻璃必须背后有环境可模糊，否则 backdrop-filter 空转 */
+const envDark = findDark('.bm-cam-stage::before');
+const envLight = findLight('.bm-cam-stage::before');
+ok(!!envDark && envDark.includes('hsla(190,85%,62%') && envDark.includes('hsla(28,85%,62%'), '暗色缺玻璃背后的青/暖环境层');
+ok(!!envLight && envLight.includes('hsla(190,70%,88%'), '亮色缺玻璃背后的环境层');
+
+/* 单一顶光源：白色高光的径向光心横坐标必须是 50%；彩色环境光允许偏离 */
 for (const rule of rules) {
   for (const m of rule.matchAll(/at\s+(\d+)%\s+(-?\d+)%/g)) {
     if (m[1] === '50') continue;
@@ -100,14 +108,9 @@ for (const rule of rules) {
   }
 }
 
-/* 虹彩釉面：暗色机身至少三层不同色相的彩色柔光斑；镜片与快门有彩色反射。
-   缺了这些就退回单色渐变，也就是作者说的「僵硬」。 */
-const darkBefore = findDark('.camera::before');
-const sheen = (darkBefore.match(/hsla\((?:190|325|45|268|38),/g) || []).length;
-ok(sheen >= 4, `暗色机身虹彩层不足（实得 ${sheen} 层，应为 4 层）`);
+/* 镜片与快门保留彩色反射 */
 const glass = findDark('.lens-glass');
-ok(!!glass && glass.includes('rgba(150,215,255,') && glass.includes('rgba(255,170,235,') && glass.includes('rgba(255,240,190,'),
-  '镜片缺三色釉面反射');
+ok(!!glass && glass.includes('rgba(150,215,255,') && glass.includes('rgba(255,170,235,') && glass.includes('rgba(255,240,190,'), '镜片缺三色釉面反射');
 const shutter2 = findDark('.shutter');
 ok(shutter2.includes('rgba(255,190,235,'), '快门缺粉紫高光');
 
