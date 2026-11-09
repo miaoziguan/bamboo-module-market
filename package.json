@@ -5,6 +5,7 @@
   "description": "竹林模块市场：manifest + modules（含版本一致性校验与 bump 工具）",
   "scripts": {
     "check:versions": "node scripts/check-versions.mjs",
+    "check:fx": "node scripts/check-fx.mjs",
     "bump": "node scripts/bump-version.mjs"
   }
 }

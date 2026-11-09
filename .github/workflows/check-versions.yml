@@ -16,3 +16,5 @@ jobs:
           node-version: 20
       - name: 校验 manifest 与模块文件头版本一致
         run: node scripts/check-versions.mjs
+      - name: 校验 blog 质感增强的关档回退契约
+        run: node scripts/check-fx.mjs

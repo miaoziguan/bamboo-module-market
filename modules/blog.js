@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.11","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.12","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 博客写立得 v0.7
  *
@@ -50,6 +50,8 @@ var __bamboo_module_blog = (function () {
     _searchGen: 0,
     _contentCache: {},
     _avatarUrl: '',
+    // 质感增强：默认开；老配置缺字段时也保持开（不静默退档），只有显式 false 才关闭
+    enhance: true,
 
   };
 
@@ -393,6 +395,60 @@ var __bamboo_module_blog = (function () {
       // 去掉 Chromium 默认那条灰色宽滚动条，观感更贴合竹青排版。
       '#module-view-root,.bm-wrap,.bm-list-region{scrollbar-width:none;-ms-overflow-style:none;}',
       '#module-view-root::-webkit-scrollbar,.bm-wrap::-webkit-scrollbar,.bm-list-region::-webkit-scrollbar{width:0;height:0;display:none;}',
+
+      /* ───────── 质感增强：设置面板开关行（与增强态无关，常驻） ───────── */
+      '.bm-fx-row{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;cursor:pointer;}',
+      '.bm-fx-label{font-size:12px;font-weight:500;color:var(--bm-ink);}',
+      '.bm-fx-input{position:absolute;opacity:0;width:0;height:0;pointer-events:none;}',
+      '.bm-fx-track{position:relative;flex:0 0 auto;width:32px;height:18px;border-radius:999px;background:hsla(var(--accent-hue),20%,calc(50% + var(--accent-lightness-offset,0%)),.30);transition:background-color .12s;}',
+      '.bm-fx-track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .12s;}',
+      '.bm-fx-input:checked ~ .bm-fx-track{background:hsla(var(--accent-hue),36%,calc(40% + var(--accent-lightness-offset,0%)),1);}',
+      '.bm-fx-input:checked ~ .bm-fx-track::after{transform:translateX(14px);}',
+      '.bm-fx-input:focus-visible ~ .bm-fx-track{outline:2px solid ' + BAMBOO + ';outline-offset:2px;}',
+
+      /* ───────── 质感增强（FX-BLOCK-START）─────────
+         全部规则只在 .bm-wrap.bm-fx-on 下命中；关闭时一条都不匹配，
+         基线 CSS 的每个数值原封不动 —— 这是「关档逐值回退」的实现方式，
+         不要把这些值写回基础规则，也不要在切换时调用 render()（会重跑
+         fitCamera() 让相机抖一下）。亮色提层次，暗色重点补轮廓光与辉光。 */
+      /* 亮色：机身三级投影略收实、顶部受光更足，凹槽/搜索内嵌更明显 */
+      '.bm-wrap.bm-fx-on .camera{box-shadow:0 2px 4px -2px rgba(var(--bm-shade),.38),0 24px 40px -18px rgba(var(--bm-shade),.28),0 14px 22px -12px rgba(var(--bm-shade),.24),0 5px 8px -3px rgba(var(--bm-shade),.18),inset 0 2px 3px rgba(255,255,255,1),inset 0 -1px 0 rgba(var(--bm-shade),.22),inset 0 -14px 10px -4px rgba(var(--bm-shade),.26),inset 0 -5px 10px rgba(var(--bm-shade),.14),inset 0 -7px 16px rgba(var(--bm-shade),.10);}',
+      '.bm-wrap.bm-fx-on .camera::after{box-shadow:inset 0 1.5px 0 0 rgba(255,255,255,.82);}',
+      '.bm-wrap.bm-fx-on .top-panel{box-shadow:inset 0 7px 18px rgba(var(--bm-shade),.30),inset 0 -3px 6px rgba(255,255,255,1),inset 0 0 0 1px rgba(255,255,255,.46),0 1px 0 rgba(255,255,255,.95);}',
+      '.bm-wrap.bm-fx-on .bm-search{box-shadow:inset 0 3px 7px rgba(var(--bm-shade),.22),inset 0 -2px 4px rgba(255,255,255,1),0 1px 0 rgba(255,255,255,.95);}',
+      '.bm-wrap.bm-fx-on .lens-unit{box-shadow:0 11px 18px -8px rgba(var(--bm-shade),.34),0 6px 11px -5px rgba(var(--bm-shade),.26),0 3px 5px -2px rgba(var(--bm-shade),.22),inset 0 6px 13px rgba(255,255,255,1),inset 0 -6px 12px rgba(var(--bm-shade),.34),0 0 0 1px rgba(255,255,255,.72);}',
+      '.bm-wrap.bm-fx-on .lens-unit::after{background:radial-gradient(circle at 50% 14%,rgba(255,255,255,.42) 0%,rgba(255,255,255,.10) 24%,transparent 48%);}',
+      '.bm-wrap.bm-fx-on .lens-barrel{box-shadow:inset 0 0 0 1px rgba(255,255,255,.46),inset 0 0 0 2.5px rgba(var(--bm-shade),.12),0 5px 10px -4px rgba(var(--bm-shade),.32),0 2px 4px -1px rgba(var(--bm-shade),.22);}',
+      '.bm-wrap.bm-fx-on .lens-flare{background:linear-gradient(180deg,rgba(255,255,255,.70) 0%,rgba(255,255,255,.30) 9%,rgba(255,255,255,.05) 24%,rgba(255,255,255,0) 36%),radial-gradient(ellipse 64% 42% at 50% 16%,hsla(var(--accent-hue),80%,calc(72% + var(--accent-lightness-offset,0%)),.36),transparent 72%);}',
+      '.bm-wrap.bm-fx-on .shutter{box-shadow:0 6px 10px -8px rgba(var(--bm-shade),.46),0 3px 6px -4px rgba(var(--bm-shade),.32),0 1px 2px rgba(var(--bm-shade),.26),inset 0 -4px 8px rgba(var(--bm-shade),.42),inset 0 3px 8px rgba(255,255,255,.72),0 0 0 2px rgba(252,251,248,.98),0 0 0 3px rgba(var(--bm-shade),.08);}',
+      '.bm-wrap.bm-fx-on .rainbow{filter:saturate(1.14) brightness(1.03);box-shadow:0 3px 5px -2px rgba(var(--bm-shade),.24),0 1px 2px -1px rgba(var(--bm-shade),.18),0 0 0 1px rgba(255,255,255,.40),inset 0 1px 1px rgba(255,255,255,.60),inset 0 -1px 2px rgba(var(--bm-shade),.30);}',
+      '.bm-wrap.bm-fx-on .grain{opacity:.042;}',
+      '.bm-wrap.bm-fx-on .bm-cam-stage::after{background:radial-gradient(ellipse at center,rgba(var(--bm-shade),.14),transparent 72%);filter:blur(7px);}',
+      '.bm-wrap.bm-fx-on .bm-paper{box-shadow:0 1px 2px -1px rgba(var(--bm-shade),.11),0 10px 18px -8px rgba(var(--bm-shade),.10);}',
+      '.bm-wrap.bm-fx-on .bm-paper-item:first-child{box-shadow:inset 0 10px 10px -7px rgba(var(--bm-shade),.42);}',
+      '.bm-wrap.bm-fx-on .brand{text-shadow:0 1px 0 rgba(255,255,255,1),0 1px 2px rgba(var(--bm-shade),.16);}',
+
+      /* 暗色：深色机身在深底上最容易糊成一团 —— 重点补「轮廓光 + 冷柔晕」，
+         再给凹槽、镜座、镜片、快门、纸带各自一道受光边，光影层次才立得住。
+         选择器必须带上 :is(.theme-dark,.dark)，特异性压过基线暗色块。 */
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera{box-shadow:0 0 0 1px rgba(255,255,255,.10),0 0 34px -10px hsla(var(--accent-hue),32%,calc(66% + var(--accent-lightness-offset,0%)),.12),0 24px 40px -18px rgba(0,0,0,.56),0 14px 22px -12px rgba(0,0,0,.44),0 5px 8px -3px rgba(0,0,0,.34),inset 0 2px 3px rgba(255,255,255,.20),inset 0 -14px 10px -4px rgba(0,0,0,.50),inset 0 -2px 3px -1px rgba(255,255,255,.12),inset 0 -5px 10px rgba(0,0,0,.44),inset 0 -7px 16px rgba(0,0,0,.32);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::before{background:radial-gradient(130% 95% at 50% -6%,rgba(255,255,255,.26),transparent 52%),radial-gradient(92% 76% at 50% 108%,rgba(0,0,0,.48),transparent 62%);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::after{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.16),inset 0 1px 0 0 rgba(255,255,255,.12);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel{box-shadow:inset 0 7px 18px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.14),inset 0 -3px 6px rgba(255,255,255,.16),inset 0 0 0 1px rgba(255,255,255,.10),0 1px 0 rgba(255,255,255,.16);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-search{border-color:rgba(255,255,255,.16);box-shadow:inset 0 3px 7px rgba(0,0,0,.68),inset 0 -2px 4px rgba(255,255,255,.12),0 1px 0 rgba(255,255,255,.12);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-unit{box-shadow:0 0 28px -6px hsla(var(--accent-hue),34%,calc(66% + var(--accent-lightness-offset,0%)),.16),0 11px 18px -8px rgba(0,0,0,.60),0 6px 11px -5px rgba(0,0,0,.50),0 3px 5px -2px rgba(0,0,0,.38),inset 0 6px 13px rgba(255,255,255,.26),inset 0 -6px 12px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.20);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-unit::after{background:radial-gradient(circle at 50% 14%,rgba(255,255,255,.60) 0%,rgba(255,255,255,.12) 24%,transparent 48%);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-flare{background:linear-gradient(180deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.44) 9%,rgba(255,255,255,.06) 24%,rgba(255,255,255,0) 36%),radial-gradient(ellipse 64% 42% at 50% 16%,rgba(150,200,255,.52),transparent 72%);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-barrel{box-shadow:inset 0 0 0 1px rgba(255,255,255,.44),inset 0 0 0 2.5px rgba(var(--bm-shade),.18),0 5px 10px -4px rgba(var(--bm-shade),.48),0 2px 4px -1px rgba(var(--bm-shade),.34);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .shutter{box-shadow:0 0 18px -2px rgba(239,59,44,.45),0 6px 10px -7px rgba(0,0,0,.58),0 3px 6px -3px rgba(0,0,0,.48),0 1px 2px rgba(0,0,0,.38),inset 0 -5px 10px rgba(0,0,0,.52),inset 0 4px 9px rgba(255,255,255,.62),0 0 0 2px rgba(60,61,55,.95),0 0 0 3px rgba(0,0,0,.20);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .rainbow{filter:saturate(1.28) brightness(1.12);box-shadow:0 0 12px -2px hsla(var(--accent-hue),40%,calc(60% + var(--accent-lightness-offset,0%)),.20),0 3px 5px -2px rgba(0,0,0,.42),0 1px 2px -1px rgba(0,0,0,.32),0 0 0 1px rgba(255,255,255,.14),inset 0 1px 1px rgba(255,255,255,.30),inset 0 -1px 2px rgba(0,0,0,.40);}',
+      /* 暗底上噪点更容易读成脏斑：增强档反而压低透明度、改用 overlay，只留材质感 */
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .grain{opacity:.022;mix-blend-mode:overlay;}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-cam-stage::after{background:radial-gradient(ellipse at center,rgba(0,0,0,.20),transparent 72%),radial-gradient(ellipse at 50% 0%,hsla(var(--accent-hue),30%,calc(70% + var(--accent-lightness-offset,0%)),.10),transparent 70%);filter:blur(7px);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-paper{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 1px 2px -1px rgba(0,0,0,.34),0 10px 18px -8px rgba(0,0,0,.46);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-paper-item:first-child{box-shadow:inset 0 10px 10px -7px rgba(0,0,0,.72);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .brand{text-shadow:0 1px 0 rgba(255,255,255,.22),0 0 10px hsla(var(--accent-hue),30%,calc(70% + var(--accent-lightness-offset,0%)),.16);}',
+      /* FX-BLOCK-END */
     ].join('');
     document.head.appendChild(st);
     ensureGrainFilter();
@@ -524,7 +580,8 @@ var __bamboo_module_blog = (function () {
     if (!root) return;
 
 
-    var html = '<div class="bm-wrap">';
+    // 增强态由根 class 决定：切换时只 toggle 这个 class，不重建 DOM（相机不会抖）
+    var html = '<div class="bm-wrap' + (state.enhance ? ' bm-fx-on' : '') + '">';
 
     // 相机：参考稿原结构（420×400），外面套缩放基座
     html += '<div class="bm-header">';
@@ -622,6 +679,15 @@ var __bamboo_module_blog = (function () {
         '<div class="bm-group-title">博主资料</div>' +
         formField('nickname', '昵称', '显示在机身品牌位', state.profile.nickname, '博客作者名') +
         formField('avatar', '头像', '留空则显示昵称首字', state.profile.avatar, '图片路径或链接，如 avatar.png') +
+      '</div>' +
+      '<div class="bm-group">' +
+        '<div class="bm-group-title">外观质感</div>' +
+        '<label class="bm-fx-row">' +
+          '<span class="bm-fx-label">质感增强</span>' +
+          '<input type="checkbox" class="bm-fx-input" data-field="enhance"' + (state.enhance ? ' checked' : '') + '>' +
+          '<span class="bm-fx-track" aria-hidden="true"></span>' +
+        '</label>' +
+        '<div class="bm-hint">加强机身光影与纸感；暗色下另加轮廓光与镜头辉光</div>' +
       '</div>' +
       '<div class="bm-actions">' +
       '<button class="bm-btn" data-act="cancel">取消</button>' +
@@ -723,6 +789,13 @@ var __bamboo_module_blog = (function () {
     // 彩虹条点/拖 → 过片定位（seek）
     var rainbow = root.querySelector('.rainbow');
     if (rainbow) rainbow.addEventListener('pointerdown', onRainbowSeek);
+    // 质感开关即时预览：只切根 class，不写 state、不重建 DOM。
+    // 取消时会 render()，class 自动按 state.enhance 复原；保存时才落盘。
+    var fx = root.querySelector('[data-field="enhance"]');
+    if (fx) fx.addEventListener('change', function (e) {
+      var wrap = root.querySelector('.bm-wrap');
+      if (wrap) wrap.classList.toggle('bm-fx-on', !!e.target.checked);
+    });
   }
 
   function onRootClick(e) {
@@ -887,6 +960,8 @@ var __bamboo_module_blog = (function () {
     if (rf) state.rootFolder = rf.value.trim() || '博客';
     if (nick) state.profile.nickname = nick.value.trim();
     if (av) state.profile.avatar = av.value.trim();
+    var fx = root.querySelector('[data-field="enhance"]');
+    if (fx) state.enhance = !!fx.checked;
     state.editing = false;
     persist();
     if (/^https?:\/\//i.test(state.profile.avatar || '')) {
@@ -909,6 +984,7 @@ var __bamboo_module_blog = (function () {
     api.saveData({
       profile: state.profile,
       rootFolder: state.rootFolder,
+      enhance: state.enhance,
     });
   }
 
@@ -977,9 +1053,17 @@ var __bamboo_module_blog = (function () {
           state.profile.avatar = d.profile.avatar || '';
         }
         if (d.rootFolder) state.rootFolder = d.rootFolder;
+        // 老配置没有 enhance 字段 → 保持默认开；只有显式 false 才是用户主动关掉
+        state.enhance = !(d.enhance === false);
 
       }
     } catch (e) { /* 首次运行无数据 */ }
+
+    // 配置是 mount 之后异步读回的：refresh() 正常路径会 render() 并按 state 带对 class，
+    // 这里兜住 listFiles 失败 / 静默刷新等不重建 DOM 的分支，避免「配置已关、界面仍开增强」。
+    // 只 toggle class，不重建相机。
+    var wrap = root && root.querySelector('.bm-wrap');
+    if (wrap) wrap.classList.toggle('bm-fx-on', !!state.enhance);
 
     state._avatarUrl = '';
     var av0 = state.profile.avatar;

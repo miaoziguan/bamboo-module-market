@@ -81,11 +81,20 @@ bamboo-module-market/
   git config core.hooksPath .githooks
   ```
 
+## blog 质感增强的回退契约
+
+`blog.js` 的「质感增强」是一层**只在 `.bm-fx-on` 下命中**的 CSS 覆盖规则，基础 CSS 一个值都不改 ——
+所以关掉开关时，画面逐值回到 v0.7.11 基线。这个约束由 `npm run check:fx`
+（`scripts/check-fx.mjs`，零依赖）固化：所有增强规则必须带 `.bm-fx-on`、基线关键值不得被改、
+亮/暗两套增强与暗色轮廓光/辉光齐全、预览回调不得调用 `render()`（重建会让相机抖一下）。
+CI 与 `check:versions` 一起跑。改动 blog 的光影时若触发它，先确认是不是把增强值写回基线了。
+
 ### 发布流程（推荐）
 
 ```sh
 npm run bump -- blog --patch     # 同步 bump manifest + 文件头（自动 patch+1）
 # 手动补充 manifest 里该模块 description 的变更说明
 npm run check:versions           # 复核一致性
+npm run check:fx                 # 复核质感增强的关档回退
 git add -A && git commit -m "module: blog vX.Y.Z —— …" && git push origin main
 ```
