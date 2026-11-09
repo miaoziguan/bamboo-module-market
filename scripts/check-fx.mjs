@@ -50,13 +50,13 @@ ok(!/animation|@keyframes|transition:/i.test(fxBlock), 'FX 块引入了动效；
 const findDark = (sel) => dark.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const findLight = (sel) => light.find(r => r.startsWith('.bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const cam = findDark('.camera');
-ok(cam.includes('-webkit-backdrop-filter:blur(') && cam.includes('backdrop-filter:blur('), '暗色机身缺 backdrop-filter（玻璃的核心）');
-ok(/background:linear-gradient\(160deg,hsla\(/.test(cam), '暗色机身不是半透明玻璃底');
-ok(cam.includes('inset 0 1px 0 rgba(255,255,255,.26)'), '暗色缺玻璃顶部厚边');
+ok(cam.includes('0 0 0 2px rgba(200,235,225,.34)'), '暗色机身缺 2px 玻璃边缘光');
+ok(cam.includes('0 0 64px -12px') && cam.includes('0 0 92px -24px'), '暗色机身缺青/暖双色外发光');
+ok(cam.includes('inset 0 0 44px rgba(190,235,225,.10)'), '暗色机身缺内部微光');
 const lens = findDark('.lens-unit');
 ok(lens.includes('0 0 30px -8px'), '暗色镜头缺柔光');
 const shutter = findDark('.shutter');
-ok(shutter.includes('rgba(239,59,44,.30)'), '暗色快门缺暖色辉光');
+ok(shutter.includes('rgba(239,59,44,.48)'), '暗色快门缺暖色辉光');
 const paper = findDark('.bm-paper');
 ok(paper.includes('0 0 0 1px rgba(255,255,255,.06)'), '暗色纸带缺边缘亮线');
 const grain = findDark('.grain');
@@ -69,8 +69,8 @@ ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-pa
    缺任何一条就退化成「半透明塑料」。 */
 for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
   const shell = find('.camera');
-  ok(shell.includes('backdrop-filter:blur('), `${mode}机身缺 backdrop-filter`);
-  ok(/background:linear-gradient\(160deg,hsla\(/.test(shell), `${mode}玻璃底不是半透明`);
+  ok(shell.includes('inset 0 0 '), `${mode}机身缺内部微光`);
+  ok(shell.includes('0 0 0 '), `${mode}机身缺玻璃边缘光`);
 
   const refl = find('.camera::before');
   ok(refl.includes('120% 85% at 50% -8%'), `${mode}缺顶部天光反射`);
@@ -96,7 +96,7 @@ for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
 /* 玻璃必须背后有环境可模糊，否则 backdrop-filter 空转 */
 const envDark = findDark('.bm-cam-stage::before');
 const envLight = findLight('.bm-cam-stage::before');
-ok(!!envDark && envDark.includes('hsla(190,85%,62%') && envDark.includes('hsla(28,85%,62%'), '暗色缺玻璃背后的青/暖环境层');
+ok(!!envDark && envDark.includes('hsla(190,85%,64%') && envDark.includes('hsla(28,88%,64%'), '暗色缺玻璃背后的青/暖环境层');
 ok(!!envLight && envLight.includes('hsla(190,70%,88%'), '亮色缺玻璃背后的环境层');
 
 /* 单一顶光源：白色高光的径向光心横坐标必须是 50%；彩色环境光允许偏离 */
@@ -112,7 +112,15 @@ for (const rule of rules) {
 const glass = findDark('.lens-glass');
 ok(!!glass && glass.includes('rgba(150,215,255,') && glass.includes('rgba(255,170,235,') && glass.includes('rgba(255,240,190,'), '镜片缺三色釉面反射');
 const shutter2 = findDark('.shutter');
-ok(shutter2.includes('rgba(255,190,235,'), '快门缺粉紫高光');
+ok(shutter2.includes('rgba(255,200,240,'), '快门缺粉紫高光');
+
+/* 玻璃集中处：镜头、快门、彩虹条 —— 小尺寸下这几处才看得见 */
+const lensGlass = findDark('.lens-glass');
+ok(lensGlass.includes('inset 0 0 24px rgba(180,230,255,.20)'), '镜片缺玻璃内光');
+const shutterGlass = findDark('.shutter');
+ok(shutterGlass.includes('inset 0 0 16px rgba(255,140,110,.34)'), '快门缺玻璃内透光');
+const rainbowGlass = findDark('.rainbow');
+ok(rainbowGlass.includes('saturate(1.45)'), '彩虹条未玻璃化（饱和度不足）');
 
 /* ── 2：基线未被改动 ── */
 ok(!baseCss.includes('.bm-fx-on'), '基础 CSS 段出现了 .bm-fx-on（增强值渗回基线，关档不干净）');
