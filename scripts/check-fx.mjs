@@ -81,7 +81,7 @@ for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
   ok(refl.includes('linear-gradient(115deg'), `${mode}缺斜向玻璃反光`);
 
   const rim = find('.camera::after');
-  ok(rim.includes('inset -1px 0 0 rgba(90,170,255'), `${mode}缺边缘色散`);
+  ok(rim.includes('inset 0 1.5px 0 0 rgba(255,255,255,') || rim.includes('inset 0 1px 0 0 rgba(255,255,255,'), `${mode}缺上缘细高光`);
 }
 
 /* 单一顶光源：白色高光的径向光心横坐标必须是 50%；彩色环境光允许偏离 */
