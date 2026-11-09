@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.14","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.15","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.14';
+  var VERSION = '0.9.15';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -1920,11 +1920,13 @@
                 '<button type="button" class="tea-chip night" data-n="crackle">裂纹</button>' +
               '</div>' +
             '</div>' +
-            '<div class="tea-field">' +
+            /* 强度是「夜色效果」的从属参数，不再是平级字段 */
+            '<div class="tea-field tea-field-sub">' +
               '<span class="tea-field-label">强度</span>' +
               '<input type="range" class="tea-range" min="0" max="100" step="1" aria-label="夜色效果强度" />' +
             '</div>' +
-            '<label class="tea-field tea-switch" title="关闭后回到与 three 原稿逐像素一致的对照画面">' +
+            /* 开关与上面的「选哪项」不是同类，用一道淡线隔开 */
+            '<label class="tea-field tea-switch tea-field-divider" title="关闭后回到与 three 原稿逐像素一致的对照画面">' +
               '<span class="tea-field-label">质感增强</span>' +
               '<input type="checkbox" class="tea-enhance-input" aria-label="质感增强（关闭为原稿对照档）" />' +
               '<span class="track" aria-hidden="true"></span></label>' +
@@ -3010,12 +3012,16 @@
     '.tea-narrow .tea-row{padding:4px 4px;margin:0 -4px;}' +
     '.tea-narrow .tea-find{height:24px;line-height:24px;font-size:11px;margin-top:8px;}' +
     '.tea-narrow .tea-title{font-size:14px;}' +
+    /* 特异性需高于 .tea-dialog .tea-title，否则窄面板会被拉回 15px */
+    '.tea-narrow .tea-dialog .tea-title{font-size:14px;letter-spacing:.06em;text-indent:.06em;}' +
     '.tea-narrow .tea-actions{padding-top:8px;margin-top:10px;}' +
     /* 窄面板：字段名列再收 6px，茶类仍保持 4 列（2 字标签在 ~43px 列宽里放得下） */
     '.tea-narrow .tea-field{grid-template-columns:52px minmax(0,1fr);column-gap:6px;}' +
     '.tea-narrow .tea-chips-types{gap:2px 4px;}' +
     '.tea-narrow .tea-chips[data-row]{gap:2px 4px;}' +
     '.tea-narrow .tea-sec{margin-top:10px;}' +
+    '.tea-narrow .tea-sec-h{gap:6px;letter-spacing:.12em;text-indent:.12em;}' +
+    '.tea-narrow .tea-field-sub .tea-field-label{padding-left:8px;}' +
     '' +
     '.tea-verse>span{display:inline-block;writing-mode:vertical-rl;text-orientation:mixed;' +
       'letter-spacing:.18em;margin-inline-end:-.18em;}' +
@@ -3192,22 +3198,32 @@
     '.tea-cab-empty{grid-column:1 / -1;padding:12px 0;text-align:center;font-size:11px;line-height:1.6;' +
       'color:var(--text-tertiary,currentColor);opacity:.75;}' +
     /* ── 设置面板信息层级 ──
-       旧版 14 个平级块（标题/说明/3 个 .tea-sub + 3 组 chips/滑块/4 个开关），
-       字号与缩进几乎一致，看不出「页头 → 分组 → 字段」三级，选项还用 flex-wrap 随机换行。
-       现在：页头（标题 + 说明 + 一条分隔线）→ 3 个分组（小标题 + 色条）→
-       每条字段走同一套两列栅格 [58px 字段名 | 1fr 控件]，开关统一右对齐，
-       底部入口独立成一级。尺寸仍全部写死像素，不吃宿主的 --space-*。 */
-    '.tea-head{padding-bottom:10px;border-bottom:1px solid var(--bamboo-border,rgba(0,0,0,.12));}' +
-    '.tea-hint{margin-top:4px;font-size:11px;line-height:1.45;color:var(--text-tertiary,currentColor);opacity:.85;}' +
-    '.tea-sec{margin-top:12px;}' +
-    '.tea-sec-h{display:flex;align-items:center;gap:6px;margin-bottom:6px;' +
-      'font-size:10px;line-height:1.2;letter-spacing:.12em;color:var(--text-tertiary,currentColor);opacity:.9;}' +
-    '.tea-sec-h::before{content:"";display:inline-block;flex:0 0 auto;width:3px;height:10px;' +
-      'border-radius:2px;background:var(--bm-primary,#3a7a3a);opacity:.75;}' +
-    '.tea-wrap.tea-dark .tea-sec-h::before{background:hsl(var(--th),42%,68%);}' +
+       三级：页头（主标题 + 说明，居中）→ 3 个分组（标题居中，两侧对称细线）→
+       每条字段走同一套两列栅格 [58px 字段名 | 1fr 控件]，开关统一右对齐。
+       字段名是「行标签」不是标题，必须保持左对齐，否则栅格左边界会散掉。
+       另两处从属关系：强度缩进弱化、归属夜色效果；开关区与属性区用淡线隔开。
+       尺寸仍全部写死像素，不吃宿主的 --space-*。 */
+    '.tea-head{text-align:center;padding-bottom:12px;border-bottom:1px solid var(--bamboo-border,rgba(0,0,0,.12));}' +
+    /* .tea-title 同时被茶柜面板复用，居中必须限定在 .tea-dialog 内 */
+    '.tea-dialog .tea-title{text-align:center;font-size:15px;letter-spacing:.08em;text-indent:.08em;}' +
+    '.tea-hint{margin-top:5px;font-size:11px;line-height:1.45;text-align:center;' +
+      'color:var(--text-tertiary,currentColor);opacity:.85;}' +
+    '.tea-sec{margin-top:14px;}' +
+    '.tea-sec-h{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;' +
+      'font-size:10px;line-height:1.2;letter-spacing:.18em;text-indent:.18em;text-align:center;' +
+      'color:var(--text-tertiary,currentColor);opacity:.9;}' +
+    /* 两侧细线由 flex:1 自动等长，标题自然居中；暗色跟随 --bamboo-border 翻转，
+       不再单写一条线的暗色规则（旧版只翻 ::before，居中后会左右不对称）。 */
+    '.tea-sec-h::before,.tea-sec-h::after{content:"";display:block;flex:1 1 auto;height:1px;' +
+      'background:var(--bamboo-border,rgba(0,0,0,.16));}' +
     '.tea-field{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;' +
       'column-gap:8px;min-height:22px;margin-top:4px;}' +
     '.tea-field-label{font-size:11px;line-height:1.3;color:var(--text-secondary,inherit);white-space:nowrap;}' +
+    /* 从属项与分区：让「选哪项」和「开不开」不再挤在同一视觉层 */
+    '.tea-field-sub{margin-top:2px;}' +
+    '.tea-field-sub .tea-field-label{padding-left:10px;font-size:10px;opacity:.72;}' +
+    '.tea-field-divider{border-top:1px solid var(--bamboo-border,rgba(0,0,0,.12));' +
+      'padding-top:7px;margin-top:8px;}' +
     /* 选项改成栅格列：茶类 4 列、器物 2 列，列首对齐，不再 flex-wrap 随机散开 */
     '.tea-chips{display:grid;gap:2px 8px;margin:0;min-width:0;}' +
     '.tea-chips-types{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:2px;}' +
