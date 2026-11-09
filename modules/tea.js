@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.13","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.14","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.13';
+  var VERSION = '0.9.14';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -1884,39 +1884,61 @@
           '</div>' +
         '</div>' +
         '<div class="tea-dialog" role="dialog" aria-modal="true" aria-label="吃茶设置">' +
-          '<div class="tea-title">今天想喝什么</div>' +
-          '<div class="tea-hint">不选就整柜都算，选了就只从这几类里抽</div>' +
-          '<div class="tea-chips">' +
-            TYPES.map(function (t) { return '<button type="button" class="tea-chip" data-t="' + t + '">' + t + '</button>'; }).join('') +
+          /* 页头：一级信息（这盏茶抽什么），说明独占一行，不与控件混排 */
+          '<div class="tea-head">' +
+            '<div class="tea-title">今天想喝什么</div>' +
+            '<div class="tea-hint">不选就整柜都算，选了就只从这几类里抽</div>' +
           '</div>' +
-          '<div class="tea-sub">杯身纹样</div>' +
-          '<div class="tea-chips" data-row="pattern">' +
-            '<button type="button" class="tea-chip pat" data-p="none">素瓷</button>' +
-            '<button type="button" class="tea-chip pat" data-p="crackle">冰裂</button>' +
-          '</div>' +
-          '<div class="tea-sub">釉色</div>' +
-          '<div class="tea-chips" data-row="mat">' +
-            '<button type="button" class="tea-chip mat" data-m="porcelain">白瓷</button>' +
-            '<button type="button" class="tea-chip mat" data-m="jade">青玉</button>' +
-          '</div>' +
-          '<div class="tea-sub">夜色效果</div>' +
-          '<div class="tea-chips" data-row="night">' +
-            '<button type="button" class="tea-chip night" data-n="body">微光</button>' +
-            '<button type="button" class="tea-chip night" data-n="crackle">裂纹</button>' +
-          '</div>' +
-          '<div class="tea-slider-row">' +
-            '<span class="tea-slider-label">强度</span>' +
-            '<input type="range" class="tea-range" min="0" max="100" step="1" aria-label="夜色效果强度" />' +
-          '</div>' +
-          '<label class="tea-switch" title="关闭后回到与 three 原稿逐像素一致的对照画面"><span class="tea-switch-label">质感增强</span>' +
-            '<input type="checkbox" class="tea-enhance-input" aria-label="质感增强（关闭为原稿对照档）" />' +
-            '<span class="track" aria-hidden="true"></span></label>' +
-          '<label class="tea-switch"><span class="tea-switch-label">蒸汽</span>' +
-            '<input type="checkbox" class="tea-steam-input" /><span class="track" aria-hidden="true"></span></label>' +
-          '<label class="tea-switch"><span class="tea-switch-label">缓慢自转</span>' +
-            '<input type="checkbox" class="tea-spin-input" /><span class="track" aria-hidden="true"></span></label>' +
-          '<label class="tea-switch"><span class="tea-switch-label">瓷器音效</span>' +
-            '<input type="checkbox" class="tea-sound-input" /><span class="track" aria-hidden="true"></span></label>' +
+          /* 分组 1：抽茶范围 */
+          '<section class="tea-sec">' +
+            '<div class="tea-sec-h">茶类</div>' +
+            '<div class="tea-chips tea-chips-types">' +
+              TYPES.map(function (t) { return '<button type="button" class="tea-chip" data-t="' + t + '">' + t + '</button>'; }).join('') +
+            '</div>' +
+          '</section>' +
+          /* 分组 2：器物外观 —— 每行「字段名 + 控件」走同一套两列网格 */
+          '<section class="tea-sec">' +
+            '<div class="tea-sec-h">器物外观</div>' +
+            '<div class="tea-field">' +
+              '<span class="tea-field-label">杯身纹样</span>' +
+              '<div class="tea-chips" data-row="pattern">' +
+                '<button type="button" class="tea-chip pat" data-p="none">素瓷</button>' +
+                '<button type="button" class="tea-chip pat" data-p="crackle">冰裂</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="tea-field">' +
+              '<span class="tea-field-label">釉色</span>' +
+              '<div class="tea-chips" data-row="mat">' +
+                '<button type="button" class="tea-chip mat" data-m="porcelain">白瓷</button>' +
+                '<button type="button" class="tea-chip mat" data-m="jade">青玉</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="tea-field">' +
+              '<span class="tea-field-label">夜色效果</span>' +
+              '<div class="tea-chips" data-row="night">' +
+                '<button type="button" class="tea-chip night" data-n="body">微光</button>' +
+                '<button type="button" class="tea-chip night" data-n="crackle">裂纹</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="tea-field">' +
+              '<span class="tea-field-label">强度</span>' +
+              '<input type="range" class="tea-range" min="0" max="100" step="1" aria-label="夜色效果强度" />' +
+            '</div>' +
+            '<label class="tea-field tea-switch" title="关闭后回到与 three 原稿逐像素一致的对照画面">' +
+              '<span class="tea-field-label">质感增强</span>' +
+              '<input type="checkbox" class="tea-enhance-input" aria-label="质感增强（关闭为原稿对照档）" />' +
+              '<span class="track" aria-hidden="true"></span></label>' +
+          '</section>' +
+          /* 分组 3：动效与声音 */
+          '<section class="tea-sec">' +
+            '<div class="tea-sec-h">动效与声音</div>' +
+            '<label class="tea-field tea-switch"><span class="tea-field-label">蒸汽</span>' +
+              '<input type="checkbox" class="tea-steam-input" /><span class="track" aria-hidden="true"></span></label>' +
+            '<label class="tea-field tea-switch"><span class="tea-field-label">缓慢自转</span>' +
+              '<input type="checkbox" class="tea-spin-input" /><span class="track" aria-hidden="true"></span></label>' +
+            '<label class="tea-field tea-switch"><span class="tea-field-label">瓷器音效</span>' +
+              '<input type="checkbox" class="tea-sound-input" /><span class="track" aria-hidden="true"></span></label>' +
+          '</section>' +
           '<button type="button" class="tea-link" data-act="open-cab">' +
             '<span class="tea-link-text">我的茶柜</span><span class="tea-link-arrow">›</span>' +
           '</button>' +
@@ -2919,9 +2941,9 @@
       'opacity:0;pointer-events:none;}' +
     '.tea-kbd:focus-visible{opacity:1;outline:2px dashed hsl(var(--th),32%,52%);outline-offset:-6px;' +
       'border-radius:var(--radius-md,14px);}' +
-    '.tea-sub{margin-top:var(--space-14);font-size:var(--type-xs);color:var(--text-tertiary,currentColor);' +
-      'opacity:.9;letter-spacing:.04em;}' +
-    '.tea-chips[data-row=pattern],.tea-chips[data-row=mat]{grid-template-columns:repeat(2,1fr);margin-top:var(--space-8);}' +
+    /* 设置面板的字段 / 分组 / 选项栅格统一定义在下方「设置面板」段：
+       这里不再散落 .tea-sub 与 .tea-chips[data-row] 的重复覆盖，避免同一属性两处打架。
+       注意：注释不能带 `+`，否则下一行字符串会被一元加号转成 NaN，样式串里出现 "NaN"。 */
     /* 负层：热气从盖碗「后面」升起，下半截被器身挡住（它本来就是从碗口往外冒的） */
     '.tea-steam{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:-1;' +
       'opacity:0;transition:opacity var(--duration-slow) var(--ease-cn);}' +
@@ -2989,12 +3011,18 @@
     '.tea-narrow .tea-find{height:24px;line-height:24px;font-size:11px;margin-top:8px;}' +
     '.tea-narrow .tea-title{font-size:14px;}' +
     '.tea-narrow .tea-actions{padding-top:8px;margin-top:10px;}' +
+    /* 窄面板：字段名列再收 6px，茶类仍保持 4 列（2 字标签在 ~43px 列宽里放得下） */
+    '.tea-narrow .tea-field{grid-template-columns:52px minmax(0,1fr);column-gap:6px;}' +
+    '.tea-narrow .tea-chips-types{gap:2px 4px;}' +
+    '.tea-narrow .tea-chips[data-row]{gap:2px 4px;}' +
+    '.tea-narrow .tea-sec{margin-top:10px;}' +
     '' +
     '.tea-verse>span{display:inline-block;writing-mode:vertical-rl;text-orientation:mixed;' +
       'letter-spacing:.18em;margin-inline-end:-.18em;}' +
     '.tea-wrap:hover .tea-verse{opacity:.78;}' +
-    '.tea-slider-row{display:flex;align-items:center;gap:10px;margin-top:10px;}' +
-    '.tea-slider-label{font-size:11px;letter-spacing:.02em;opacity:.72;white-space:nowrap;}' +
+    /* 滑块行已并入 .tea-field 两列网格（见设置面板段），此处只补栅格内的宽度。
+       同上：注释行不带 `+`，否则下一行字符串会被一元加号吞成 NaN。 */
+    '.tea-field .tea-range{width:100%;}' +
     /* 滑块沿用 curtain 模块 .bc-range 的组件写法（轨道 4px / 拇指 14px），
        并保留那条必须的 min-height:0 —— base.css 有全局 :where(input) 触控地板，
        不显式清零会被撑到 44px 高，把面板顶变形。 */
@@ -3075,9 +3103,10 @@
     '.tea-cab-panel::-webkit-scrollbar,.tea-dialog::-webkit-scrollbar{display:none;}' +
     '.tea-wrap.is-set .tea-dialog,.tea-wrap.is-cab .tea-cab-panel{display:block;}' +
     '.tea-title{font-size:14px;font-weight:600;line-height:1.3;letter-spacing:.02em;}' +
+    /* 底部入口独立成一级：与最后一组之间拉出更明确的间隔与分隔线 */
     '.tea-link{display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;' +
-      'margin-top:12px;padding:7px 0 0;border:0;border-top:1px solid hsla(var(--th),18%,46%,.14);' +
-      'background:none;cursor:pointer;font-family:inherit;font-size:11px;' +
+      'margin-top:14px;padding:10px 0 0;border:0;border-top:1px solid var(--bamboo-border,rgba(0,0,0,.12));' +
+      'background:none;cursor:pointer;font-family:inherit;font-size:12px;' +
       'color:var(--text-tertiary,currentColor);opacity:.85;}' +
     '.tea-link:hover{opacity:1;color:var(--bm-primary,#3a7a3a);}' +
     '.tea-link-arrow{opacity:.6;}' +
@@ -3162,12 +3191,29 @@
     /* 空状态要跨两列，否则在网格里只占半行、文字被挤断 */
     '.tea-cab-empty{grid-column:1 / -1;padding:12px 0;text-align:center;font-size:11px;line-height:1.6;' +
       'color:var(--text-tertiary,currentColor);opacity:.75;}' +
+    /* ── 设置面板信息层级 ──
+       旧版 14 个平级块（标题/说明/3 个 .tea-sub + 3 组 chips/滑块/4 个开关），
+       字号与缩进几乎一致，看不出「页头 → 分组 → 字段」三级，选项还用 flex-wrap 随机换行。
+       现在：页头（标题 + 说明 + 一条分隔线）→ 3 个分组（小标题 + 色条）→
+       每条字段走同一套两列栅格 [58px 字段名 | 1fr 控件]，开关统一右对齐，
+       底部入口独立成一级。尺寸仍全部写死像素，不吃宿主的 --space-*。 */
+    '.tea-head{padding-bottom:10px;border-bottom:1px solid var(--bamboo-border,rgba(0,0,0,.12));}' +
     '.tea-hint{margin-top:4px;font-size:11px;line-height:1.45;color:var(--text-tertiary,currentColor);opacity:.85;}' +
-    '.tea-sub{margin-top:12px;font-size:11px;letter-spacing:.06em;color:var(--text-tertiary,currentColor);opacity:.9;}' +
-    /* 选项用纯文字排布，不做胶囊：行内自然换行，省下边框与内边距的垂直空间 */
-    '.tea-chips{display:flex;flex-wrap:wrap;gap:4px 13px;margin-top:8px;}' +
+    '.tea-sec{margin-top:12px;}' +
+    '.tea-sec-h{display:flex;align-items:center;gap:6px;margin-bottom:6px;' +
+      'font-size:10px;line-height:1.2;letter-spacing:.12em;color:var(--text-tertiary,currentColor);opacity:.9;}' +
+    '.tea-sec-h::before{content:"";display:inline-block;flex:0 0 auto;width:3px;height:10px;' +
+      'border-radius:2px;background:var(--bm-primary,#3a7a3a);opacity:.75;}' +
+    '.tea-wrap.tea-dark .tea-sec-h::before{background:hsl(var(--th),42%,68%);}' +
+    '.tea-field{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;' +
+      'column-gap:8px;min-height:22px;margin-top:4px;}' +
+    '.tea-field-label{font-size:11px;line-height:1.3;color:var(--text-secondary,inherit);white-space:nowrap;}' +
+    /* 选项改成栅格列：茶类 4 列、器物 2 列，列首对齐，不再 flex-wrap 随机散开 */
+    '.tea-chips{display:grid;gap:2px 8px;margin:0;min-width:0;}' +
+    '.tea-chips-types{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:2px;}' +
+    '.tea-chips[data-row]{grid-template-columns:repeat(2,minmax(0,1fr));}' +
     /* min-height:0 同 .tea-range —— 宿主 base.css 对表单控件有全局触控地板 */
-    '.tea-chip{padding:2px 0;min-height:0;border:0;background:none;border-radius:0;' +
+    '.tea-chip{padding:2px 0;min-height:0;border:0;background:none;border-radius:0;text-align:left;' +
       'color:var(--text-tertiary,currentColor);font-size:11px;line-height:1.4;' +
       'cursor:pointer;white-space:nowrap;opacity:.85;' +
       'transition:color var(--duration-fast) var(--ease-cn),opacity var(--duration-fast) var(--ease-cn);}' +
@@ -3175,10 +3221,11 @@
     '.tea-chip.on{color:var(--bm-primary,#3a7a3a);opacity:1;font-weight:600;}' +
     '.tea-chip:hover{opacity:1;}' +
     '.tea-chip:focus-visible,.tea-btn:focus-visible{outline:2px solid var(--bm-primary,#3a7a3a);outline-offset:2px;}' +
-    '.tea-switch{display:flex;align-items:center;justify-content:space-between;margin-top:12px;' +
-      'font-size:11px;color:var(--text-secondary,inherit);cursor:pointer;position:relative;}' +
+    /* .tea-switch 同时带 .tea-field：栅格由后者提供，这里只补语义与间距，
+       并把 track 推到第二列右端，让四个开关与上方所有控件共用同一条右边界。 */
+    '.tea-switch{margin-top:4px;font-size:11px;color:var(--text-secondary,inherit);cursor:pointer;position:relative;}' +
     '.tea-switch input{position:absolute;opacity:0;width:0;height:0;pointer-events:none;}' +
-    '.tea-switch .track{width:30px;height:17px;border-radius:999px;flex:0 0 auto;' +
+    '.tea-switch .track{width:30px;height:17px;border-radius:999px;flex:0 0 auto;justify-self:end;' +
       'background:var(--bamboo-border,rgba(0,0,0,.16));position:relative;' +
       'transition:background-color var(--duration-fast) var(--ease-cn);}' +
     '.tea-switch .track::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;' +
