@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.22","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.23","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 博客写立得 v0.7
  *
@@ -417,6 +417,7 @@ var __bamboo_module_blog = (function () {
          所有高光圆心仍在正上方，遵守 blog 的单一顶光源规矩。 */
       /* 亮色：机身三级投影略收实 + 瓷器釉层（掠射亮边、薄胎透光） */
       '.bm-wrap.bm-fx-on .bm-cam-stage::before{content:"";position:absolute;inset:0;z-index:0;border-radius:32px;background:radial-gradient(55% 45% at 20% 16%,hsla(190,70%,88%,.55),transparent 70%),radial-gradient(48% 40% at 82% 26%,hsla(28,80%,88%,.45),transparent 70%),linear-gradient(165deg,#fffdf8 0%,#f4f0e6 60%,#e8e2d4 100%);filter:blur(6px);pointer-events:none;}',
+      '.bm-wrap.bm-fx-on{background:linear-gradient(165deg,hsl(var(--accent-hue,120),22%,min(96%,calc(93% + var(--accent-lightness-offset,0%)))) 0%,hsl(var(--accent-hue,120),24%,min(93%,calc(90% + var(--accent-lightness-offset,0%)))) 20%,hsl(var(--accent-hue,120),26%,min(94%,calc(91% + var(--accent-lightness-offset,0%)))) 40%,hsl(var(--accent-hue,120),24%,min(93%,calc(90% + var(--accent-lightness-offset,0%)))) 60%,hsl(var(--accent-hue,120),22%,min(91%,calc(88% + var(--accent-lightness-offset,0%)))) 80%,hsl(var(--accent-hue,120),22%,min(96%,calc(93% + var(--accent-lightness-offset,0%)))) 100%);}',
       '.bm-wrap.bm-fx-on .camera{background:linear-gradient(160deg,hsla(190,30%,98%,.58) 0%,hsla(200,25%,92%,.46) 45%,hsla(205,25%,84%,.40) 100%);-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1px 0 rgba(255,255,255,.30),inset 0 0 0 1px rgba(255,255,255,.42),0 0 0 1px rgba(255,255,255,.55),0 2px 4px -2px rgba(var(--bm-shade),.28),0 24px 40px -18px rgba(var(--bm-shade),.22),0 14px 22px -12px rgba(var(--bm-shade),.18),0 5px 8px -3px rgba(var(--bm-shade),.14),inset 0 -18px 24px -12px rgba(255,190,132,.10);}',
       /* clearcoat：透明釉的第二层窄镜面（tea 里 pow(dnh,180)），比漫射高光窄得多 */
       '.bm-wrap.bm-fx-on .camera::before{background:radial-gradient(ellipse 6% 22% at 50% 0%,rgba(255,255,255,.45),rgba(255,255,255,.08) 45%,transparent 72%),radial-gradient(120% 85% at 50% -8%,rgba(255,255,255,.55),transparent 56%),linear-gradient(90deg,transparent 10%,rgba(255,255,255,.35) 15%,transparent 21%),radial-gradient(92% 76% at 50% 108%,rgba(var(--bm-shade),.16),transparent 62%);}',
@@ -477,6 +478,7 @@ var __bamboo_module_blog = (function () {
       /* 品牌字在暗底上偏灰、白色描边又像浮在表面：提亮到 66%（19px 粗体，AA 大文本 3:1 足够），
          描边压低，改成一圈同色相的极淡光晕 */
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .brand{color:hsl(var(--accent-hue),10%,calc(72% + var(--accent-lightness-offset,0%)));text-shadow:0 1px 0 rgba(255,255,255,.18),0 0 12px hsla(30,80%,65%,.10);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on{background:linear-gradient(165deg,hsl(calc(var(--accent-hue,120) + 16),min(100%,calc(30% * var(--accent-saturation-ui,1))),min(10%,calc(6% + var(--accent-lightness-offset,0%)))) 0%,hsl(calc(var(--accent-hue,120) + 6),min(100%,calc(34% * var(--accent-saturation-ui,1))),min(7%,calc(3% + var(--accent-lightness-offset,0%)))) 20%,hsl(calc(var(--accent-hue,120) + 28),min(100%,calc(38% * var(--accent-saturation-ui,1))),min(12%,calc(8% + var(--accent-lightness-offset,0%)))) 40%,hsl(calc(var(--accent-hue,120) + 6),min(100%,calc(34% * var(--accent-saturation-ui,1))),min(7%,calc(3% + var(--accent-lightness-offset,0%)))) 60%,hsl(calc(var(--accent-hue,120) + 2),min(100%,calc(30% * var(--accent-saturation-ui,1))),min(9%,calc(5% + var(--accent-lightness-offset,0%)))) 80%,hsl(calc(var(--accent-hue,120) + 16),min(100%,calc(30% * var(--accent-saturation-ui,1))),min(10%,calc(6% + var(--accent-lightness-offset,0%)))) 100%);}',
       /* FX-BLOCK-END */
     ].join('');
     document.head.appendChild(st);
