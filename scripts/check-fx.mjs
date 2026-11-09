@@ -50,14 +50,14 @@ ok(!/animation|@keyframes|transition:/i.test(fxBlock), 'FX 块引入了动效；
 const findDark = (sel) => dark.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const findLight = (sel) => light.find(r => r.startsWith('.bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const cam = findDark('.camera');
-ok(cam.includes('0 0 0 2px rgba(200,235,225,.40)'), '暗色机身缺轮廓光');
-ok(cam.includes('0 0 56px -14px'), '暗色机身缺冷色柔晕');
-ok(cam.includes('linear-gradient(160deg'), '暗色机身未重建青瓷底色（形体会糊进背景）');
-ok(/min\(62%,max\(50%,calc\(56%/.test(cam), '暗色机身底色缺明度上下限（滑块极端时形体仍会糊）');
+ok(cam.includes('0 0 0 1px rgba(200,235,225,.22)'), '暗色机身缺玻璃轮廓光');
+ok(cam.includes('0 0 50px -14px') && cam.includes('0 0 40px -12px'), '暗色机身缺灯火/青光晕');
+ok(!/background:/.test(cam), '暗色机身不应覆盖底色（增强只加光，不换关闭态的材质底色）');
+ok(cam.includes('inset 0 0 40px rgba(190,235,225,.08)'), '暗色机身缺内部微光（玻璃通透感）');
 const lens = findDark('.lens-unit');
 ok(lens.includes('0 0 30px -8px'), '暗色镜头缺柔光');
 const shutter = findDark('.shutter');
-ok(shutter.includes('rgba(239,59,44,.38)'), '暗色快门缺暖色辉光');
+ok(shutter.includes('rgba(239,59,44,.30)'), '暗色快门缺暖色辉光');
 const paper = findDark('.bm-paper');
 ok(paper.includes('0 0 0 1px rgba(255,255,255,.06)'), '暗色纸带缺边缘亮线');
 const grain = findDark('.grain');
@@ -102,8 +102,8 @@ for (const rule of rules) {
 
 /* 虹彩釉面：暗色机身至少三层不同色相的彩色柔光斑；镜片与快门有彩色反射。
    缺了这些就退回单色渐变，也就是作者说的「僵硬」。 */
-const darkCam = findDark('.camera');
-const sheen = (darkCam.match(/hsla\((?:190|325|45|268),/g) || []).length;
+const darkBefore = findDark('.camera::before');
+const sheen = (darkBefore.match(/hsla\((?:190|325|45|268|38),/g) || []).length;
 ok(sheen >= 4, `暗色机身虹彩层不足（实得 ${sheen} 层，应为 4 层）`);
 const glass = findDark('.lens-glass');
 ok(!!glass && glass.includes('rgba(150,215,255,') && glass.includes('rgba(255,170,235,') && glass.includes('rgba(255,240,190,'),
