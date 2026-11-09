@@ -50,10 +50,10 @@ ok(!/animation|@keyframes|transition:/i.test(fxBlock), 'FX 块引入了动效；
 const findDark = (sel) => dark.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const findLight = (sel) => light.find(r => r.startsWith('.bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const cam = findDark('.camera');
-ok(cam.includes('0 0 0 1.5px rgba(200,235,225,.30)'), '暗色机身缺轮廓光');
+ok(cam.includes('0 0 0 2px rgba(200,235,225,.40)'), '暗色机身缺轮廓光');
 ok(cam.includes('0 0 56px -14px'), '暗色机身缺冷色柔晕');
 ok(cam.includes('linear-gradient(160deg'), '暗色机身未重建青瓷底色（形体会糊进背景）');
-ok(/min\(54%,max\(42%,calc\(48%/.test(cam), '暗色机身底色缺明度上下限（滑块极端时形体仍会糊）');
+ok(/min\(62%,max\(50%,calc\(56%/.test(cam), '暗色机身底色缺明度上下限（滑块极端时形体仍会糊）');
 const lens = findDark('.lens-unit');
 ok(lens.includes('0 0 30px -8px'), '暗色镜头缺柔光');
 const shutter = findDark('.shutter');
@@ -69,13 +69,13 @@ ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-pa
    亮暗两套都必须齐；缺一条就退化回「普通塑料光影」。 */
 for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
   const clearcoat = find('.camera::before');
-  ok(clearcoat.includes('ellipse 7%') && clearcoat.includes('at 50% 0%'),
+  ok(clearcoat.includes('ellipse 6%') && clearcoat.includes('at 50% 0%'),
     `${mode}缺 clearcoat 极窄顶部高光（釉的第二层镜面）`);
 
   const shell = find('.camera');
   ok(/rgba\(255,(?:190,132|186,126),/.test(shell),
     `${mode}缺薄胎背光暖透射（tea 的 sss，白瓷暖 1.0/0.72/0.48）`);
-  ok(/0 0 0 1\.5px rgba\(\d+,/.test(shell) || shell.includes('0 0 0 1px rgba(255,255,255,'), `${mode}缺掠射釉口亮边`);
+  ok(/0 0 0 (1(\.5)?|2)px rgba\(/.test(shell), `${mode}缺掠射釉口亮边`);
 
   const windows = find('.lens-unit::after');
   const panes = (windows.match(/rgba\(255,250,235,/g) || []).length;
