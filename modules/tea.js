@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.12","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.13","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.12';
+  var VERSION = '0.9.13';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -2885,6 +2885,31 @@
     '.tea-wrap.tea-dark{' +
       'color:hsl(var(--th),10%,92%);' +
     '}' +
+    /* 【设置面板 / 茶柜的明暗适配】
+       模块 iframe 是普通文档、没有 Shadow DOM：宿主 variables.css 的暗色令牌全部写在
+       :host(.dark) 里，在这里永远不生效（上面 :root.dark 只补了 4 个背景渐变令牌）。
+       弹窗吃的是 --overlay-surface / --text-* 这套语义变量，若不在模块侧补暗色值，
+       暗色主题下仍取 :root 的亮色令牌 —— 近白底 + 深字，一块刺眼的白板，即「没有明暗适配」。
+       这里按宿主 :host(.dark) 的明度公式逐条对齐，改用模块自己的 --th / --lo 跟随色相与
+       明度滑块；作用域只落在 .tea-wrap.tea-dark 内，不越权改全局。.tea-dark 由
+       applyTheme() 响应 html class 与 theme:changed 双向切换，切主题即时生效。 */
+    '.tea-wrap.tea-dark{' +
+      /* 面板底封顶 18%：明度滑块 +15% 时若抬到 25%，暗色 tertiary/hover 文字会跌破 AA；
+         对齐宿主 --bg-gradient-* 的 min(18%,…) 上限口径。 */
+      '--overlay-surface:hsl(var(--th),18%,min(18%,calc(10% + var(--lo,0%))));' +
+      '--overlay-border:1px solid hsla(var(--th),18%,60%,.22);' +
+      '--overlay-shadow:0 8px 32px rgba(0,0,0,.5);' +
+      '--text-primary:hsl(var(--th),18%,calc(91% + var(--lo,0%)));' +
+      '--text-secondary:hsl(var(--th),15%,calc(74% + var(--lo,0%)));' +
+      '--text-tertiary:hsl(var(--th),11%,calc(66% + var(--lo,0%)));' +
+      '--text-on-accent:#fff;' +
+      '--bamboo-border:hsla(var(--th),18%,60%,.22);' +
+      /* 主色在暗底上同时当「主要按钮」的底（白字）与 hover 文字色：压到 34% 保白字
+         在所有色相下都达 AA（黄相 60° 最差，38% 时只有 4.14:1，34% 时 4.99:1）。
+         hover / focus 由下面亮一档的 hsl(--th,42%,68%) 规则接管。
+         min() 封顶：明度滑块拉到 +15% 时若跟着提亮到 49%，白字对比会掉到 3.4:1。 */
+      '--bm-primary:hsl(var(--th),32%,min(34%,calc(34% + var(--lo,0%))));' +
+    '}' +
 
     /* z-index:0 让舞台自成层叠上下文：蒸汽才能用负层压到画布（器物）后面，
        同时不影响工具行、命中区这些 z-index:auto 的定位子元素（它们仍在画布之上） */
@@ -3043,8 +3068,9 @@
       'border:var(--overlay-border,1px solid rgba(0,0,0,.08));border-radius:14px;' +
       'box-shadow:var(--overlay-shadow,0 12px 32px rgba(0,0,0,.18));padding:16px;' +
       'color:var(--text-primary,inherit);}' +
-    /* 底色与文字色都取宿主语义变量（--overlay-surface / --text-*），二者必须配套翻转——
-       这是宿主主题的约定：暗色下宿主同时翻两者，模块不越权替宿主配色。
+    /* 底色与文字色都取宿主语义变量（--overlay-surface / --text-*），二者必须配套翻转。
+       宿主在 Shadow DOM 下靠 :host(.dark) 翻转，但模块 iframe 没有 shadow host、翻不到，
+       故暗色值由上方 .tea-wrap.tea-dark 在模块作用域内补齐（不越权改全局）。
        对比度核查按此口径执行（16/16 通过，见 PATCHES.md PATCH-44）。 */
     '.tea-cab-panel::-webkit-scrollbar,.tea-dialog::-webkit-scrollbar{display:none;}' +
     '.tea-wrap.is-set .tea-dialog,.tea-wrap.is-cab .tea-cab-panel{display:block;}' +
@@ -3071,9 +3097,16 @@
     '.tea-seg-btn{padding:2px 0;min-height:0;line-height:1.1;white-space:nowrap;text-align:left;border:0;background:none;cursor:pointer;' +
       'font-family:inherit;font-size:11px;color:var(--text-tertiary,currentColor);opacity:.8;}' +
     '.tea-seg-btn.on{color:var(--bm-primary,#3a7a3a);opacity:1;font-weight:600;}' +
-    /* 暗色底上主色回退值对比度只有 3.1（实测 #3a7a3a on #1d231d），选中色按主题双向定明暗保 AA */
+    /* 暗色底上主色回退值对比度只有 3.1（实测 #3a7a3a on #1d231d），选中色按主题双向定明暗保 AA。
+       弹窗里所有用 --bm-primary 作 hover / focus 色的元素一并抬到亮一档，否则暗底上看不清。 */
     '.tea-wrap.tea-dark .tea-seg-btn.on,.tea-wrap.tea-dark .tea-chip.on,.tea-wrap.tea-dark .tea-row-t.on,' +
-    '.tea-wrap.tea-dark .tea-row-n:hover,.tea-wrap.tea-dark .tea-save{color:hsl(var(--th),42%,58%);}' +
+    '.tea-wrap.tea-dark .tea-row-n:hover,.tea-wrap.tea-dark .tea-save,' +
+    '.tea-wrap.tea-dark .tea-link:hover,.tea-wrap.tea-dark .tea-x:hover,' +
+    '.tea-wrap.tea-dark .tea-row-t:hover,.tea-wrap.tea-dark .tea-cab-del:hover{color:hsl(var(--th),42%,68%);}' +
+    '.tea-wrap.tea-dark .tea-find:focus{border-bottom-color:hsl(var(--th),42%,68%);}' +
+    '.tea-wrap.tea-dark .tea-chip:focus-visible,.tea-wrap.tea-dark .tea-btn:focus-visible,' +
+    '.tea-wrap.tea-dark .tea-switch input:focus-visible ~ .track{outline-color:hsl(var(--th),42%,68%);}' +
+    '.tea-wrap.tea-dark .tea-switch input:checked ~ .track{background:hsl(var(--th),42%,68%);}' +
     '.tea-wrap:not(.tea-dark) .tea-seg-btn.on,.tea-wrap:not(.tea-dark) .tea-chip.on,' +
     '.tea-wrap:not(.tea-dark) .tea-row-t.on,.tea-wrap:not(.tea-dark) .tea-row-n:hover,' +
     '.tea-wrap:not(.tea-dark) .tea-save{color:hsl(var(--th),42%,30%);}' +
