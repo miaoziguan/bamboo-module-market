@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.13","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.14","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 博客写立得 v0.7
  *
@@ -418,17 +418,17 @@ var __bamboo_module_blog = (function () {
       /* 亮色：机身三级投影略收实 + 瓷器釉层（掠射亮边、薄胎透光） */
       '.bm-wrap.bm-fx-on .camera{box-shadow:0 0 0 1px rgba(255,255,255,.28),0 2px 4px -2px rgba(var(--bm-shade),.38),0 24px 40px -18px rgba(var(--bm-shade),.28),0 14px 22px -12px rgba(var(--bm-shade),.24),0 5px 8px -3px rgba(var(--bm-shade),.18),inset 0 2px 3px rgba(255,255,255,1),inset 0 -1px 0 rgba(var(--bm-shade),.22),inset 0 -14px 10px -4px rgba(var(--bm-shade),.26),inset 0 -5px 10px rgba(var(--bm-shade),.14),inset 0 -7px 16px rgba(var(--bm-shade),.10),inset 0 -18px 24px -12px rgba(255,190,132,.15);}',
       /* clearcoat：透明釉的第二层窄镜面（tea 里 pow(dnh,180)），比漫射高光窄得多 */
-      '.bm-wrap.bm-fx-on .camera::before{background:radial-gradient(ellipse 9% 40% at 50% 1%,rgba(255,255,255,.62),rgba(255,255,255,.12) 42%,transparent 72%),radial-gradient(130% 95% at 50% -6%,rgba(255,255,255,.72),transparent 52%),radial-gradient(92% 76% at 50% 108%,rgba(var(--bm-shade),.16),transparent 62%);}',
+      '.bm-wrap.bm-fx-on .camera::before{background:radial-gradient(ellipse 7% 28% at 50% 0%,rgba(255,255,255,.42),rgba(255,255,255,.08) 45%,transparent 72%),radial-gradient(120% 85% at 50% -8%,rgba(255,255,255,.58),transparent 56%),radial-gradient(92% 76% at 50% 108%,rgba(var(--bm-shade),.18),transparent 62%);}',
       '.bm-wrap.bm-fx-on .camera::after{box-shadow:inset 0 1.5px 0 0 rgba(255,255,255,.92);}',
       '.bm-wrap.bm-fx-on .top-panel{box-shadow:inset 0 7px 18px rgba(var(--bm-shade),.30),inset 0 -3px 6px rgba(255,255,255,1),inset 0 0 0 1px rgba(255,255,255,.46),0 1px 0 rgba(255,255,255,.95);}',
       '.bm-wrap.bm-fx-on .bm-search{box-shadow:inset 0 3px 7px rgba(var(--bm-shade),.22),inset 0 -2px 4px rgba(255,255,255,1),0 1px 0 rgba(255,255,255,.95);}',
       '.bm-wrap.bm-fx-on .lens-unit{box-shadow:0 11px 18px -8px rgba(var(--bm-shade),.34),0 6px 11px -5px rgba(var(--bm-shade),.26),0 3px 5px -2px rgba(var(--bm-shade),.22),inset 0 6px 13px rgba(255,255,255,1),inset 0 -6px 12px rgba(var(--bm-shade),.34),0 0 0 1px rgba(255,255,255,.72);}',
       /* 窗光：tea 的 ENV centers 0.12/0.46/0.80 三扇柔边窗格，暖白 255,250,235；
          只映在圆形釉面（镜座）上，不铺满整机，免得读成条纹 */
-      '.bm-wrap.bm-fx-on .lens-unit::after{background:linear-gradient(90deg,transparent 6%,rgba(255,250,235,.18) 12%,transparent 19%,transparent 40%,rgba(255,250,235,.15) 46%,transparent 53%,transparent 74%,rgba(255,250,235,.18) 80%,transparent 87%),radial-gradient(circle at 50% 14%,rgba(255,255,255,.42) 0%,rgba(255,255,255,.10) 24%,transparent 48%);}',
+      '.bm-wrap.bm-fx-on .lens-unit::after{background:linear-gradient(90deg,transparent 6%,rgba(255,250,235,.14) 12%,transparent 19%,transparent 40%,rgba(255,250,235,.12) 46%,transparent 53%,transparent 74%,rgba(255,250,235,.14) 80%,transparent 87%),radial-gradient(circle at 50% 14%,rgba(255,255,255,.32) 0%,rgba(255,255,255,.08) 24%,transparent 48%);}',
       /* 口沿硬折角（tea P4）：1px 亮线紧邻 1px 暗线，转折锐利不糊 */
       '.bm-wrap.bm-fx-on .lens-barrel{box-shadow:inset 0 0 0 1px rgba(255,255,255,.66),inset 0 0 0 2px rgba(var(--bm-shade),.18),inset 0 0 0 2.5px rgba(var(--bm-shade),.12),0 5px 10px -4px rgba(var(--bm-shade),.32),0 2px 4px -1px rgba(var(--bm-shade),.22);}',
-      '.bm-wrap.bm-fx-on .lens-flare{background:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.34) 5%,rgba(255,255,255,.10) 12%,rgba(255,255,255,0) 26%),radial-gradient(ellipse 64% 42% at 50% 16%,hsla(var(--accent-hue),80%,calc(72% + var(--accent-lightness-offset,0%)),.36),transparent 72%);}',
+      '.bm-wrap.bm-fx-on .lens-flare{background:linear-gradient(180deg,rgba(255,255,255,.76) 0%,rgba(255,255,255,.26) 5%,rgba(255,255,255,.08) 12%,rgba(255,255,255,0) 26%),radial-gradient(ellipse 58% 36% at 50% 14%,hsla(var(--accent-hue),80%,calc(72% + var(--accent-lightness-offset,0%)),.30),transparent 72%);}',
       '.bm-wrap.bm-fx-on .shutter{box-shadow:0 6px 10px -8px rgba(var(--bm-shade),.46),0 3px 6px -4px rgba(var(--bm-shade),.32),0 1px 2px rgba(var(--bm-shade),.26),inset 0 -4px 8px rgba(var(--bm-shade),.42),inset 0 3px 8px rgba(255,255,255,.72),0 0 0 2px rgba(252,251,248,.98),0 0 0 3px rgba(var(--bm-shade),.08);}',
       '.bm-wrap.bm-fx-on .shutter::after{background:linear-gradient(180deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.08) 14%,transparent 30%),radial-gradient(circle at 50% 20%,#ff7f6c,#a80c06);}',
       '.bm-wrap.bm-fx-on .rainbow{filter:saturate(1.14) brightness(1.03);box-shadow:0 3px 5px -2px rgba(var(--bm-shade),.24),0 1px 2px -1px rgba(var(--bm-shade),.18),0 0 0 1px rgba(255,255,255,.40),inset 0 1px 1px rgba(255,255,255,.60),inset 0 -1px 2px rgba(var(--bm-shade),.30);}',
@@ -438,29 +438,34 @@ var __bamboo_module_blog = (function () {
       '.bm-wrap.bm-fx-on .bm-paper-item:first-child{box-shadow:inset 0 10px 10px -7px rgba(var(--bm-shade),.42);}',
       '.bm-wrap.bm-fx-on .brand{text-shadow:0 1px 0 rgba(255,255,255,1),0 1px 2px rgba(var(--bm-shade),.16);}',
 
-      /* 暗色：深色机身在深底上最容易糊成一团 —— 重点补「轮廓光 + 冷柔晕」，
-         再给凹槽、镜座、镜片、快门、纸带各自一道受光边，光影层次才立得住。
-         釉面在暗底上最出彩：clearcoat 窄高光、薄胎暖透光、掠射釉口亮边、
-         镜座三扇窗光、口沿硬折角全部给到；透光走下缘背光侧，不违单一顶光源。
+      /* 暗色：上一版把高光堆在「宽天光 + 大 clearcoat」上，暗底看起来像一块
+         反光的黑塑料。这一版换思路 —— 瓷器在暗处靠「形体」而不是「亮带」：
+         ① 机身底色提成青瓷（明度 40%→21%，低饱和），先让轮廓从背景里出来；
+         ② 高光收窄到 7%×26% 的顶部窄弧，天光降到 .10，去掉横贯机身的白带；
+         ③ 内侧 1px 暗边 + 外侧 1px 釉口亮边，做出釉层厚度；
+         ④ 下缘冷色环境反光为主、暖透光只留 .08，避免暗底泛黄。
+         釉面五特征（clearcoat/薄胎/掠射/窗光/硬折角）保留，只是全部降一档。
          选择器必须带上 :is(.theme-dark,.dark)，特异性压过基线暗色块。 */
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera{box-shadow:0 0 0 1px rgba(255,255,255,.14),0 0 34px -10px hsla(var(--accent-hue),32%,calc(66% + var(--accent-lightness-offset,0%)),.12),0 24px 40px -18px rgba(0,0,0,.56),0 14px 22px -12px rgba(0,0,0,.44),0 5px 8px -3px rgba(0,0,0,.34),inset 0 2px 3px rgba(255,255,255,.20),inset 0 -14px 10px -4px rgba(0,0,0,.50),inset 0 -2px 3px -1px rgba(255,255,255,.12),inset 0 -5px 10px rgba(0,0,0,.44),inset 0 -7px 16px rgba(0,0,0,.32),inset 0 -20px 26px -12px rgba(255,186,126,.20);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::before{background:radial-gradient(ellipse 9% 42% at 50% 1%,rgba(255,255,255,.48),rgba(255,255,255,.10) 42%,transparent 72%),radial-gradient(130% 95% at 50% -6%,rgba(255,255,255,.26),transparent 52%),radial-gradient(92% 76% at 50% 108%,rgba(0,0,0,.48),transparent 62%);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::after{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.20),inset 0 1px 0 0 rgba(255,255,255,.22);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel{box-shadow:inset 0 7px 18px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.14),inset 0 -3px 6px rgba(255,255,255,.16),inset 0 0 0 1px rgba(255,255,255,.10),0 1px 0 rgba(255,255,255,.16);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-search{border-color:rgba(255,255,255,.16);box-shadow:inset 0 3px 7px rgba(0,0,0,.68),inset 0 -2px 4px rgba(255,255,255,.12),0 1px 0 rgba(255,255,255,.12);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-unit{box-shadow:0 0 28px -6px hsla(var(--accent-hue),34%,calc(66% + var(--accent-lightness-offset,0%)),.16),0 11px 18px -8px rgba(0,0,0,.60),0 6px 11px -5px rgba(0,0,0,.50),0 3px 5px -2px rgba(0,0,0,.38),inset 0 6px 13px rgba(255,255,255,.26),inset 0 -6px 12px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.20);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-unit::after{background:linear-gradient(90deg,transparent 6%,rgba(255,250,235,.24) 12%,transparent 19%,transparent 40%,rgba(255,250,235,.20) 46%,transparent 53%,transparent 74%,rgba(255,250,235,.24) 80%,transparent 87%),radial-gradient(circle at 50% 14%,rgba(255,255,255,.60) 0%,rgba(255,255,255,.12) 24%,transparent 48%);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-flare{background:linear-gradient(180deg,rgba(255,255,255,.98) 0%,rgba(255,255,255,.46) 5%,rgba(255,255,255,.10) 12%,rgba(255,255,255,0) 26%),radial-gradient(ellipse 64% 42% at 50% 16%,rgba(150,200,255,.52),transparent 72%);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-barrel{box-shadow:inset 0 0 0 1px rgba(255,255,255,.58),inset 0 0 0 2px rgba(0,0,0,.34),inset 0 0 0 2.5px rgba(var(--bm-shade),.18),0 5px 10px -4px rgba(var(--bm-shade),.48),0 2px 4px -1px rgba(var(--bm-shade),.34);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .shutter{box-shadow:0 0 18px -2px rgba(239,59,44,.45),0 6px 10px -7px rgba(0,0,0,.58),0 3px 6px -3px rgba(0,0,0,.48),0 1px 2px rgba(0,0,0,.38),inset 0 -5px 10px rgba(0,0,0,.52),inset 0 4px 9px rgba(255,255,255,.62),0 0 0 2px rgba(60,61,55,.95),0 0 0 3px rgba(0,0,0,.20);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .shutter::after{background:linear-gradient(180deg,rgba(255,255,255,.78) 0%,rgba(255,255,255,.10) 14%,transparent 30%),radial-gradient(circle at 50% 20%,#ff7f6c,#a80c06);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .rainbow{filter:saturate(1.28) brightness(1.12);box-shadow:0 0 12px -2px hsla(var(--accent-hue),40%,calc(60% + var(--accent-lightness-offset,0%)),.20),0 3px 5px -2px rgba(0,0,0,.42),0 1px 2px -1px rgba(0,0,0,.32),0 0 0 1px rgba(255,255,255,.14),inset 0 1px 1px rgba(255,255,255,.30),inset 0 -1px 2px rgba(0,0,0,.40);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera{background:radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 55%),linear-gradient(160deg,hsl(var(--accent-hue),9%,min(46%,max(34%,calc(40% + var(--accent-lightness-offset,0%))))) 0%,hsl(var(--accent-hue),9%,min(42%,max(31%,calc(36% + var(--accent-lightness-offset,0%))))) 28%,hsl(var(--accent-hue),10%,min(36%,max(26%,calc(30% + var(--accent-lightness-offset,0%))))) 60%,hsl(var(--accent-hue),10%,min(29%,max(21%,calc(24% + var(--accent-lightness-offset,0%))))) 92%,hsl(var(--accent-hue),11%,min(26%,max(19%,calc(21% + var(--accent-lightness-offset,0%))))) 100%);box-shadow:0 0 0 1px rgba(255,255,255,.16),0 0 40px -12px hsla(var(--accent-hue),30%,calc(70% + var(--accent-lightness-offset,0%)),.14),0 24px 40px -18px rgba(0,0,0,.50),0 14px 22px -12px rgba(0,0,0,.40),0 5px 8px -3px rgba(0,0,0,.30),inset 0 2px 3px rgba(255,255,255,.16),inset 0 0 0 1px rgba(0,0,0,.28),inset 0 -14px 10px -4px rgba(0,0,0,.44),inset 0 -2px 3px -1px rgba(255,255,255,.10),inset 0 -5px 10px rgba(0,0,0,.38),inset 0 -7px 16px rgba(0,0,0,.28),inset 0 -18px 24px -12px rgba(190,215,205,.12),inset 0 -20px 26px -12px rgba(255,186,126,.08);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::before{background:radial-gradient(ellipse 7% 26% at 50% 0%,rgba(255,255,255,.30),rgba(255,255,255,.06) 45%,transparent 72%),radial-gradient(120% 85% at 50% -8%,rgba(255,255,255,.10),transparent 58%),radial-gradient(100% 52% at 50% 112%,rgba(190,215,205,.08),transparent 70%),radial-gradient(92% 76% at 50% 108%,rgba(0,0,0,.40),transparent 62%);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::after{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14),inset 0 1px 0 0 rgba(255,255,255,.18);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel{box-shadow:inset 0 8px 20px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.06),inset 0 -3px 6px rgba(255,255,255,.24),inset 0 0 0 1px rgba(255,255,255,.08),0 1px 0 rgba(255,255,255,.10);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-search{border-color:rgba(255,255,255,.14);box-shadow:inset 0 3px 7px rgba(0,0,0,.72),inset 0 -2px 4px rgba(255,255,255,.10),0 1px 0 rgba(255,255,255,.10);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-unit{box-shadow:0 0 24px -8px hsla(var(--accent-hue),34%,calc(66% + var(--accent-lightness-offset,0%)),.12),0 11px 18px -8px rgba(0,0,0,.55),0 6px 11px -5px rgba(0,0,0,.45),0 3px 5px -2px rgba(0,0,0,.35),inset 0 6px 13px rgba(255,255,255,.20),inset 0 -6px 12px rgba(0,0,0,.52),0 0 0 1px rgba(255,255,255,.16);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-unit::after{background:linear-gradient(90deg,transparent 6%,rgba(255,250,235,.14) 12%,transparent 19%,transparent 40%,rgba(255,250,235,.12) 46%,transparent 53%,transparent 74%,rgba(255,250,235,.14) 80%,transparent 87%),radial-gradient(circle at 50% 14%,rgba(255,255,255,.34) 0%,rgba(255,255,255,.08) 24%,transparent 48%);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-flare{background:linear-gradient(180deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.18) 3%,rgba(255,255,255,.03) 9%,transparent 18%),radial-gradient(ellipse 56% 34% at 50% 14%,rgba(150,200,255,.28),transparent 72%);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-barrel{box-shadow:inset 0 0 0 1px rgba(255,255,255,.42),inset 0 0 0 2px rgba(0,0,0,.30),inset 0 0 0 2.5px rgba(var(--bm-shade),.18),0 5px 10px -4px rgba(var(--bm-shade),.44),0 2px 4px -1px rgba(var(--bm-shade),.30);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .shutter{background:radial-gradient(circle at 50% 16%,#f07a66 0%,#d33a2c 42%,#a8180f 72%,#6d0704 100%);box-shadow:0 0 14px -3px rgba(239,59,44,.32),0 6px 10px -7px rgba(0,0,0,.58),0 3px 6px -3px rgba(0,0,0,.48),0 1px 2px rgba(0,0,0,.38),inset 0 -5px 10px rgba(0,0,0,.52),inset 0 4px 9px rgba(255,255,255,.34),0 0 0 2px rgba(60,61,55,.95),0 0 0 3px rgba(0,0,0,.20);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .shutter::after{background:linear-gradient(180deg,rgba(255,255,255,.44) 0%,rgba(255,255,255,.06) 14%,transparent 30%),radial-gradient(circle at 50% 20%,#e26a58,#8f0a05);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .rainbow{filter:saturate(1.10) brightness(1.02);box-shadow:0 0 10px -3px hsla(var(--accent-hue),40%,calc(60% + var(--accent-lightness-offset,0%)),.12),0 3px 5px -2px rgba(0,0,0,.42),0 1px 2px -1px rgba(0,0,0,.32),0 0 0 1px rgba(255,255,255,.12),inset 0 1px 1px rgba(255,255,255,.24),inset 0 -1px 2px rgba(0,0,0,.40);}',
       /* 暗底上噪点更容易读成脏斑：增强档反而压低透明度、改用 overlay，只留材质感 */
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .grain{opacity:.022;mix-blend-mode:overlay;}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-cam-stage::after{background:radial-gradient(ellipse at center,rgba(0,0,0,.20),transparent 72%),radial-gradient(ellipse at 50% 0%,hsla(var(--accent-hue),30%,calc(70% + var(--accent-lightness-offset,0%)),.10),transparent 70%);filter:blur(7px);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-paper{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 1px 2px -1px rgba(0,0,0,.34),0 10px 18px -8px rgba(0,0,0,.46);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-paper-item:first-child{box-shadow:inset 0 10px 10px -7px rgba(0,0,0,.72);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .brand{text-shadow:0 1px 0 rgba(255,255,255,.22),0 0 10px hsla(var(--accent-hue),30%,calc(70% + var(--accent-lightness-offset,0%)),.16);}',
+      /* 品牌字在暗底上偏灰、白色描边又像浮在表面：提亮到 66%（19px 粗体，AA 大文本 3:1 足够），
+         描边压低，改成一圈同色相的极淡光晕 */
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .brand{color:hsl(var(--accent-hue),9%,calc(66% + var(--accent-lightness-offset,0%)));text-shadow:0 1px 0 rgba(255,255,255,.16),0 0 8px hsla(var(--accent-hue),30%,calc(70% + var(--accent-lightness-offset,0%)),.12);}',
       /* FX-BLOCK-END */
     ].join('');
     document.head.appendChild(st);

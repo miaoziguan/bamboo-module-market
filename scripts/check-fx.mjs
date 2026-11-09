@@ -50,12 +50,14 @@ ok(!/animation|@keyframes|transition:/i.test(fxBlock), 'FX 块引入了动效；
 const findDark = (sel) => dark.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const findLight = (sel) => light.find(r => r.startsWith('.bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const cam = findDark('.camera');
-ok(cam.includes('0 0 0 1px rgba(255,255,255,.14)'), '暗色机身缺轮廓光');
-ok(cam.includes('0 0 34px -10px'), '暗色机身缺冷色柔晕');
+ok(cam.includes('0 0 0 1px rgba(255,255,255,.16)'), '暗色机身缺轮廓光');
+ok(cam.includes('0 0 40px -12px'), '暗色机身缺冷色柔晕');
+ok(cam.includes('linear-gradient(160deg'), '暗色机身未重建青瓷底色（形体会糊进背景）');
+ok(/min\(46%,max\(34%,calc\(40%/.test(cam), '暗色机身底色缺明度上下限（滑块极端时形体仍会糊）');
 const lens = findDark('.lens-unit');
-ok(lens.includes('0 0 28px -6px'), '暗色镜头缺柔光');
+ok(lens.includes('0 0 24px -8px'), '暗色镜头缺柔光');
 const shutter = findDark('.shutter');
-ok(shutter.includes('rgba(239,59,44,.45)'), '暗色快门缺暖色辉光');
+ok(shutter.includes('rgba(239,59,44,.32)'), '暗色快门缺暖色辉光');
 const paper = findDark('.bm-paper');
 ok(paper.includes('0 0 0 1px rgba(255,255,255,.06)'), '暗色纸带缺边缘亮线');
 const grain = findDark('.grain');
@@ -67,7 +69,7 @@ ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-pa
    亮暗两套都必须齐；缺一条就退化回「普通塑料光影」。 */
 for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
   const clearcoat = find('.camera::before');
-  ok(clearcoat.includes('ellipse 9%') && clearcoat.includes('at 50% 1%'),
+  ok(clearcoat.includes('ellipse 7%') && clearcoat.includes('at 50% 0%'),
     `${mode}缺 clearcoat 极窄顶部高光（釉的第二层镜面）`);
 
   const shell = find('.camera');
@@ -83,7 +85,9 @@ for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
   ok(rim.includes('inset 0 0 0 2px'), `${mode}口沿缺 1px 亮+暗硬折角`);
 
   ok(!!find('.shutter::after'), `${mode}快门穹顶缺釉面窄高光`);
-  ok(!!find('.lens-flare') && find('.lens-flare').includes('5%'), `${mode}镜片缺收窄的釉面高光`);
+  const flare = find('.lens-flare');
+  ok(!!flare && flare.includes('linear-gradient(180deg'), `${mode}镜片缺釉面高光带`);
+  ok(flare.includes('18%') || flare.includes('26%'), `${mode}镜片高光带过宽（应收在 18~26% 内）`);
 }
 /* 单一顶光源：所有径向渐变的光心横向坐标必须是 50%，
    出现 at 14% 22% 这类左上光心就等于多了一个光源。 */
