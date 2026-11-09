@@ -48,8 +48,9 @@ ok(!/animation|@keyframes|transition:/i.test(fxBlock), 'FX 块引入了动效；
 
 /* ── 3：暗色关键光影项 ── */
 const findDark = (sel) => dark.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + sel + '{')) || '';
+const findLight = (sel) => light.find(r => r.startsWith('.bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const cam = findDark('.camera');
-ok(cam.includes('0 0 0 1px rgba(255,255,255,.10)'), '暗色机身缺轮廓光');
+ok(cam.includes('0 0 0 1px rgba(255,255,255,.14)'), '暗色机身缺轮廓光');
 ok(cam.includes('0 0 34px -10px'), '暗色机身缺冷色柔晕');
 const lens = findDark('.lens-unit');
 ok(lens.includes('0 0 28px -6px'), '暗色镜头缺柔光');
@@ -61,6 +62,34 @@ const grain = findDark('.grain');
 ok(grain.includes('mix-blend-mode:overlay') && grain.includes('opacity:.022'), '暗色颗粒未改成「更细的材质感」');
 ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::before{')), '暗色机身高光/暗角未增强');
 ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel{')), '暗色凹槽未增强');
+
+/* ── 3b：瓷器釉面五特征（迁移自 tea.js FX_PBR spec/coat/sss/env + P4 口沿）──
+   亮暗两套都必须齐；缺一条就退化回「普通塑料光影」。 */
+for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
+  const clearcoat = find('.camera::before');
+  ok(clearcoat.includes('ellipse 9%') && clearcoat.includes('at 50% 1%'),
+    `${mode}缺 clearcoat 极窄顶部高光（釉的第二层镜面）`);
+
+  const shell = find('.camera');
+  ok(/rgba\(255,(?:190,132|186,126),/.test(shell),
+    `${mode}缺薄胎背光暖透射（tea 的 sss，白瓷暖 1.0/0.72/0.48）`);
+  ok(shell.includes('0 0 0 1px rgba(255,255,255,'), `${mode}缺掠射釉口亮边`);
+
+  const windows = find('.lens-unit::after');
+  const panes = (windows.match(/rgba\(255,250,235,/g) || []).length;
+  ok(panes === 3, `${mode}镜座窗光应为三扇（tea ENV centers 0.12/0.46/0.80），实得 ${panes} 扇`);
+
+  const rim = find('.lens-barrel');
+  ok(rim.includes('inset 0 0 0 2px'), `${mode}口沿缺 1px 亮+暗硬折角`);
+
+  ok(!!find('.shutter::after'), `${mode}快门穹顶缺釉面窄高光`);
+  ok(!!find('.lens-flare') && find('.lens-flare').includes('5%'), `${mode}镜片缺收窄的釉面高光`);
+}
+/* 单一顶光源：所有径向渐变的光心横向坐标必须是 50%，
+   出现 at 14% 22% 这类左上光心就等于多了一个光源。 */
+for (const m of fxBlock.matchAll(/at\s+(\d+)%\s+(-?\d+)%/g)) {
+  ok(m[1] === '50', `釉面光心横坐标 ${m[1]}%（应为 50%），违反 blog 的单一顶光源规矩`);
+}
 
 /* ── 2：基线未被改动 ── */
 ok(!baseCss.includes('.bm-fx-on'), '基础 CSS 段出现了 .bm-fx-on（增强值渗回基线，关档不干净）');
