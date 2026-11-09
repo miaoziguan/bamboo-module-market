@@ -89,11 +89,27 @@ for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
   ok(!!flare && flare.includes('linear-gradient(180deg'), `${mode}镜片缺釉面高光带`);
   ok(/(1[5-9]|2[0-6])%/.test(flare), `${mode}镜片高光带过宽（应收在 15~26% 内）`);
 }
-/* 单一顶光源：所有径向渐变的光心横向坐标必须是 50%，
-   出现 at 14% 22% 这类左上光心就等于多了一个光源。 */
-for (const m of fxBlock.matchAll(/at\s+(\d+)%\s+(-?\d+)%/g)) {
-  ok(m[1] === '50', `釉面光心横坐标 ${m[1]}%（应为 50%），违反 blog 的单一顶光源规矩`);
+/* 单一顶光源：**白色高光**的径向光心横坐标必须是 50%，
+   出现 at 14% 22%,rgba(255,255,255,…) 这类左上白光就等于多了一个光源。
+   彩色 hsla 光斑是环境反射（虹彩），允许偏离 —— 它们不提供方向性照明。 */
+for (const rule of rules) {
+  for (const m of rule.matchAll(/at\s+(\d+)%\s+(-?\d+)%/g)) {
+    if (m[1] === '50') continue;
+    const tail = rule.slice(m.index, m.index + 60);
+    ok(!/rgba\(255,255,255/.test(tail), `白色高光横坐标 ${m[1]}% 偏离正上方，违反单一顶光源`);
+  }
 }
+
+/* 虹彩釉面：暗色机身至少三层不同色相的彩色柔光斑；镜片与快门有彩色反射。
+   缺了这些就退回单色渐变，也就是作者说的「僵硬」。 */
+const darkCam = findDark('.camera');
+const sheen = (darkCam.match(/hsla\((?:190|325|45|268),/g) || []).length;
+ok(sheen >= 4, `暗色机身虹彩层不足（实得 ${sheen} 层，应为 4 层）`);
+const glass = findDark('.lens-glass');
+ok(!!glass && glass.includes('rgba(150,215,255,') && glass.includes('rgba(255,170,235,') && glass.includes('rgba(255,240,190,'),
+  '镜片缺三色釉面反射');
+const shutter2 = findDark('.shutter');
+ok(shutter2.includes('rgba(255,190,235,'), '快门缺粉紫高光');
 
 /* ── 2：基线未被改动 ── */
 ok(!baseCss.includes('.bm-fx-on'), '基础 CSS 段出现了 .bm-fx-on（增强值渗回基线，关档不干净）');
