@@ -53,6 +53,7 @@ var __bamboo_module_blog = (function () {
     // 质感增强：默认开；老配置缺字段时也保持开（不静默退档），只有显式 false 才关闭
     enhance: true,
     motion: false, // 流光动效（相机液体流光）：默认关，独立开关
+    reed: false,   // 竖纹玻璃（长虹玻璃）：默认关，独立开关，依赖质感增强
 
   };
 
@@ -408,6 +409,7 @@ var __bamboo_module_blog = (function () {
       '.bm-fx-input:focus-visible ~ .bm-fx-track{outline:2px solid ' + BAMBOO + ';outline-offset:2px;}',
 
       '.bm-cam-liquid{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;overflow:hidden;}',
+      '.bm-cam-reed{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;}',
       '@keyframes bm-breathe-light{0%{opacity:.22;background-size:128% 128%;background-position:44% 42%;}38%{opacity:1;background-size:192% 192%;background-position:56% 50%;}68%{opacity:.5;background-size:150% 150%;background-position:48% 46%;}100%{opacity:.22;background-size:128% 128%;background-position:44% 42%;}}',
       '@keyframes bm-breathe-shade{0%{opacity:.3;background-size:150% 150%;background-position:56% 56%;}45%{opacity:.85;background-size:185% 185%;background-position:46% 50%;}74%{opacity:.45;background-size:162% 162%;background-position:52% 58%;}100%{opacity:.3;background-size:150% 150%;background-position:56% 56%;}}',
       /* ───────── 质感增强（FX-BLOCK-START）─────────
@@ -500,7 +502,13 @@ var __bamboo_module_blog = (function () {
 
       /* P3 无障碍：系统要求减少透明度时，给玻璃垫实色并关掉 backdrop-filter。
          纯增量；未开启该偏好时整块被忽略，零视觉变化、零兼容风险。 */
-      '@media (prefers-reduced-transparency: reduce){.bm-wrap.bm-fx-on .camera,.bm-wrap.bm-fx-on .top-panel,.bm-wrap.bm-fx-on .bm-search,.bm-wrap.bm-fx-on .bm-input,.bm-wrap.bm-fx-on .bm-form{background-color:hsl(var(--accent-hue,120),14%,min(100%,calc(93% + var(--accent-lightness-offset,0%))));}.bm-wrap.bm-fx-on .camera,.bm-wrap.bm-fx-on .bm-input{-webkit-backdrop-filter:none;backdrop-filter:none;}:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-search,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-input,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-form{background-color:hsl(var(--accent-hue,120),12%,max(6%,calc(22% + var(--accent-lightness-offset,0%))));}:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-input{-webkit-backdrop-filter:none;backdrop-filter:none;}}',
+      /* 竖纹玻璃（长虹玻璃）：参考打字机 .tw-case::before 的三段式折射剖面，
+         周期 12px 防 k<1 缩放摩尔纹；斜向扫光 + 偏心环境光 + radial mask
+         让棱条在圆角/边缘渐隐。静态、零动效；暗色给足、亮色大幅收淡。 */
+      '.bm-wrap.bm-fx-on.bm-fx-reed .bm-cam-reed{background:linear-gradient(110deg,transparent 30%,hsla(calc(var(--accent-hue,120) + 8),34%,calc(92% + var(--accent-lightness-offset,0%)),.07) 47%,hsla(calc(var(--accent-hue,120) + 8),34%,calc(92% + var(--accent-lightness-offset,0%)),.02) 60%,transparent 76%),repeating-linear-gradient(90deg,hsla(calc(var(--accent-hue,120) + 8),30%,calc(88% + var(--accent-lightness-offset,0%)),.09) 0px,hsla(calc(var(--accent-hue,120) + 8),30%,calc(88% + var(--accent-lightness-offset,0%)),.035) 2px,transparent 5px,rgba(0,0,0,.025) 8px,rgba(0,0,0,.075) 10px,transparent 12px),radial-gradient(ellipse 60% 50% at 22% 14%,hsla(calc(var(--accent-hue,120) + 10),36%,calc(86% + var(--accent-lightness-offset,0%)),.06),transparent 62%),radial-gradient(ellipse 50% 55% at 82% 88%,hsla(calc(var(--accent-hue,120) - 6),34%,calc(84% + var(--accent-lightness-offset,0%)),.04),transparent 62%);-webkit-mask-image:radial-gradient(ellipse 78% 72% at var(--bm-light-x) 45%,black 55%,transparent 100%);mask-image:radial-gradient(ellipse 78% 72% at var(--bm-light-x) 45%,black 55%,transparent 100%);opacity:.26;}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on.bm-fx-reed .bm-cam-reed{background:linear-gradient(110deg,transparent 30%,hsla(calc(var(--accent-hue,120) + 8),40%,calc(86% + var(--accent-lightness-offset,0%)),.13) 47%,hsla(calc(var(--accent-hue,120) + 8),40%,calc(86% + var(--accent-lightness-offset,0%)),.04) 60%,transparent 76%),repeating-linear-gradient(90deg,hsla(calc(var(--accent-hue,120) + 8),34%,calc(82% + var(--accent-lightness-offset,0%)),.15) 0px,hsla(calc(var(--accent-hue,120) + 8),34%,calc(82% + var(--accent-lightness-offset,0%)),.06) 2px,transparent 5px,rgba(0,0,0,.04) 8px,rgba(0,0,0,.12) 10px,transparent 12px),radial-gradient(ellipse 60% 50% at 22% 14%,hsla(calc(var(--accent-hue,120) + 10),40%,calc(80% + var(--accent-lightness-offset,0%)),.10),transparent 62%),radial-gradient(ellipse 50% 55% at 82% 88%,hsla(calc(var(--accent-hue,120) - 6),38%,calc(78% + var(--accent-lightness-offset,0%)),.07),transparent 62%);-webkit-mask-image:radial-gradient(ellipse 78% 72% at var(--bm-light-x) 45%,black 55%,transparent 100%);mask-image:radial-gradient(ellipse 78% 72% at var(--bm-light-x) 45%,black 55%,transparent 100%);opacity:1;}',
+
+      '@media (prefers-reduced-transparency: reduce){.bm-wrap.bm-fx-on .camera,.bm-wrap.bm-fx-on .top-panel,.bm-wrap.bm-fx-on .bm-search,.bm-wrap.bm-fx-on .bm-input,.bm-wrap.bm-fx-on .bm-form{background-color:hsl(var(--accent-hue,120),14%,min(100%,calc(93% + var(--accent-lightness-offset,0%))));}.bm-wrap.bm-fx-on .camera,.bm-wrap.bm-fx-on .bm-input{-webkit-backdrop-filter:none;backdrop-filter:none;}:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-search,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-input,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-form{background-color:hsl(var(--accent-hue,120),12%,max(6%,calc(22% + var(--accent-lightness-offset,0%))));}:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-input{-webkit-backdrop-filter:none;backdrop-filter:none;}.bm-wrap.bm-fx-on.bm-fx-reed .bm-cam-reed{display:none;}}',
 
       /* FX-BLOCK-END */
     ].join('');
@@ -635,12 +643,13 @@ var __bamboo_module_blog = (function () {
 
 
     // 增强态由根 class 决定：切换时只 toggle 这个 class，不重建 DOM（相机不会抖）
-    var html = '<div class="bm-wrap' + (state.enhance ? ' bm-fx-on' : '') + (state.motion ? ' bm-fx-liquid' : '') + '">';
+    var html = '<div class="bm-wrap' + (state.enhance ? ' bm-fx-on' : '') + (state.motion ? ' bm-fx-liquid' : '') + (state.reed ? ' bm-fx-reed' : '') + '">';
 
     // 相机：参考稿原结构（420×400），外面套缩放基座
     html += '<div class="bm-header">';
     html += '<div class="bm-cam-stage">';
     html += '<div class="camera">';
+    html += '<div class="bm-cam-reed"></div>';
     html += '<div class="bm-cam-liquid"></div>';
     html += '<div class="top-panel">';
     html += '<div class="bm-search-wrap">';
@@ -745,6 +754,11 @@ var __bamboo_module_blog = (function () {
         '<label class="bm-fx-row">' +
           '<span class="bm-fx-label">流光动效</span>' +
           '<input type="checkbox" class="bm-fx-input" data-field="motion"' + (state.motion ? ' checked' : '') + '>' +
+          '<span class="bm-fx-track" aria-hidden="true"></span>' +
+        '</label>' +
+        '<label class="bm-fx-row">' +
+          '<span class="bm-fx-label">竖纹玻璃</span>' +
+          '<input type="checkbox" class="bm-fx-input" data-field="reed"' + (state.reed ? ' checked' : '') + '>' +
           '<span class="bm-fx-track" aria-hidden="true"></span>' +
         '</label>' +
       '</div>' +
@@ -857,6 +871,10 @@ var __bamboo_module_blog = (function () {
         var mo = root.querySelector('[data-field="motion"]');
         if (mo) mo.checked = false;
         if (wrap) wrap.classList.remove('bm-fx-liquid');
+        state.reed = false;
+        var rd = root.querySelector('[data-field="reed"]');
+        if (rd) rd.checked = false;
+        if (wrap) wrap.classList.remove('bm-fx-reed');
       }
       persist();
     });
@@ -883,6 +901,31 @@ var __bamboo_module_blog = (function () {
       state.motion = !!e.target.checked;
       var wrap = root.querySelector('.bm-wrap');
       if (wrap) wrap.classList.toggle('bm-fx-liquid', !!e.target.checked);
+      persist();
+    });
+    var rd = root.querySelector('[data-field="reed"]');
+    if (rd) rd.addEventListener('change', function (e) {
+      if (e.target.checked && !state.enhance) {
+        e.target.checked = false;
+        state.reed = false;
+        var wrap0 = root.querySelector('.bm-wrap');
+        if (wrap0) wrap0.classList.remove('bm-fx-reed');
+        var row = e.target.closest && e.target.closest('.bm-fx-row');
+        if (row && row.parentNode) {
+          var oldWarn = row.parentNode.querySelector('.bm-warn');
+          if (oldWarn && oldWarn.parentNode) oldWarn.parentNode.removeChild(oldWarn);
+          var warn = document.createElement('div');
+          warn.className = 'bm-hint bm-warn';
+          warn.style.color = '#e0564f';
+          warn.textContent = '请先打开「质感增强」再开启竖纹玻璃';
+          row.parentNode.insertBefore(warn, row.nextSibling);
+          setTimeout(function () { if (warn.parentNode) warn.parentNode.removeChild(warn); }, 2600);
+        }
+        return;
+      }
+      state.reed = !!e.target.checked;
+      var wrap = root.querySelector('.bm-wrap');
+      if (wrap) wrap.classList.toggle('bm-fx-reed', !!e.target.checked);
       persist();
     });
 
@@ -1107,6 +1150,8 @@ var __bamboo_module_blog = (function () {
     if (fx) state.enhance = !!fx.checked;
     var mo = root.querySelector('[data-field="motion"]');
     if (mo) state.motion = !!mo.checked;
+    var rd = root.querySelector('[data-field="reed"]');
+    if (rd) state.reed = !!rd.checked;
     state.editing = false;
     persist();
     if (/^https?:\/\//i.test(state.profile.avatar || '')) {
@@ -1131,6 +1176,7 @@ var __bamboo_module_blog = (function () {
       rootFolder: state.rootFolder,
       enhance: state.enhance,
       motion: state.motion,
+      reed: state.reed,
     });
   }
 
@@ -1208,7 +1254,8 @@ var __bamboo_module_blog = (function () {
         // 老配置没有 enhance 字段 → 保持默认开；只有显式 false 才是用户主动关掉
         state.enhance = !(d.enhance === false);
         state.motion = !!(d.motion); // 默认关，无需「保持默认开」逻辑
-        if (!state.enhance) state.motion = false; // 脏数据兜底：质感增强关着时流光无意义
+        state.reed = !!(d.reed);     // 默认关
+        if (!state.enhance) { state.motion = false; state.reed = false; } // 脏数据兜底
 
       }
     } catch (e) { /* 首次运行无数据 */ }
@@ -1217,7 +1264,7 @@ var __bamboo_module_blog = (function () {
     // 这里兜住 listFiles 失败 / 静默刷新等不重建 DOM 的分支，避免「配置已关、界面仍开增强」。
     // 只 toggle class，不重建相机。
     var wrap = root && root.querySelector('.bm-wrap');
-    if (wrap) { wrap.classList.toggle('bm-fx-on', !!state.enhance); wrap.classList.toggle('bm-fx-liquid', !!state.motion); }
+    if (wrap) { wrap.classList.toggle('bm-fx-on', !!state.enhance); wrap.classList.toggle('bm-fx-liquid', !!state.motion); wrap.classList.toggle('bm-fx-reed', !!state.reed); }
 
     state._avatarUrl = '';
     var av0 = state.profile.avatar;

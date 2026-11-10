@@ -14,7 +14,8 @@
  *   5) JS 侧：默认开、老配置不静默退档、保存/读回/即时预览的契约齐全，
  *      且预览回调不得调用 render()（重建会重跑 fitCamera，相机抖一下）；
  *   6) 架构与无障碍：相机链只允许 .camera 一层 backdrop-filter（内层不得回潮）；
- *      必须有 prefers-reduced-transparency 兜底，给玻璃垫实色并关掉 blur。
+ *      必须有 prefers-reduced-transparency 兜底，给玻璃垫实色、关 blur、隐藏竖纹层；
+ *      竖纹玻璃为默认关的独立开关，依赖增强档、静态微结构、全链路可回退。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -141,7 +142,23 @@ if (rtRule) {
     ok(rtLight.includes('.bm-wrap.bm-fx-on ' + part), `兜底缺亮色覆盖 ${part}`);
     ok(rtDark.includes(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + part), `兜底缺暗色覆盖 ${part}`);
   }
+  ok(rtRule.includes('.bm-cam-reed{display:none;}'), '兜底未隐藏竖纹层');
 }
+
+/* ── 竖纹玻璃 CSS：双 class 限定、周期、边缘渐隐、零动效 ──
+   本质是可开关的表面微结构，不能渗进基线、不能带动画、亮暗都要在
+   .bm-fx-on.bm-fx-reed 下命中，否则关档回退不干净。 */
+const reedRules = rules.filter(r => r.includes('.bm-cam-reed{') && r.includes('repeating-linear-gradient'));
+ok(reedRules.length === 2, `竖纹应有亮/暗各一套，实际 ${reedRules.length} 套`);
+for (const r of reedRules) {
+  const sel = r.slice(0, r.indexOf('{'));
+  ok(sel.includes('.bm-fx-on.bm-fx-reed'), `竖纹规则未限定双 class: ${sel.slice(0, 70)}`);
+  ok(/repeating-linear-gradient\(90deg,/.test(r), '竖纹缺 90deg 三段式棱条');
+  ok(r.includes('12px'), '竖纹周期不是 12px（k<1 缩放下 9px 易起摩尔纹）');
+  ok(r.includes('mask-image:'), '竖纹缺 radial mask 边缘渐隐（圆角会硬截断）');
+  ok(!/animation|transition:|@keyframes/i.test(r), '竖纹引入了动效（应为静态微结构）');
+}
+ok(reedRules.some(r => r.startsWith(':is(.theme-dark,.dark)')), '竖纹缺暗色档');
 
 /* 单一顶光源：白色高光的径向光心横坐标必须是 50%；彩色环境光允许偏离。
    token 化后先把 var(--bm-light-x) 归一化成其定义值，再跑原检查（契约不降强度） */
@@ -188,6 +205,19 @@ ok(src.includes("wrap.classList.toggle('bm-fx-on', !!state.enhance)"), '异步�
 ok(src.includes('data-field="motion"'), '设置表单缺流光动效开关');
 ok(src.includes('state.motion = !!e.target.checked;'), '流光动效 change 未写入 state.motion（会不持久/复位）');
 ok(src.includes('motion: state.motion,'), 'persist() 未写入 motion');
+/* 竖纹玻璃开关：默认关、依赖 enhance、class 与 state 全链路一致。
+   复用 motion 的教训——change 不写 state 会不持久、收起/重开即复位 */
+ok(/reed:\s*false,/.test(src), 'state.reed 默认值不是 false（新效果应默认关）');
+ok(src.includes('data-field="reed"'), '设置表单缺竖纹玻璃开关');
+ok(src.includes("(state.reed ? ' bm-fx-reed' : '')"), 'render() 未按 state 带竖纹 class');
+ok(src.includes("'<div class=\"bm-cam-reed\"></div>'"), '相机缺 .bm-cam-reed 竖纹层');
+ok(src.includes('state.reed = !!e.target.checked;'), '竖纹 change 未写入 state.reed（会不持久/复位）');
+ok(src.includes("classList.toggle('bm-fx-reed', !!e.target.checked)"), '竖纹预览回调未切换根 class');
+ok(src.includes('reed: state.reed,'), 'persist() 未写入 reed');
+ok(src.includes('state.reed = !!(d.reed)'), 'loadAll() 未读回 reed');
+ok(src.includes("wrap.classList.toggle('bm-fx-reed', !!state.reed)"), '异步读回配置后未兜底同步竖纹 class');
+ok(src.includes("if (rd) state.reed = !!rd.checked;"), 'saveProfile() 未读取竖纹开关值');
+ok(src.includes("if (!state.enhance) { state.motion = false; state.reed = false; }"), '缺 enhance 关闭时的竖纹联动/脏数据兜底');
 
 const changeAt = src.indexOf("fx.addEventListener('change'");
 ok(changeAt > 0, '缺开关即时预览的 change 监听');
