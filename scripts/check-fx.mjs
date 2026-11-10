@@ -94,10 +94,10 @@ const lightDef = rules.find(r => r.startsWith('.bm-wrap.bm-fx-on{') && r.include
 const darkDef = rules.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on{') && r.includes('--bm-glass-blur:'));
 ok(!!lightDef, '缺亮色材质 token 定义（.bm-wrap.bm-fx-on）');
 ok(!!darkDef, '缺暗色材质 token 覆盖定义');
-for (const t of ['--bm-light-x', '--bm-depth-blur', '--bm-glass-blur', '--bm-recess-blur', '--bm-input-blur']) {
+for (const t of ['--bm-light-x', '--bm-depth-blur', '--bm-glass-blur', '--bm-input-blur']) {
   ok(!!tokVal(lightDef, t), `亮色缺材质 token ${t} 定义`);
 }
-for (const t of ['--bm-depth-blur', '--bm-glass-blur', '--bm-recess-blur']) {
+for (const t of ['--bm-depth-blur', '--bm-glass-blur']) {
   ok(!!tokVal(darkDef, t), `暗色缺材质 token ${t} 覆盖`);
 }
 const lightX = tokVal(lightDef, '--bm-light-x');
@@ -105,6 +105,18 @@ ok(lightX === '50%', `--bm-light-x 必须为正上方 50%（单一顶光源）�
 /* 引用完整性：blur(var(--bm-…)) 引用的 token 必须有定义，否则整条声明在浏览器里失效 */
 for (const m of fxBlock.matchAll(/blur\(var\((--bm-[\w-]+)\)\)/g)) {
   ok(!!tokVal(lightDef, m[1]) || !!tokVal(darkDef, m[1]), `blur 引用了未定义的 ${m[1]}`);
+}
+
+/* ── P2 架构约束：相机链只允许 .camera 一层 backdrop-filter ──
+   内层（凹槽/搜索框）曾嵌套 3 层，受 Backdrop Root 限制根本采不到机身背后
+   的景深光斑，只是白付合成开销；内层玻璃改由半透明 hsla + 自带折射光表现。
+   .bm-input 在列表区、不属相机链，允许保有独立的一层。 */
+const innerSel = /\.(top-panel|bm-search)\{/;
+for (const r of rules) {
+  const sel = r.slice(0, r.indexOf('{'));
+  if (innerSel.test(sel + '{')) {
+    ok(!/backdrop-filter/.test(r), `${sel} 又给内层加了 backdrop-filter（相机链应保持 3→1）`);
+  }
 }
 
 /* 单一顶光源：白色高光的径向光心横坐标必须是 50%；彩色环境光允许偏离。
