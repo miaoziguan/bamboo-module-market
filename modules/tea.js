@@ -3038,6 +3038,7 @@
     /* ── 窄面板（<210px）：单列列表、分类三列、留白收紧 ── */
     '.tea-narrow .tea-dialog,.tea-narrow .tea-cab-panel{padding:12px;' +
       'max-width:none;width:calc(100% - 8px);}' +
+    '.tea-narrow .tea-dialog{padding:12px 11px 11px;}' +
     '.tea-narrow .tea-cab-list{grid-template-columns:1fr;column-gap:0;row-gap:0;}' +
     '.tea-narrow .tea-seg-types{grid-template-columns:repeat(3,1fr);gap:0 6px;}' +
     '.tea-narrow .tea-seg-btn{font-size:11px;}' +
@@ -3048,11 +3049,12 @@
     '.tea-narrow .tea-dialog .tea-title{font-size:14px;letter-spacing:.06em;text-indent:.06em;}' +
     '.tea-narrow .tea-actions{padding-top:8px;margin-top:10px;}' +
     /* 窄面板：字段名列再收 6px，茶类仍保持 4 列（2 字标签在 ~43px 列宽里放得下） */
-    '.tea-narrow .tea-field{grid-template-columns:52px minmax(0,1fr);column-gap:6px;}' +
+    '.tea-narrow .tea-field{grid-template-columns:58px minmax(0,1fr);column-gap:6px;}' +
     '.tea-narrow .tea-chips-types{gap:2px 4px;}' +
     '.tea-narrow .tea-chips[data-row]{gap:2px 4px;}' +
     '.tea-narrow .tea-sec{margin-top:10px;}' +
-    '.tea-narrow .tea-sec-h{gap:6px;letter-spacing:.12em;text-indent:.12em;}' +
+    '.tea-narrow .tea-sec+.tea-sec{padding-top:10px;}' +
+    '.tea-narrow .tea-sec-h{letter-spacing:.08em;text-indent:.08em;}' +
     '.tea-narrow .tea-field-sub .tea-field-label{padding-left:8px;}' +
     '' +
     '.tea-verse>span{display:inline-block;writing-mode:vertical-rl;text-orientation:mixed;' +
@@ -3138,6 +3140,9 @@
       'border:var(--overlay-border,1px solid rgba(0,0,0,.08));border-radius:14px;' +
       'box-shadow:var(--overlay-shadow,0 12px 32px rgba(0,0,0,.18));padding:16px;' +
       'color:var(--text-primary,inherit);}' +
+    /* 设置面板对齐博客表单：圆角 12 / padding 14·13。仅作用于 .tea-dialog，
+       茶柜面板继续用共享外壳的 14 / 16，不受本次对齐影响。 */
+    '.tea-dialog{border-radius:12px;padding:14px 13px;}' +
     /* 底色与文字色都取宿主语义变量（--overlay-surface / --text-*），二者必须配套翻转。
        宿主在 Shadow DOM 下靠 :host(.dark) 翻转，但模块 iframe 没有 shadow host、翻不到，
        故暗色值由上方 .tea-wrap.tea-dark 在模块作用域内补齐（不越权改全局）。
@@ -3244,17 +3249,16 @@
     '.tea-dialog .tea-title{text-align:center;font-size:15px;letter-spacing:.08em;text-indent:.08em;}' +
     '.tea-hint{margin-top:5px;font-size:11px;line-height:1.45;text-align:center;' +
       'color:var(--text-tertiary,currentColor);opacity:.85;}' +
-    '.tea-sec{margin-top:18px;}' +
-    '.tea-sec-h{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;' +
-      'font-size:10px;line-height:1.2;letter-spacing:.18em;text-indent:.18em;text-align:center;' +
-      'color:var(--text-tertiary,currentColor);opacity:.9;}' +
-    /* 两侧细线由 flex:1 自动等长，标题自然居中；暗色跟随 --bamboo-border 翻转，
-       不再单写一条线的暗色规则（旧版只翻 ::before，居中后会左右不对称）。 */
-    '.tea-sec-h::before,.tea-sec-h::after{content:"";display:block;flex:1 1 auto;height:1px;' +
-      'background:var(--bamboo-border,rgba(0,0,0,.16));}' +
-    '.tea-field{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;' +
+    '.tea-sec{margin-top:15px;}' +
+    '.tea-sec+.tea-sec{padding-top:15px;border-top:1px solid var(--bamboo-border,rgba(0,0,0,.14));}' +
+    '.tea-sec-h{display:block;margin:0 0 8px;text-align:center;font-size:10.5px;font-weight:600;' +
+      'line-height:1.2;letter-spacing:.08em;text-indent:.08em;color:var(--text-secondary,inherit);}' +
+    /* 组标题改为博客式纯居中短标签，停用原来的两侧细线伪元素。
+       颜色沿用 --text-secondary（提一级），不碰暗色语义变量，保住对比度核查。 */
+    '.tea-sec-h::before,.tea-sec-h::after{content:none;}' +
+    '.tea-field{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;' +
       'column-gap:8px;min-height:22px;margin-top:9px;}' +
-    '.tea-field-label{font-size:11px;line-height:1.3;color:var(--text-secondary,inherit);white-space:nowrap;}' +
+    '.tea-field-label{font-size:12px;font-weight:500;line-height:1.3;color:var(--text-secondary,inherit);white-space:nowrap;}' +
     /* 从属项与分区：让「选哪项」和「开不开」不再挤在同一视觉层 */
     '.tea-field-sub{margin-top:2px;}' +
     '.tea-field-sub .tea-field-label{padding-left:10px;font-size:10px;opacity:.72;}' +
@@ -3284,13 +3288,13 @@
     '.tea-switch{margin-top:9px;font-size:11px;color:var(--text-secondary,inherit);cursor:pointer;position:relative;}' +
     '.tea-field.tea-switch > .tea-switch{margin-top:0;}' +
     '.tea-switch input{position:absolute;opacity:0;width:0;height:0;pointer-events:none;}' +
-    '.tea-switch .track{width:30px;height:17px;border-radius:999px;flex:0 0 auto;justify-self:end;' +
+    '.tea-switch .track{width:32px;height:18px;border-radius:999px;flex:0 0 auto;justify-self:end;' +
       'background:var(--bamboo-border,rgba(0,0,0,.16));position:relative;' +
       'transition:background-color var(--duration-fast) var(--ease-cn);}' +
-    '.tea-switch .track::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;' +
+    '.tea-switch .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;' +
       'background:#fff;transition:transform var(--duration-fast) var(--ease-cn);box-shadow:0 1px 2px rgba(0,0,0,.22);}' +
     '.tea-switch input:checked ~ .track{background:var(--bm-primary,#3a7a3a);}' +
-    '.tea-switch input:checked ~ .track::after{transform:translateX(13px);}' +
+    '.tea-switch input:checked ~ .track::after{transform:translateX(14px);}' +
     '.tea-switch input:focus-visible ~ .track{outline:2px solid var(--bm-primary,#3a7a3a);outline-offset:2px;}' +
     /* 按钮固定在面板底部：72 行的列表很长，否则要滚到底才能关闭 */
     '.tea-actions{position:sticky;bottom:0;display:flex;gap:8px;margin-top:12px;padding-top:10px;' +
