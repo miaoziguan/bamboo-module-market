@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.28","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.29","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 博客写立得 v0.7
  *
@@ -52,6 +52,7 @@ var __bamboo_module_blog = (function () {
     _avatarUrl: '',
     // 质感增强：默认开；老配置缺字段时也保持开（不静默退档），只有显式 false 才关闭
     enhance: true,
+    motion: false, // 流光动效（相机液体流光）：默认关，独立开关
 
   };
 
@@ -296,7 +297,7 @@ var __bamboo_module_blog = (function () {
       // 为什么必须是 14 而不是 8：机身底角圆角 R=28（视觉值），纸带边缘处弧线已抬高
       // rise=10.7px；重叠量必须 > rise，否则纸带顶边那道白线会从弧线下方漏出来横切圆角
       // —— 那正是「圆角被破坏」的成因。取 14 = rise 10.7 + 3.3 余量，白线全程藏在轮廓内。
-      '.bm-list-region{flex:1 1 auto;overflow:auto;margin-top:-14px;padding:0 0 8px;box-sizing:border-box;}',
+      '.bm-list-region{flex:1 1 auto;overflow:auto;margin-top:0;padding:0 0 8px;box-sizing:border-box;}',
       // 纸带对齐机身（左右对称），比机身每侧窄 6px（机身宽 = 侧栏 - 80，纸带 = 侧栏 - 92）
       // 纸带投影：原 0 8px 16px 会向上渗出 8px，正好灌进机身与纸带之间那 6px 窄缝，
       // 与机身三级投影+接地影叠成 114 的近黑焦痕。加 -8 收缩并加大下移后，上渗归零
@@ -406,7 +407,11 @@ var __bamboo_module_blog = (function () {
       '.bm-fx-input:checked ~ .bm-fx-track::after{transform:translateX(14px);}',
       '.bm-fx-input:focus-visible ~ .bm-fx-track{outline:2px solid ' + BAMBOO + ';outline-offset:2px;}',
 
+      '.bm-cam-liquid{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;overflow:hidden;}',
+      '@keyframes bm-breathe-light{0%{opacity:.22;background-size:128% 128%;background-position:44% 42%;}38%{opacity:1;background-size:192% 192%;background-position:56% 50%;}68%{opacity:.5;background-size:150% 150%;background-position:48% 46%;}100%{opacity:.22;background-size:128% 128%;background-position:44% 42%;}}',
+      '@keyframes bm-breathe-shade{0%{opacity:.3;background-size:150% 150%;background-position:56% 56%;}45%{opacity:.85;background-size:185% 185%;background-position:46% 50%;}74%{opacity:.45;background-size:162% 162%;background-position:52% 58%;}100%{opacity:.3;background-size:150% 150%;background-position:56% 56%;}}',
       /* ───────── 质感增强（FX-BLOCK-START）─────────
+
          全部规则只在 .bm-wrap.bm-fx-on 下命中；关闭时一条都不匹配，
          基线 CSS 的每个数值原封不动 —— 这是「关档逐值回退」的实现方式，
          不要把这些值写回基础规则，也不要在切换时调用 render()（会重跑
@@ -432,11 +437,11 @@ var __bamboo_module_blog = (function () {
       '.bm-wrap.bm-fx-on .lens-barrel{box-shadow:inset 0 0 0 1px rgba(255,255,255,.66),inset 0 0 0 2px rgba(var(--bm-shade),.18),inset 0 0 0 2.5px rgba(var(--bm-shade),.12),0 5px 10px -4px rgba(var(--bm-shade),.32),0 2px 4px -1px rgba(var(--bm-shade),.22);}',
       '.bm-wrap.bm-fx-on .lens-flare{background:linear-gradient(180deg,rgba(255,255,255,.76) 0%,rgba(255,255,255,.26) 5%,rgba(255,255,255,.08) 12%,rgba(255,255,255,0) 26%),radial-gradient(ellipse 58% 36% at 50% 14%,hsla(var(--accent-hue),80%,calc(72% + var(--accent-lightness-offset,0%)),.30),transparent 72%);}',
       '.bm-wrap.bm-fx-on .shutter{box-shadow:0 6px 10px -8px rgba(var(--bm-shade),.46),0 3px 6px -4px rgba(var(--bm-shade),.32),0 1px 2px rgba(var(--bm-shade),.26),inset 0 -4px 8px rgba(var(--bm-shade),.42),inset 0 3px 8px rgba(255,255,255,.72),0 0 0 2px rgba(252,251,248,.98),0 0 0 3px rgba(var(--bm-shade),.08);}',
-      '.bm-wrap.bm-fx-on .shutter::after{background:linear-gradient(180deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.08) 14%,transparent 30%),radial-gradient(circle at 50% 20%,#ff7f6c,#a80c06);}',
-      '.bm-wrap.bm-fx-on .rainbow{filter:saturate(1.14) brightness(1.03);box-shadow:0 3px 5px -2px rgba(var(--bm-shade),.24),0 1px 2px -1px rgba(var(--bm-shade),.18),0 0 0 1px rgba(255,255,255,.40),inset 0 1px 1px rgba(255,255,255,.60),inset 0 -1px 2px rgba(var(--bm-shade),.30);}',
+      '.bm-wrap.bm-fx-on .shutter::after{background:linear-gradient(180deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.08) 14%,transparent 30%),radial-gradient(circle at 50% 20%,#ff7f6c,#a80c06);}','.bm-wrap.bm-fx-on .shutter::before{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:2;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,0) 0deg,rgba(255,255,255,.20) 1.5deg,rgba(255,255,255,0) 3deg,rgba(0,0,0,.12) 4.5deg,rgba(0,0,0,0) 6deg);}',
+      '.bm-wrap.bm-fx-on .rainbow{filter:saturate(1.14) brightness(1.03);box-shadow:0 3px 5px -2px rgba(var(--bm-shade),.24),0 1px 2px -1px rgba(var(--bm-shade),.18),0 0 0 1px rgba(255,255,255,.40),inset 0 1px 1px rgba(255,255,255,.60),inset 0 -1px 2px rgba(var(--bm-shade),.30);}','.bm-wrap.bm-fx-on .rainbow::after{background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(255,255,255,.45) 3%,rgba(255,255,255,0) 10%),linear-gradient(180deg,rgba(255,255,255,0) 26%,rgba(255,255,255,.14) 33%,rgba(255,255,255,0) 40%),linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 34%,rgba(0,0,0,0) 58%,rgba(0,0,0,.18) 84%,rgba(0,0,0,.34) 100%),linear-gradient(0deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.12) 4%,rgba(255,255,255,0) 14%);}','.bm-wrap.bm-fx-on .rainbow i{box-shadow:inset 0 1px 0 rgba(255,255,255,.50);}','.bm-wrap.bm-fx-on .rainbow i + i{box-shadow:inset 1px 0 0 rgba(255,255,255,.22),inset 0 1px 0 rgba(255,255,255,.50),inset 0 -1px 0 rgba(0,0,0,.16);}',
       '.bm-wrap.bm-fx-on .grain{opacity:.042;}',
       '.bm-wrap.bm-fx-on .bm-cam-stage::after{background:radial-gradient(ellipse at center,rgba(var(--bm-shade),.14),transparent 72%);filter:blur(7px);}',
-      '.bm-wrap.bm-fx-on .bm-paper{box-shadow:0 0 0 1px hsla(var(--accent-hue),26%,calc(88% + var(--accent-lightness-offset,0%)),.85),0 1px 2px rgba(var(--bm-shade),.10),0 10px 18px -8px rgba(var(--bm-shade),.12);}',
+      '.bm-wrap.bm-fx-on .bm-paper{box-shadow:0 0 0 1px hsla(var(--accent-hue),26%,calc(88% + var(--accent-lightness-offset,0%)),.85),0 1px 2px rgba(var(--bm-shade),.10),0 10px 18px -8px rgba(var(--bm-shade),.12);}','.bm-wrap.bm-fx-on .bm-form{background:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.06) 14px,transparent 60px),hsla(var(--accent-hue),24%,95%,.6);box-shadow:inset 0 1px 0 0 rgba(255,255,255,.6),inset 0 0 0 1px hsla(var(--accent-hue),28%,calc(50% + var(--accent-lightness-offset,0%)),.24),0 2px 5px rgba(var(--bm-shade),.05),0 18px 30px -16px rgba(var(--bm-shade),.18);}','.bm-wrap.bm-fx-on .bm-paper-item{background:hsla(var(--accent-hue),28%,100%,.40);}','.bm-wrap.bm-fx-on .bm-paper-item:hover{background:hsla(var(--accent-hue),28%,99%,.55);}','.bm-wrap.bm-fx-on .bm-paper-item.is-active{background:hsla(var(--accent-hue),30%,98.5%,.65);}',
       '.bm-wrap.bm-fx-on .bm-paper-item:first-child{box-shadow:inset 0 10px 10px -7px rgba(var(--bm-shade),.42);}',
       '.bm-wrap.bm-fx-on .brand{text-shadow:0 1px 0 rgba(255,255,255,1),0 1px 2px rgba(var(--bm-shade),.16);}',
 
@@ -459,8 +464,8 @@ var __bamboo_module_blog = (function () {
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera{background:linear-gradient(160deg,hsla(190,24%,72%,.34) 0%,hsla(200,20%,52%,.26) 45%,hsla(210,22%,34%,.32) 100%);-webkit-backdrop-filter:blur(3px) saturate(1.2);backdrop-filter:blur(3px) saturate(1.2);box-shadow:0 0 0 1px rgba(0,0,0,.42),0 0 0 7px hsla(190,30%,80%,.06),inset 0 0 0 1px rgba(220,245,240,.22),inset 0 0 0 7px rgba(220,245,240,.06),inset 0 0 30px rgba(200,240,235,.12),inset 0 2px 0 rgba(255,255,255,.26),inset 0 -16px 26px -12px rgba(0,0,0,.42),0 24px 40px -18px rgba(0,0,0,.55),0 14px 22px -12px rgba(0,0,0,.42),0 5px 8px -3px rgba(0,0,0,.30);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::before{background:linear-gradient(115deg,transparent 22%,rgba(255,255,255,.10) 34%,rgba(255,255,255,.03) 44%,transparent 58%),radial-gradient(ellipse 8% 26% at 50% 0%,rgba(255,255,255,.28),rgba(255,255,255,.06) 50%,transparent 75%),radial-gradient(92% 70% at 50% 108%,rgba(0,0,0,.34),transparent 62%);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::after{box-shadow:inset 0 1px 0 0 rgba(255,255,255,.24);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel{box-shadow:inset 0 8px 20px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.06),inset 0 -3px 6px rgba(255,255,255,.24),inset 0 0 0 1px rgba(255,255,255,.08),0 1px 0 rgba(255,255,255,.10);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-search{border-color:rgba(255,255,255,.14);box-shadow:inset 0 3px 7px rgba(0,0,0,.72),inset 0 -2px 4px rgba(255,255,255,.10),0 1px 0 rgba(255,255,255,.10);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel{background:linear-gradient(180deg,#25271f 0%,#2f3129 22%,#3a3c33 55%,#43453b 100%);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-search{background:linear-gradient(180deg,#1e201a 0%,#24261f 45%,#2b2d24 100%);border-color:rgba(255,255,255,.16);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-unit{box-shadow:0 0 30px -8px hsla(var(--accent-hue),36%,calc(68% + var(--accent-lightness-offset,0%)),.18),0 11px 18px -8px rgba(0,0,0,.52),0 6px 11px -5px rgba(0,0,0,.42),0 3px 5px -2px rgba(0,0,0,.32),inset 0 6px 13px rgba(255,255,255,.26),inset 0 -6px 12px rgba(0,0,0,.48),0 0 0 1px rgba(200,235,225,.22);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-unit::after{background:linear-gradient(90deg,transparent 6%,rgba(255,250,235,.18) 12%,transparent 19%,transparent 40%,rgba(255,250,235,.16) 46%,transparent 53%,transparent 74%,rgba(255,250,235,.18) 80%,transparent 87%),radial-gradient(circle at 50% 14%,rgba(255,255,255,.42) 0%,rgba(255,255,255,.10) 24%,transparent 48%);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-flare{background:linear-gradient(180deg,rgba(255,255,255,.70) 0%,rgba(255,255,255,.22) 3%,rgba(255,255,255,.04) 9%,transparent 20%),radial-gradient(ellipse 58% 36% at 50% 14%,rgba(150,200,255,.34),transparent 72%),radial-gradient(ellipse 44% 28% at 34% 22%,rgba(255,170,225,.20),transparent 68%),radial-gradient(ellipse 38% 24% at 68% 26%,rgba(255,225,160,.16),transparent 66%);}',
@@ -468,12 +473,12 @@ var __bamboo_module_blog = (function () {
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-glass{background:radial-gradient(circle at 30% 22%,rgba(150,215,255,.32),transparent 52%),radial-gradient(circle at 70% 30%,rgba(255,170,235,.26),transparent 55%),radial-gradient(circle at 50% 16%,rgba(255,240,190,.22),transparent 48%),radial-gradient(circle at 50% 18%,hsl(var(--accent-hue),36%,calc(46% + var(--accent-lightness-offset,0%))) 0%,hsl(var(--accent-hue),40%,calc(26% + var(--accent-lightness-offset,0%))) 22%,hsl(var(--accent-hue),42%,calc(14% + var(--accent-lightness-offset,0%))) 50%,hsl(var(--accent-hue),44%,calc(9% + var(--accent-lightness-offset,0%))) 76%,hsl(var(--accent-hue),46%,calc(5% + var(--accent-lightness-offset,0%))) 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.24),inset 0 -2px 0 rgba(255,255,255,.08),inset 0 0 24px rgba(180,230,255,.20);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .lens-barrel{box-shadow:inset 0 0 0 1px rgba(255,255,255,.50),inset 0 0 0 2px rgba(0,0,0,.28),inset 0 0 0 2.5px rgba(var(--bm-shade),.18),0 5px 10px -4px rgba(var(--bm-shade),.44),0 2px 4px -1px rgba(var(--bm-shade),.30);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .shutter{background:radial-gradient(circle at 30% 20%,rgba(255,200,240,.42),transparent 46%),radial-gradient(circle at 50% 16%,rgba(226,72,58,.92) 0%,rgba(168,28,20,.95) 42%,rgba(108,10,6,.96) 72%,rgba(58,3,2,.98) 100%);box-shadow:0 0 22px -3px rgba(239,59,44,.48),0 6px 10px -7px rgba(0,0,0,.58),0 3px 6px -3px rgba(0,0,0,.48),0 1px 2px rgba(0,0,0,.38),inset 0 -5px 10px rgba(0,0,0,.52),inset 0 4px 9px rgba(255,255,255,.48),inset 0 0 16px rgba(255,140,110,.34),0 0 0 2px rgba(60,61,55,.95),0 0 0 3px rgba(0,0,0,.20);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .shutter::after{background:linear-gradient(180deg,rgba(255,255,255,.44) 0%,rgba(255,255,255,.06) 14%,transparent 30%),radial-gradient(circle at 50% 20%,#e26a58,#8f0a05);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .rainbow{filter:saturate(1.45) brightness(1.15);box-shadow:0 0 18px -3px hsla(190,60%,64%,.20),0 0 18px -3px hsla(28,85%,62%,.16),0 3px 5px -2px rgba(0,0,0,.42),0 1px 2px -1px rgba(0,0,0,.32),0 0 0 1px rgba(255,255,255,.24),inset 0 1px 1px rgba(255,255,255,.55),inset 0 -1px 2px rgba(0,0,0,.40);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .shutter::after{background:linear-gradient(180deg,rgba(255,255,255,.44) 0%,rgba(255,255,255,.06) 14%,transparent 30%),radial-gradient(circle at 50% 20%,#e26a58,#8f0a05);}',':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .shutter::before{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:2;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,0) 0deg,rgba(255,255,255,.16) 1.5deg,rgba(255,255,255,0) 3deg,rgba(0,0,0,.14) 4.5deg,rgba(0,0,0,0) 6deg);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .rainbow{filter:saturate(1.45) brightness(1.15);box-shadow:0 0 18px -3px hsla(190,60%,64%,.20),0 0 18px -3px hsla(28,85%,62%,.16),0 3px 5px -2px rgba(0,0,0,.42),0 1px 2px -1px rgba(0,0,0,.32),0 0 0 1px rgba(255,255,255,.24),inset 0 1px 1px rgba(255,255,255,.55),inset 0 -1px 2px rgba(0,0,0,.40);}',':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .rainbow::after{background:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.50) 3%,rgba(255,255,255,0) 10%),linear-gradient(180deg,rgba(255,255,255,0) 26%,rgba(255,255,255,.10) 33%,rgba(255,255,255,0) 40%),linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 34%,rgba(0,0,0,0) 58%,rgba(0,0,0,.20) 86%,rgba(0,0,0,.42) 100%),linear-gradient(0deg,rgba(255,255,255,.45) 0%,rgba(255,255,255,.10) 4%,rgba(255,255,255,0) 14%);}',':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .rainbow i{box-shadow:inset 0 1px 0 rgba(255,255,255,.42),inset 0 -1px 0 rgba(0,0,0,.30);}',':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .rainbow i + i{box-shadow:inset 1px 0 0 rgba(255,255,255,.18),inset 0 1px 0 rgba(255,255,255,.42),inset 0 -1px 0 rgba(0,0,0,.30);}',
       /* 暗底上噪点更容易读成脏斑：增强档反而压低透明度、改用 overlay，只留材质感 */
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .grain{opacity:.022;mix-blend-mode:overlay;}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-cam-stage::after{background:radial-gradient(ellipse at center,rgba(0,0,0,.20),transparent 72%),radial-gradient(ellipse at 50% 0%,hsla(var(--accent-hue),30%,calc(70% + var(--accent-lightness-offset,0%)),.10),transparent 70%);filter:blur(7px);}',
-      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-paper{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 1px 2px -1px rgba(0,0,0,.34),0 10px 18px -8px rgba(0,0,0,.46);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-paper{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 1px 2px -1px rgba(0,0,0,.34),0 10px 18px -8px rgba(0,0,0,.46);}',':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-form{background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,transparent 40px),hsla(var(--accent-hue),12%,calc(19% + var(--accent-lightness-offset,0%)),.55);box-shadow:inset 0 1px 0 0 rgba(255,255,255,.12),inset 0 0 0 1px hsla(var(--accent-hue),28%,calc(50% + var(--accent-lightness-offset,0%)),.18),0 2px 5px rgba(0,0,0,.3),0 18px 30px -16px rgba(0,0,0,.45);}',':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-paper-item{background:hsla(var(--accent-hue),16%,calc(27% + var(--accent-lightness-offset,0%)),.35);}',':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-paper-item:hover{background:hsla(var(--accent-hue),17%,calc(30% + var(--accent-lightness-offset,0%)),.48);}',':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-paper-item.is-active{background:hsla(var(--accent-hue),17%,calc(29% + var(--accent-lightness-offset,0%)),.58);}',,
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-paper-item:first-child{box-shadow:inset 0 10px 10px -7px rgba(0,0,0,.72);}',
       /* 品牌字在暗底上偏灰、白色描边又像浮在表面：提亮到 66%（19px 粗体，AA 大文本 3:1 足够），
          描边压低，改成一圈同色相的极淡光晕 */
@@ -481,6 +486,11 @@ var __bamboo_module_blog = (function () {
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel{background:linear-gradient(180deg,#25271f 0%,#2f3129 22%,#3a3c33 55%,#43453b 100%);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-search{background:linear-gradient(180deg,#1e201a 0%,#24261f 45%,#2b2d24 100%);border-color:rgba(255,255,255,.16);}',
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on{--bm-paper:hsl(var(--accent-hue),16%,calc(27% + var(--accent-lightness-offset,0%)));--bm-paper-hover:hsl(var(--accent-hue),17%,calc(30% + var(--accent-lightness-offset,0%)));--bm-paper-active:hsl(var(--accent-hue),17%,calc(29% + var(--accent-lightness-offset,0%)));--bm-surface:hsl(var(--accent-hue),12%,calc(21% + var(--accent-lightness-offset,0%)));--bm-surface-2:hsl(var(--accent-hue),12%,calc(19% + var(--accent-lightness-offset,0%)));--bm-border:hsl(var(--accent-hue),14%,calc(32% + var(--accent-lightness-offset,0%)));--bm-hover:hsla(var(--accent-hue),18%,calc(80% + var(--accent-lightness-offset,0%)),.10);}:is(.theme-dark,.dark) .bm-wrap.bm-fx-on::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(165deg,hsl(calc(var(--accent-hue,120) + 16),min(100%,calc(30% * var(--accent-saturation-ui,1))),min(18%,calc(13% + var(--accent-lightness-offset,0%)))) 0%,hsl(calc(var(--accent-hue,120) + 6),min(100%,calc(34% * var(--accent-saturation-ui,1))),min(12%,calc(7% + var(--accent-lightness-offset,0%)))) 20%,hsl(calc(var(--accent-hue,120) + 28),min(100%,calc(38% * var(--accent-saturation-ui,1))),min(18%,calc(16% + var(--accent-lightness-offset,0%)))) 40%,hsl(calc(var(--accent-hue,120) + 6),min(100%,calc(34% * var(--accent-saturation-ui,1))),min(12%,calc(7% + var(--accent-lightness-offset,0%)))) 60%,hsl(calc(var(--accent-hue,120) + 2),min(100%,calc(30% * var(--accent-saturation-ui,1))),min(15%,calc(9% + var(--accent-lightness-offset,0%)))) 80%,hsl(calc(var(--accent-hue,120) + 16),min(100%,calc(30% * var(--accent-saturation-ui,1))),min(18%,calc(13% + var(--accent-lightness-offset,0%)))) 100%);}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on.bm-fx-liquid .bm-cam-liquid::before,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on.bm-fx-liquid .bm-cam-liquid::after{content:"";position:absolute;inset:0;pointer-events:none;}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on.bm-fx-liquid .bm-cam-liquid::before{background:radial-gradient(58% 58% at 50% 50%,hsla(var(--accent-hue,120),60%,86%,.32),transparent 70%);background-repeat:no-repeat;mix-blend-mode:screen;animation:bm-breathe-light 9s ease-in-out infinite;opacity:.22;}',
+      ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on.bm-fx-liquid .bm-cam-liquid::after{background:radial-gradient(72% 72% at 50% 50%,hsla(var(--accent-hue,120),35%,22%,.24),transparent 72%);background-repeat:no-repeat;mix-blend-mode:multiply;animation:bm-breathe-shade 11s ease-in-out infinite;opacity:.3;}',
+      '@media (prefers-reduced-motion: reduce){:is(.theme-dark,.dark) .bm-wrap.bm-fx-on.bm-fx-liquid .bm-cam-liquid::before,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on.bm-fx-liquid .bm-cam-liquid::after{animation:none;}}',
+
       /* FX-BLOCK-END */
     ].join('');
     document.head.appendChild(st);
@@ -614,12 +624,13 @@ var __bamboo_module_blog = (function () {
 
 
     // 增强态由根 class 决定：切换时只 toggle 这个 class，不重建 DOM（相机不会抖）
-    var html = '<div class="bm-wrap' + (state.enhance ? ' bm-fx-on' : '') + '">';
+    var html = '<div class="bm-wrap' + (state.enhance ? ' bm-fx-on' : '') + (state.motion ? ' bm-fx-liquid' : '') + '">';
 
     // 相机：参考稿原结构（420×400），外面套缩放基座
     html += '<div class="bm-header">';
     html += '<div class="bm-cam-stage">';
     html += '<div class="camera">';
+    html += '<div class="bm-cam-liquid"></div>';
     html += '<div class="top-panel">';
     html += '<div class="bm-search-wrap">';
     html += '<input class="bm-search" data-field="search" placeholder="搜索文章…" value="' + esc(state.searchQuery) + '">';
@@ -720,12 +731,13 @@ var __bamboo_module_blog = (function () {
           '<input type="checkbox" class="bm-fx-input" data-field="enhance"' + (state.enhance ? ' checked' : '') + '>' +
           '<span class="bm-fx-track" aria-hidden="true"></span>' +
         '</label>' +
-        '<div class="bm-hint">加强机身光影与纸感；暗色下另加轮廓光与镜头辉光</div>' +
+        '<label class="bm-fx-row">' +
+          '<span class="bm-fx-label">流光动效</span>' +
+          '<input type="checkbox" class="bm-fx-input" data-field="motion"' + (state.motion ? ' checked' : '') + '>' +
+          '<span class="bm-fx-track" aria-hidden="true"></span>' +
+        '</label>' +
       '</div>' +
-      '<div class="bm-actions">' +
-      '<button class="bm-btn" data-act="cancel">取消</button>' +
-      '<button class="bm-btn primary" data-act="save">保存</button>' +
-      '</div>' +
+      '<div class="bm-hint" style="text-align:center;margin-top:14px;">改动即时生效，点镜头可收起</div>' +
       '</div>';
   }
 
@@ -826,9 +838,90 @@ var __bamboo_module_blog = (function () {
     // 取消时会 render()，class 自动按 state.enhance 复原；保存时才落盘。
     var fx = root.querySelector('[data-field="enhance"]');
     if (fx) fx.addEventListener('change', function (e) {
+      state.enhance = !!e.target.checked;
       var wrap = root.querySelector('.bm-wrap');
       if (wrap) wrap.classList.toggle('bm-fx-on', !!e.target.checked);
+      if (!e.target.checked) {
+        state.motion = false;
+        var mo = root.querySelector('[data-field="motion"]');
+        if (mo) mo.checked = false;
+        if (wrap) wrap.classList.remove('bm-fx-liquid');
+      }
+      persist();
     });
+    var mo = root.querySelector('[data-field="motion"]');
+    if (mo) mo.addEventListener('change', function (e) {
+      if (e.target.checked && !state.enhance) {
+        e.target.checked = false;
+        state.motion = false;
+        var wrap0 = root.querySelector('.bm-wrap');
+        if (wrap0) wrap0.classList.remove('bm-fx-liquid');
+        var row = e.target.closest && e.target.closest('.bm-fx-row');
+        if (row && row.parentNode) {
+          var oldWarn = row.parentNode.querySelector('.bm-warn');
+          if (oldWarn && oldWarn.parentNode) oldWarn.parentNode.removeChild(oldWarn);
+          var warn = document.createElement('div');
+          warn.className = 'bm-hint bm-warn';
+          warn.style.color = '#e0564f';
+          warn.textContent = '请先打开「质感增强」再开启流光动效';
+          row.parentNode.insertBefore(warn, row.nextSibling);
+          setTimeout(function () { if (warn.parentNode) warn.parentNode.removeChild(warn); }, 2600);
+        }
+        return;
+      }
+      var wrap = root.querySelector('.bm-wrap');
+      if (wrap) wrap.classList.toggle('bm-fx-liquid', !!e.target.checked);
+      persist();
+    });
+
+    // 实时编辑：输入即改 state、补丁预览、防抖持久化（无需保存按钮）
+    function patchBrand() {
+      var b = root.querySelector('.brand');
+      if (!b) return;
+      var t = (state.profile.nickname || '').trim() || 'BAMBOO IMMORTALS';
+      var cjk = /[\u3400-\u9fff\u3040-\u30ff]/.test(t);
+      var lng = !cjk && t.replace(/\s/g, '').length >= 14;
+      b.textContent = t;
+      b.classList.toggle('is-cjk', cjk);
+      b.classList.toggle('is-long', lng);
+    }
+    function patchAvatar() {
+      var a = root.querySelector('.bm-avatar');
+      if (a) a.innerHTML = avatarHtml();
+    }
+    var nick = root.querySelector('[data-field="nickname"]');
+    if (nick) nick.addEventListener('input', function (e) {
+      state.profile.nickname = e.target.value;
+      patchBrand();
+      patchAvatar();
+      schedulePersist();
+    });
+    var av = root.querySelector('[data-field="avatar"]');
+    if (av) {
+      av.addEventListener('input', function (e) {
+        var v = e.target.value.trim();
+        state.profile.avatar = v;
+        if (/^https?:\/\//i.test(v)) { state._avatarUrl = v; patchAvatar(); }
+        else if (!v) { state._avatarUrl = ''; patchAvatar(); }
+        schedulePersist();
+      });
+      av.addEventListener('change', function (e) {
+        var v = e.target.value.trim();
+        state.profile.avatar = v;
+        if (!v || /^https?:\/\//i.test(v)) return;
+        if (api) api.resolveResource(v).then(function (url) { state._avatarUrl = url || ''; patchAvatar(); }).catch(function () { state._avatarUrl = ''; patchAvatar(); });
+      });
+    }
+    var rf = root.querySelector('[data-field="rootFolder"]');
+    if (rf) {
+      rf.addEventListener('input', function (e) { state.rootFolder = e.target.value; schedulePersist(); });
+      rf.addEventListener('change', function (e) {
+        var v = e.target.value.trim();
+        state.rootFolder = v || '博客';
+        e.target.value = state.rootFolder;
+        persist();
+      });
+    }
   }
 
   function onRootClick(e) {
@@ -956,7 +1049,12 @@ var __bamboo_module_blog = (function () {
 
 
   /* ────────────── 行为 ────────────── */
-  function toggleEdit() { state.editing = !state.editing; render(); }
+  function toggleEdit() {
+    var was = state.editing;
+    state.editing = !state.editing;
+    render();
+    if (was) refresh(true);
+  }
 
 
 
@@ -995,6 +1093,8 @@ var __bamboo_module_blog = (function () {
     if (av) state.profile.avatar = av.value.trim();
     var fx = root.querySelector('[data-field="enhance"]');
     if (fx) state.enhance = !!fx.checked;
+    var mo = root.querySelector('[data-field="motion"]');
+    if (mo) state.motion = !!mo.checked;
     state.editing = false;
     persist();
     if (/^https?:\/\//i.test(state.profile.avatar || '')) {
@@ -1018,7 +1118,14 @@ var __bamboo_module_blog = (function () {
       profile: state.profile,
       rootFolder: state.rootFolder,
       enhance: state.enhance,
+      motion: state.motion,
     });
+  }
+
+  var _persistTimer = null;
+  function schedulePersist() {
+    clearTimeout(_persistTimer);
+    _persistTimer = setTimeout(persist, 400);
   }
 
   /* ────────────── 数据 ────────────── */
@@ -1088,6 +1195,7 @@ var __bamboo_module_blog = (function () {
         if (d.rootFolder) state.rootFolder = d.rootFolder;
         // 老配置没有 enhance 字段 → 保持默认开；只有显式 false 才是用户主动关掉
         state.enhance = !(d.enhance === false);
+        state.motion = !!(d.motion); // 默认关，无需「保持默认开」逻辑
 
       }
     } catch (e) { /* 首次运行无数据 */ }
@@ -1096,7 +1204,7 @@ var __bamboo_module_blog = (function () {
     // 这里兜住 listFiles 失败 / 静默刷新等不重建 DOM 的分支，避免「配置已关、界面仍开增强」。
     // 只 toggle class，不重建相机。
     var wrap = root && root.querySelector('.bm-wrap');
-    if (wrap) wrap.classList.toggle('bm-fx-on', !!state.enhance);
+    if (wrap) { wrap.classList.toggle('bm-fx-on', !!state.enhance); wrap.classList.toggle('bm-fx-liquid', !!state.motion); }
 
     state._avatarUrl = '';
     var av0 = state.profile.avatar;

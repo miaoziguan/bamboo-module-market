@@ -9,7 +9,7 @@
  *   1) FX 块内每条规则的选择器都必须带 .bm-fx-on；
  *   2) 基础 CSS 段不得出现 .bm-fx-on，也不得改掉几个关键基线值；
  *   3) 亮/暗两套增强都齐全，暗色的轮廓光 / 镜头辉光 / 快门暖光 / 纸带亮边不可缺；
- *   4) 增强只做静态光影，不引入动画（blog 目前无 reduced-motion 保护）；
+ *   4) 增强默认静态光影；允许带 prefers-reduced-motion 兜底的轻量动画（blog 已加降级保护），裸动画仍禁止；
  *   5) JS 侧：默认开、老配置不静默退档、保存/读回/即时预览的契约齐全，
  *      且预览回调不得调用 render()（重建会重跑 fitCamera，相机抖一下）。
  */
@@ -37,14 +37,21 @@ const rules = [];
 for (const m of fxBlock.matchAll(/'([^']*\{[^']*\})'/g)) rules.push(m[1]);
 ok(rules.length >= 20, `FX 块规则数偏少（${rules.length} 条），疑似漏加或拼接被吞`);
 
-const scoped = rules.filter(r => r.slice(0, r.indexOf('{')).includes('.bm-fx-on'));
-ok(scoped.length === rules.length, `${rules.length - scoped.length} 条增强规则没带 .bm-fx-on，关档不会回退`);
+/* @media / @keyframes 是结构性规则，不是增强值，不要求带 .bm-fx-on；
+   真正的增强值规则必须全部限定在 .bm-fx-on 下，关档才干净 */
+const structural = (r) => r.startsWith('@media') || r.startsWith('@keyframes');
+const enhRules = rules.filter((r) => !structural(r));
+const scoped = enhRules.filter((r) => r.slice(0, r.indexOf('{')).includes('.bm-fx-on'));
+ok(scoped.length === enhRules.length, `${enhRules.length - scoped.length} 条增强规则没带 .bm-fx-on，关档不会回退`);
 
 const light = scoped.filter(r => !r.startsWith(':is(.theme-dark,.dark)'));
 const dark = scoped.filter(r => r.startsWith(':is(.theme-dark,.dark)'));
 ok(light.length >= 10, `亮色增强规则仅 ${light.length} 条`);
 ok(dark.length >= 10, `暗色增强规则仅 ${dark.length} 条（暗色光影是本次重点）`);
-ok(!/animation|@keyframes|transition:/i.test(fxBlock), 'FX 块引入了动效；blog 尚无 prefers-reduced-motion 保护');
+/* 允许「带 prefers-reduced-motion 兜底的轻量动画」：降级/关档时停播。
+   裸动画（无 reduced-motion 兜底）仍禁止，避免关档后还在动 */
+const fxHasReducedMotion = /prefers-reduced-motion/.test(fxBlock);
+ok(!/animation|@keyframes|transition:/i.test(fxBlock) || fxHasReducedMotion, 'FX 块引入了动效，但缺少 prefers-reduced-motion 兜底（关档/降级应停播）');
 
 /* ── 3：暗色关键光影项 ── */
 const findDark = (sel) => dark.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + sel + '{')) || '';

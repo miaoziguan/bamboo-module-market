@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.15","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.16","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.15';
+  var VERSION = '0.9.16';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -1849,7 +1849,7 @@
         '<button type="button" class="tea-kbd" aria-label="揭开或合上碗盖；点击杯托或按 P 切换纹样"></button>' +
         '<div class="tea-verse v-top"><span>不如<span class="el">……</span></span></div>' +
         '<div class="tea-verse v-bot"><span>吃茶去</span></div>' +
-        '<div class="tea-count"><span></span></div>' +
+        '<div class="tea-count"><span class="t-num"></span><span class="t-cab">我的茶柜</span></div>' +
 '<div class="tea-tools">' +
                 '<button class="tea-gear" type="button" aria-label="吃茶设置">' +
         '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" ' +
@@ -1923,7 +1923,10 @@
             /* 强度是「夜色效果」的从属参数，不再是平级字段 */
             '<div class="tea-field tea-field-sub">' +
               '<span class="tea-field-label">强度</span>' +
-              '<input type="range" class="tea-range" min="0" max="100" step="1" aria-label="夜色效果强度" />' +
+              '<div class="tea-range-wrap">' +
+                '<input type="range" class="tea-range" min="0" max="100" step="1" aria-label="夜色效果强度" />' +
+                '<span class="tea-range-val"></span>' +
+              '</div>' +
             '</div>' +
             /* 开关与上面的「选哪项」不是同类，用一道淡线隔开 */
             '<label class="tea-field tea-switch tea-field-divider" title="关闭后回到与 three 原稿逐像素一致的对照画面">' +
@@ -1965,7 +1968,7 @@
     el.cabList = wrap.querySelector('.tea-cab-list');
     el.cabTitle = wrap.querySelector('.tea-cab-title');
     el.find = wrap.querySelector('.tea-find');
-    var countStr = wrap.querySelector('.tea-count span');
+    var countStr = wrap.querySelector('.tea-count .t-num');
     paintCount();
 
     /* 详情卡是开盖后才填内容的，而它在竖向 flex 里与舞台抢高度：
@@ -2005,6 +2008,7 @@
     el.matChips = wrap.querySelector('.tea-chips[data-row="mat"]');
     el.nightChips = wrap.querySelector('.tea-chips[data-row="night"]');
     el.range = wrap.querySelector('.tea-range');
+    el.rangeVal = wrap.querySelector('.tea-range-val');
     el.enhanceInput = wrap.querySelector('.tea-enhance-input');
     el.steamInput = wrap.querySelector('.tea-steam-input');
     el.spinInput = wrap.querySelector('.tea-spin-input');
@@ -2267,9 +2271,7 @@
     function paintCount() {
       var n = state.cabinet.length;
       if (countStr) {
-        countStr.textContent = _countHover
-          ? '我的茶柜'
-          : ('录茶' + cnNum(TEAS.length));
+        countStr.textContent = '录茶' + cnNum(TEAS.length);
         var box = countStr.parentNode;
         if (box) box.classList.toggle('has-cab', n > 0);
       }
@@ -2495,6 +2497,7 @@
       if (!el.range) return;
       var v = state.nightFx[state.night];
       el.range.value = String(Math.round((v == null ? 0.5 : v) * 100));
+      if (el.rangeVal) el.rangeVal.textContent = Math.round((v == null ? 0.5 : v) * 100) + '%';
     }
     function setNight(mode) {
       state.night = (mode === 'crackle') ? 'crackle' : 'body';
@@ -2757,14 +2760,37 @@
       countBox.setAttribute('role', 'button');
       countBox.setAttribute('tabindex', '0');
       countBox.setAttribute('aria-label', '打开我的茶柜');
-      countBox.addEventListener('mouseenter', function () { _countHover = true; paintCount(); });
-      countBox.addEventListener('mouseleave', function () { _countHover = false; paintCount(); });
-      countBox.addEventListener('focus', function () { _countHover = true; paintCount(); });
-      countBox.addEventListener('blur', function () { _countHover = false; paintCount(); });
+      countBox.addEventListener('mouseenter', function () { _countHover = true; countBox.classList.add('is-hover'); paintCount(); });
+      countBox.addEventListener('mouseleave', function () { _countHover = false; countBox.classList.remove('is-hover'); paintCount(); });
+      countBox.addEventListener('focus', function () { _countHover = true; countBox.classList.add('is-hover'); paintCount(); });
+      countBox.addEventListener('blur', function () { _countHover = false; countBox.classList.remove('is-hover'); paintCount(); });
       /* 默认文案是「录茶N」（库），点击开「全部」段——用户明确要求过：点它看完整列表再挑进柜 */
       countBox.addEventListener('click', function () { openCabinet('all'); });
       countBox.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCabinet('all'); }
+      });
+    }
+    /* 悬停检测改走舞台 mousemove 几何命中，绕过可能盖住 .tea-count 的透明层
+       （WebGL 画布 / 拖动手柄等）；只认几何位置不认元素自身事件，稳定显示「我的茶柜」 */
+    if (el.stage) {
+      var teaCountHit = function (x, y) {
+        if (!vCountEl) return false;
+        var r = vCountEl.getBoundingClientRect();
+        return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+      };
+      el.stage.addEventListener('mousemove', function (e) {
+        if (el.wrap && el.wrap.classList.contains('is-dragging')) {
+          if (_countHover) { _countHover = false; if (countBox) countBox.classList.remove('is-hover'); }
+          return;
+        }
+        var inside = teaCountHit(e.clientX, e.clientY);
+        if (inside !== _countHover) {
+          _countHover = inside;
+          if (countBox) countBox.classList.toggle('is-hover', inside);
+        }
+      });
+      el.stage.addEventListener('mouseleave', function () {
+        if (_countHover) { _countHover = false; if (countBox) countBox.classList.remove('is-hover'); }
       });
     }
     if (el.find) {
@@ -2794,7 +2820,9 @@
     }
     if (el.range) {
       el.range.addEventListener('input', function () {
-        state.nightFx[state.night] = clamp(parseFloat(el.range.value) / 100 || 0, 0, 1);
+        var v = clamp(parseFloat(el.range.value) / 100 || 0, 0, 1);
+        state.nightFx[state.night] = v;
+        if (el.rangeVal) el.rangeVal.textContent = Math.round(v * 100) + '%';
         applyTheme();
         scheduleSave();
       });
@@ -2987,7 +3015,8 @@
     /* 这一列本身就是「柜 / 库」的状态显示，点击直达茶柜 —— 比另加图标更省地方 */
     /* 计数列常显 .55（PATCH-49 的隐藏是误读：用户当时要的是改名不是隐藏）；
        悬停自身提亮到 .85 提示可点，开盖后让位给茶样文案 */
-    '.tea-count{position:absolute;z-index:2;left:0;right:0;text-align:center;pointer-events:auto;cursor:pointer;' +
+    '.tea-count{position:absolute;z-index:4;left:0;right:0;display:grid;justify-content:center;justify-items:center;' +
+      'align-items:center;pointer-events:auto;cursor:pointer;' +
       'font-size:15px;line-height:1;opacity:.55;transform:translateY(-50%);' +
       'white-space:nowrap;transition:opacity var(--duration-slow) var(--ease-cn);}' +
     '.tea-count:focus-visible{opacity:.85;}' +
@@ -2995,8 +3024,11 @@
     '.tea-wrap:not(.is-open) .tea-count:hover{opacity:.85;}' +
     /* 颜色不写死：继承 .tea-wrap 的主题色（浅底 hsl(--th,18%,22%)、深底 hsl(--th,10%,92%)），
        与两列题字同源，只是透明度更低一档。 */
-    '.tea-count>span{display:inline-block;writing-mode:vertical-rl;text-orientation:mixed;' +
-      'letter-spacing:.30em;margin-inline-end:-.30em;}' +
+    '.tea-count>span{grid-area:1/1;display:inline-block;writing-mode:vertical-rl;text-orientation:mixed;' +
+      'letter-spacing:.30em;margin-inline-end:-.30em;transition:opacity var(--duration-fast) var(--ease-cn);}' +
+    '.tea-count .t-cab{opacity:0;}' +
+    '.tea-count:hover .t-num,.tea-count.is-hover .t-num,.tea-count:focus-within .t-num{opacity:0;}' +
+    '.tea-count:hover .t-cab,.tea-count.is-hover .t-cab,.tea-count:focus-within .t-cab{opacity:1;}' +
     /* 开盖后这段纵向空间交给茶样文案：数量是未开盖态的信息，工具行也不必在喝茶中途出现
        （要开茶柜/设置，合盖即可）。不隐藏的话三者会叠在一起、按钮被盖住点不到。 */
     /* 竖排里 text-decoration:underline 会沿文字方向画一条竖线，看着像多出来的一根线，
@@ -3028,7 +3060,10 @@
     '.tea-wrap:hover .tea-verse{opacity:.78;}' +
     /* 滑块行已并入 .tea-field 两列网格（见设置面板段），此处只补栅格内的宽度。
        同上：注释行不带 `+`，否则下一行字符串会被一元加号吞成 NaN。 */
-    '.tea-field .tea-range{width:100%;}' +
+    '.tea-range-wrap{display:flex;align-items:center;gap:8px;width:100%;}' +
+    '.tea-range-wrap .tea-range{width:auto;flex:1 1 auto;}' +
+    '.tea-range-val{flex:0 0 auto;min-width:34px;text-align:right;font-size:11px;' +
+      'color:var(--text-tertiary,currentColor);font-variant-numeric:tabular-nums;}' +
     /* 滑块沿用 curtain 模块 .bc-range 的组件写法（轨道 4px / 拇指 14px），
        并保留那条必须的 min-height:0 —— base.css 有全局 :where(input) 触控地板，
        不显式清零会被撑到 44px 高，把面板顶变形。 */
@@ -3046,6 +3081,7 @@
       'cursor:grab;outline:none;transition:transform var(--duration-slower) cubic-bezier(.2,.8,.2,1);}' +
     '.tea-wrap.is-dragging .tea-hit{cursor:grabbing;transition:none;}' +
     '.tea-stage{cursor:grab;}' +
+    '.gaiwan-canvas{position:absolute;inset:0;pointer-events:none;}' +
     '.tea-wrap.is-orbiting .tea-stage{cursor:grabbing;}' +
     '.tea-hit:focus-visible{outline:2px dashed hsl(var(--th),32%,52%);outline-offset:4px;border-radius:50%;}' +
     '.tea-wrap.tea-nogl .tea-stage{display:none;}' +
@@ -3203,13 +3239,13 @@
        字段名是「行标签」不是标题，必须保持左对齐，否则栅格左边界会散掉。
        另两处从属关系：强度缩进弱化、归属夜色效果；开关区与属性区用淡线隔开。
        尺寸仍全部写死像素，不吃宿主的 --space-*。 */
-    '.tea-head{text-align:center;padding-bottom:12px;border-bottom:1px solid var(--bamboo-border,rgba(0,0,0,.12));}' +
+    '.tea-head{text-align:center;padding-bottom:14px;}' +
     /* .tea-title 同时被茶柜面板复用，居中必须限定在 .tea-dialog 内 */
     '.tea-dialog .tea-title{text-align:center;font-size:15px;letter-spacing:.08em;text-indent:.08em;}' +
     '.tea-hint{margin-top:5px;font-size:11px;line-height:1.45;text-align:center;' +
       'color:var(--text-tertiary,currentColor);opacity:.85;}' +
-    '.tea-sec{margin-top:14px;}' +
-    '.tea-sec-h{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;' +
+    '.tea-sec{margin-top:18px;}' +
+    '.tea-sec-h{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;' +
       'font-size:10px;line-height:1.2;letter-spacing:.18em;text-indent:.18em;text-align:center;' +
       'color:var(--text-tertiary,currentColor);opacity:.9;}' +
     /* 两侧细线由 flex:1 自动等长，标题自然居中；暗色跟随 --bamboo-border 翻转，
@@ -3217,17 +3253,23 @@
     '.tea-sec-h::before,.tea-sec-h::after{content:"";display:block;flex:1 1 auto;height:1px;' +
       'background:var(--bamboo-border,rgba(0,0,0,.16));}' +
     '.tea-field{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;' +
-      'column-gap:8px;min-height:22px;margin-top:4px;}' +
+      'column-gap:8px;min-height:22px;margin-top:9px;}' +
     '.tea-field-label{font-size:11px;line-height:1.3;color:var(--text-secondary,inherit);white-space:nowrap;}' +
     /* 从属项与分区：让「选哪项」和「开不开」不再挤在同一视觉层 */
     '.tea-field-sub{margin-top:2px;}' +
     '.tea-field-sub .tea-field-label{padding-left:10px;font-size:10px;opacity:.72;}' +
-    '.tea-field-divider{border-top:1px solid var(--bamboo-border,rgba(0,0,0,.12));' +
-      'padding-top:7px;margin-top:8px;}' +
+    '.tea-field.tea-field-divider{border-top:1px solid var(--bamboo-border,rgba(0,0,0,.12));' +
+      'padding-top:9px;margin-top:12px;}' +
     /* 选项改成栅格列：茶类 4 列、器物 2 列，列首对齐，不再 flex-wrap 随机散开 */
-    '.tea-chips{display:grid;gap:2px 8px;margin:0;min-width:0;}' +
+    '.tea-chips{display:grid;gap:6px 8px;margin:0;min-width:0;}' +
     '.tea-chips-types{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:2px;}' +
-    '.tea-chips[data-row]{grid-template-columns:repeat(2,minmax(0,1fr));}' +
+    '.tea-chips-types .tea-chip{text-align:center;}' +
+    '.tea-chips[data-row]{display:inline-flex;gap:0;justify-self:end;' +
+      'border:1px solid var(--bamboo-border,rgba(0,0,0,.16));border-radius:999px;overflow:hidden;vertical-align:middle;}' +
+    '.tea-chips[data-row] .tea-chip{padding:3px 13px;text-align:center;' +
+      'border-right:1px solid var(--bamboo-border,rgba(0,0,0,.16));}' +
+    '.tea-chips[data-row] .tea-chip:last-child{border-right:0;}' +
+    '.tea-chips[data-row] .tea-chip.on{background:var(--bm-primary,#3a7a3a);color:#fff;opacity:1;}' +
     /* min-height:0 同 .tea-range —— 宿主 base.css 对表单控件有全局触控地板 */
     '.tea-chip{padding:2px 0;min-height:0;border:0;background:none;border-radius:0;text-align:left;' +
       'color:var(--text-tertiary,currentColor);font-size:11px;line-height:1.4;' +
@@ -3239,7 +3281,8 @@
     '.tea-chip:focus-visible,.tea-btn:focus-visible{outline:2px solid var(--bm-primary,#3a7a3a);outline-offset:2px;}' +
     /* .tea-switch 同时带 .tea-field：栅格由后者提供，这里只补语义与间距，
        并把 track 推到第二列右端，让四个开关与上方所有控件共用同一条右边界。 */
-    '.tea-switch{margin-top:4px;font-size:11px;color:var(--text-secondary,inherit);cursor:pointer;position:relative;}' +
+    '.tea-switch{margin-top:9px;font-size:11px;color:var(--text-secondary,inherit);cursor:pointer;position:relative;}' +
+    '.tea-field.tea-switch > .tea-switch{margin-top:0;}' +
     '.tea-switch input{position:absolute;opacity:0;width:0;height:0;pointer-events:none;}' +
     '.tea-switch .track{width:30px;height:17px;border-radius:999px;flex:0 0 auto;justify-self:end;' +
       'background:var(--bamboo-border,rgba(0,0,0,.16));position:relative;' +
