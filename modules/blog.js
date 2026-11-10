@@ -498,6 +498,10 @@ var __bamboo_module_blog = (function () {
       ':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-input::placeholder{color:hsla(var(--accent-hue,120),10%,calc(66% + var(--accent-lightness-offset,0%)),.86);}',
       '@media (prefers-reduced-motion: reduce){:is(.theme-dark,.dark) .bm-wrap.bm-fx-on.bm-fx-liquid .bm-cam-liquid::before,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on.bm-fx-liquid .bm-cam-liquid::after{animation:none;}}',
 
+      /* P3 无障碍：系统要求减少透明度时，给玻璃垫实色并关掉 backdrop-filter。
+         纯增量；未开启该偏好时整块被忽略，零视觉变化、零兼容风险。 */
+      '@media (prefers-reduced-transparency: reduce){.bm-wrap.bm-fx-on .camera,.bm-wrap.bm-fx-on .top-panel,.bm-wrap.bm-fx-on .bm-search,.bm-wrap.bm-fx-on .bm-input,.bm-wrap.bm-fx-on .bm-form{background-color:hsl(var(--accent-hue,120),14%,min(100%,calc(93% + var(--accent-lightness-offset,0%))));}.bm-wrap.bm-fx-on .camera,.bm-wrap.bm-fx-on .bm-input{-webkit-backdrop-filter:none;backdrop-filter:none;}:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-search,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-input,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-form{background-color:hsl(var(--accent-hue,120),12%,max(6%,calc(22% + var(--accent-lightness-offset,0%))));}:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera,:is(.theme-dark,.dark) .bm-wrap.bm-fx-on .bm-input{-webkit-backdrop-filter:none;backdrop-filter:none;}}',
+
       /* FX-BLOCK-END */
     ].join('');
     document.head.appendChild(st);

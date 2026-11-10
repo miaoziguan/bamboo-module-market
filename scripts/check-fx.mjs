@@ -6,12 +6,15 @@
  * 一旦某条增强值被写进基础 CSS，关掉开关就回不到 v0.7.11 的画面，
  * 而「关闭＝逐值回退」是这个开关唯一的语义。人眼很难发现，故固化为断言：
  *
- *   1) FX 块内每条规则的选择器都必须带 .bm-fx-on；
+ *   1) FX 块内每条增强值规则的选择器都必须带 .bm-fx-on（@media / @keyframes
+ *      结构性规则除外）；材质 token 集中定义、blur 引用不得悬空；
  *   2) 基础 CSS 段不得出现 .bm-fx-on，也不得改掉几个关键基线值；
- *   3) 亮/暗两套增强都齐全，暗色的轮廓光 / 镜头辉光 / 快门暖光 / 纸带亮边不可缺；
+ *   3) 亮/暗两套增强都齐全，暗色的轮廓光 / 镜片反射 / 彩虹条 / 纸带亮边不可缺；
  *   4) 增强默认静态光影；允许带 prefers-reduced-motion 兜底的轻量动画（blog 已加降级保护），裸动画仍禁止；
  *   5) JS 侧：默认开、老配置不静默退档、保存/读回/即时预览的契约齐全，
- *      且预览回调不得调用 render()（重建会重跑 fitCamera，相机抖一下）。
+ *      且预览回调不得调用 render()（重建会重跑 fitCamera，相机抖一下）；
+ *   6) 架构与无障碍：相机链只允许 .camera 一层 backdrop-filter（内层不得回潮）；
+ *      必须有 prefers-reduced-transparency 兜底，给玻璃垫实色并关掉 blur。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -116,6 +119,27 @@ for (const r of rules) {
   const sel = r.slice(0, r.indexOf('{'));
   if (innerSel.test(sel + '{')) {
     ok(!/backdrop-filter/.test(r), `${sel} 又给内层加了 backdrop-filter（相机链应保持 3→1）`);
+  }
+}
+
+/* ── P3 无障碍：prefers-reduced-transparency 兜底 ──
+   系统要求减少透明度时，玻璃必须垫实色 + 关 blur。纯增量，未开启该偏好
+   时整块被浏览器忽略，故零视觉变化；但容易在后续改动里被误删，固化断言。 */
+const rtRule = rules.find(r => r.startsWith('@media (prefers-reduced-transparency: reduce)'));
+ok(!!rtRule, '缺 prefers-reduced-transparency 兜底（减少透明度偏好下玻璃应收敛）');
+if (rtRule) {
+  /* 亮/暗各一套，必须精确计数：只写「存在一处」会让删掉一半的兜底蒙混过关 */
+  const bgCount = (rtRule.match(/background-color:/g) || []).length;
+  ok(bgCount === 2, `兜底应给亮/暗各垫一次实色，实际 ${bgCount} 次`);
+  const offCount = (rtRule.match(/-webkit-backdrop-filter:none;backdrop-filter:none;/g) || []).length;
+  ok(offCount === 2, `兜底应给亮/暗各关一次 blur，实际 ${offCount} 次`);
+  const darkAt = rtRule.indexOf(':is(.theme-dark,.dark)');
+  const rtLight = darkAt > 0 ? rtRule.slice(0, darkAt) : '';
+  const rtDark = darkAt > 0 ? rtRule.slice(darkAt) : '';
+  ok(darkAt > 0, '兜底缺暗色选择器组（暗档玻璃仍透）');
+  for (const part of ['.camera', '.top-panel', '.bm-search', '.bm-input', '.bm-form']) {
+    ok(rtLight.includes('.bm-wrap.bm-fx-on ' + part), `兜底缺亮色覆盖 ${part}`);
+    ok(rtDark.includes(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + part), `兜底缺暗色覆盖 ${part}`);
   }
 }
 
