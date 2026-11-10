@@ -85,8 +85,32 @@ for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
   ok(rim.includes('inset 0 1.5px 0 0 rgba(255,255,255,') || rim.includes('inset 0 1px 0 0 rgba(255,255,255,'), `${mode}缺上缘细高光`);
 }
 
-/* 单一顶光源：白色高光的径向光心横坐标必须是 50%；彩色环境光允许偏离 */
-for (const rule of rules) {
+/* ── 材质 token（P1）：光学常量集中定义，且值受契约约束 ── */
+const tokVal = (r, name) => {
+  const m = r && r.match(new RegExp(name + ':\\s*([^;]+);'));
+  return m ? m[1] : '';
+};
+const lightDef = rules.find(r => r.startsWith('.bm-wrap.bm-fx-on{') && r.includes('--bm-light-x:'));
+const darkDef = rules.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on{') && r.includes('--bm-glass-blur:'));
+ok(!!lightDef, '缺亮色材质 token 定义（.bm-wrap.bm-fx-on）');
+ok(!!darkDef, '缺暗色材质 token 覆盖定义');
+for (const t of ['--bm-light-x', '--bm-depth-blur', '--bm-glass-blur', '--bm-recess-blur', '--bm-input-blur']) {
+  ok(!!tokVal(lightDef, t), `亮色缺材质 token ${t} 定义`);
+}
+for (const t of ['--bm-depth-blur', '--bm-glass-blur', '--bm-recess-blur']) {
+  ok(!!tokVal(darkDef, t), `暗色缺材质 token ${t} 覆盖`);
+}
+const lightX = tokVal(lightDef, '--bm-light-x');
+ok(lightX === '50%', `--bm-light-x 必须为正上方 50%（单一顶光源），当前「${lightX || '未定义'}」`);
+/* 引用完整性：blur(var(--bm-…)) 引用的 token 必须有定义，否则整条声明在浏览器里失效 */
+for (const m of fxBlock.matchAll(/blur\(var\((--bm-[\w-]+)\)\)/g)) {
+  ok(!!tokVal(lightDef, m[1]) || !!tokVal(darkDef, m[1]), `blur 引用了未定义的 ${m[1]}`);
+}
+
+/* 单一顶光源：白色高光的径向光心横坐标必须是 50%；彩色环境光允许偏离。
+   token 化后先把 var(--bm-light-x) 归一化成其定义值，再跑原检查（契约不降强度） */
+const normalized = rules.map(r => r.replace(/var\(--bm-light-x\)/g, lightX || '50%'));
+for (const rule of normalized) {
   for (const m of rule.matchAll(/at\s+(\d+)%\s+(-?\d+)%/g)) {
     if (m[1] === '50') continue;
     const tail = rule.slice(m.index, m.index + 60);
