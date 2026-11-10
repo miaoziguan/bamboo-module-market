@@ -124,8 +124,10 @@ for (const r of rules) {
 }
 
 /* ── P3 无障碍：prefers-reduced-transparency 兜底 ──
-   系统要求减少透明度时，玻璃必须垫实色 + 关 blur。纯增量，未开启该偏好
-   时整块被浏览器忽略，故零视觉变化；但容易在后续改动里被误删，固化断言。 */
+   语义是「别让半透明背景损害文字可读性」，故只垫实色/关 blur 于承载文字的
+   控件（凹槽/搜索框/输入框/表单）；相机外壳 .camera 是纯装饰件、无文字，
+   必须保持半透明玻璃 + 那层 blur，否则整块机身被垫成实色、透不出背景景深。
+   未开启该偏好时整块被浏览器忽略；但容易在后续改动里被误删，固化断言。 */
 const rtRule = rules.find(r => r.startsWith('@media (prefers-reduced-transparency: reduce)'));
 ok(!!rtRule, '缺 prefers-reduced-transparency 兜底（减少透明度偏好下玻璃应收敛）');
 if (rtRule) {
@@ -138,10 +140,14 @@ if (rtRule) {
   const rtLight = darkAt > 0 ? rtRule.slice(0, darkAt) : '';
   const rtDark = darkAt > 0 ? rtRule.slice(darkAt) : '';
   ok(darkAt > 0, '兜底缺暗色选择器组（暗档玻璃仍透）');
-  for (const part of ['.camera', '.top-panel', '.bm-search', '.bm-input', '.bm-form']) {
+  /* 文字/凹槽控件必须亮暗都覆盖 */
+  for (const part of ['.top-panel', '.bm-search', '.bm-input', '.bm-form']) {
     ok(rtLight.includes('.bm-wrap.bm-fx-on ' + part), `兜底缺亮色覆盖 ${part}`);
     ok(rtDark.includes(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + part), `兜底缺暗色覆盖 ${part}`);
   }
+  /* 反向锁：相机外壳是纯装饰件，reduced-transparency 不得把它垫实色或关 blur，
+     否则半透明玻璃叠在实色上会「透不出背景」（曾实测 camBg=rgb(49,63,49)） */
+  ok(!/\.camera[,{]/.test(rtRule), '兜底误把相机外壳 .camera 垫实色/关 blur（会透不出背景）');
   /* 竖纹是不透明表面微结构，不涉及透视背景；减少透明度时不得隐藏它，
      否则系统偏好会静默否决用户主动打开的开关（曾导致「完全没生效」） */
   ok(!rtRule.includes('.bm-cam-reed{display:none;}'), '兜底误隐藏竖纹层（reduced-transparency 不应否决表面纹理）');
