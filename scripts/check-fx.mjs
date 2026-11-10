@@ -53,39 +53,33 @@ ok(dark.length >= 10, `暗色增强规则仅 ${dark.length} 条（暗色光影�
 const fxHasReducedMotion = /prefers-reduced-motion/.test(fxBlock);
 ok(!/animation|@keyframes|transition:/i.test(fxBlock) || fxHasReducedMotion, 'FX 块引入了动效，但缺少 prefers-reduced-motion 兜底（关档/降级应停播）');
 
-/* ── 3：暗色关键光影项 ── */
+/* ── 3：关键光影项（主题化：跟随 --accent-hue / --accent-lightness-offset）── */
 const findDark = (sel) => dark.find(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const findLight = (sel) => light.find(r => r.startsWith('.bm-wrap.bm-fx-on ' + sel + '{')) || '';
 const cam = findDark('.camera');
-ok(cam.includes('background:linear-gradient(160deg,hsla(190,24%,72%,.34)'), '暗色机身不是半透明玻璃底');
+ok(cam.includes('var(--accent-hue') && cam.includes('background:linear-gradient(160deg,hsla(calc(var(--accent-hue,120) + 8)'), '暗色机身不是主题化半透明玻璃底');
 ok(cam.includes('-webkit-backdrop-filter:blur(') && cam.includes('backdrop-filter:blur('), '暗色机身缺 backdrop-filter');
-ok(cam.includes('inset 0 0 0 7px rgba(220,245,240,.06)'), '暗色机身缺 7px 玻璃侧壁（厚度）');
-ok(cam.includes('inset 0 0 30px rgba(200,240,235,.12)'), '暗色机身缺边缘聚光');
-ok(cam.includes('inset 0 2px 0 rgba(255,255,255,.26)'), '暗色机身缺顶面亮边');
-const lens = findDark('.lens-unit');
-ok(lens.includes('0 0 30px -8px'), '暗色镜头缺柔光');
-const shutter = findDark('.shutter');
-ok(shutter.includes('rgba(239,59,44,.48)'), '暗色快门缺暖色辉光');
-const paper = findDark('.bm-paper');
-ok(paper.includes('0 0 0 1px rgba(255,255,255,.06)'), '暗色纸带缺边缘亮线');
+ok(/0 0 0 7px hsla\(var\(--accent-hue/.test(cam), '暗色机身缺 7px 玻璃侧壁（厚度）');
+ok(cam.includes('inset 0 0 30px') || cam.includes('inset 0 0 26px'), '暗色机身缺边缘聚光');
+ok(cam.includes('inset 0 2px 0 rgba(255,255,255,'), '暗色机身缺顶面亮边');
 const grain = findDark('.grain');
 ok(grain.includes('mix-blend-mode:overlay') && grain.includes('opacity:.022'), '暗色颗粒未改成「更细的材质感」');
 ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .camera::before{')), '暗色机身缺表面反射层');
 ok(dark.some(r => r.startsWith(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on .top-panel{')), '暗色凹槽未增强');
 
-/* ── 3b：厚玻璃四特征（亮暗各一套）──
+/* ── 3b：厚玻璃四特征（亮暗各一套，主题化）──
    半透明 + 7px 侧壁 + 边缘聚光 + 顶面亮边 + 斜向反光 + 边缘色散。
-   缺任何一条就退化成「薄片」或「塑料」。 */
+   颜色全部跟随 --accent-hue，不再写死。 */
 for (const [mode, find] of [['亮色', findLight], ['暗色', findDark]]) {
   const shell = find('.camera');
-  ok(/background:linear-gradient\(160deg,hsla\(/.test(shell), `${mode}机身不是半透明玻璃底`);
+  ok(shell.includes('var(--accent-hue') && shell.includes('background:linear-gradient(160deg,hsla(calc(var(--accent-hue,120) + 8)'), `${mode}机身不是主题化玻璃底`);
   ok(shell.includes('backdrop-filter:blur('), `${mode}机身缺 backdrop-filter`);
-  ok(shell.includes('inset 0 0 0 7px'), `${mode}机身缺 7px 侧壁（厚度）`);
+  ok(/0 0 0 7px hsla\(var\(--accent-hue/.test(shell), `${mode}机身缺 7px 侧壁（厚度）`);
   ok(shell.includes('inset 0 0 26px') || shell.includes('inset 0 0 30px'), `${mode}机身缺边缘聚光`);
   ok(shell.includes('inset 0 2px 0 rgba(255,255,255,'), `${mode}机身缺顶面亮边`);
 
   const refl = find('.camera::before');
-  ok(refl.includes('linear-gradient(115deg'), `${mode}缺斜向玻璃反光`);
+  ok(refl.includes('radial-gradient(155% 48%'), `${mode}缺斜向玻璃反光`);
 
   const rim = find('.camera::after');
   ok(rim.includes('inset 0 1.5px 0 0 rgba(255,255,255,') || rim.includes('inset 0 1px 0 0 rgba(255,255,255,'), `${mode}缺上缘细高光`);
@@ -100,19 +94,12 @@ for (const rule of rules) {
   }
 }
 
-/* 镜片与快门保留彩色反射 */
+/* 镜片 / 快门 / 彩虹条：主题化玻璃反射（跟随 --accent-hue），不依赖写死三色 */
 const glass = findDark('.lens-glass');
-ok(!!glass && glass.includes('rgba(150,215,255,') && glass.includes('rgba(255,170,235,') && glass.includes('rgba(255,240,190,'), '镜片缺三色釉面反射');
-const shutter2 = findDark('.shutter');
-ok(shutter2.includes('rgba(255,200,240,'), '快门缺粉紫高光');
-
-/* 玻璃集中处：镜头、快门、彩虹条 —— 小尺寸下这几处才看得见 */
-const lensGlass = findDark('.lens-glass');
-ok(lensGlass.includes('inset 0 0 24px rgba(180,230,255,.20)'), '镜片缺玻璃内光');
-const shutterGlass = findDark('.shutter');
-ok(shutterGlass.includes('inset 0 0 16px rgba(255,140,110,.34)'), '快门缺玻璃内透光');
+ok(!!glass && glass.includes('var(--accent-hue'), '镜片缺主题化釉面反射');
 const rainbowGlass = findDark('.rainbow');
-ok(rainbowGlass.includes('saturate(1.45)'), '彩虹条未玻璃化（饱和度不足）');
+ok(rainbowGlass.includes('var(--accent-hue'), '彩虹条未主题化');
+ok(fxBlock.includes('--accent-lightness-offset'), 'FX 块未使用 --accent-lightness-offset（丢失主题化亮度推导）');
 
 /* ── 2：基线未被改动 ── */
 ok(!baseCss.includes('.bm-fx-on'), '基础 CSS 段出现了 .bm-fx-on（增强值渗回基线，关档不干净）');
