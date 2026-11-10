@@ -142,7 +142,9 @@ if (rtRule) {
     ok(rtLight.includes('.bm-wrap.bm-fx-on ' + part), `兜底缺亮色覆盖 ${part}`);
     ok(rtDark.includes(':is(.theme-dark,.dark) .bm-wrap.bm-fx-on ' + part), `兜底缺暗色覆盖 ${part}`);
   }
-  ok(rtRule.includes('.bm-cam-reed{display:none;}'), '兜底未隐藏竖纹层');
+  /* 竖纹是不透明表面微结构，不涉及透视背景；减少透明度时不得隐藏它，
+     否则系统偏好会静默否决用户主动打开的开关（曾导致「完全没生效」） */
+  ok(!rtRule.includes('.bm-cam-reed{display:none;}'), '兜底误隐藏竖纹层（reduced-transparency 不应否决表面纹理）');
 }
 
 /* ── 竖纹玻璃 CSS：双 class 限定、周期、边缘渐隐、零动效 ──
