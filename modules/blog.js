@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.33","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.34","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 博客写立得 v0.7
  *
