@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.30","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.31","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 博客写立得 v0.7
  *
@@ -869,6 +869,7 @@ var __bamboo_module_blog = (function () {
         }
         return;
       }
+      state.motion = !!e.target.checked;
       var wrap = root.querySelector('.bm-wrap');
       if (wrap) wrap.classList.toggle('bm-fx-liquid', !!e.target.checked);
       persist();
@@ -1196,6 +1197,7 @@ var __bamboo_module_blog = (function () {
         // 老配置没有 enhance 字段 → 保持默认开；只有显式 false 才是用户主动关掉
         state.enhance = !(d.enhance === false);
         state.motion = !!(d.motion); // 默认关，无需「保持默认开」逻辑
+        if (!state.enhance) state.motion = false; // 脏数据兜底：质感增强关着时流光无意义
 
       }
     } catch (e) { /* 首次运行无数据 */ }

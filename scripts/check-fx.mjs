@@ -124,6 +124,10 @@ ok(src.includes("(state.enhance ? ' bm-fx-on' : '')"), 'render() 未按 state �
 ok(src.includes('data-field="enhance"'), '设置表单缺增强开关');
 ok(src.includes('if (fx) state.enhance = !!fx.checked;'), 'saveProfile() 未读取开关值');
 ok(src.includes("wrap.classList.toggle('bm-fx-on', !!state.enhance)"), '异步读回配置后未兜底同步 class');
+/* 流光动效开关：change 时必须写入 state.motion，否则 persist 存旧值、收起/重开即复位 */
+ok(src.includes('data-field="motion"'), '设置表单缺流光动效开关');
+ok(src.includes('state.motion = !!e.target.checked;'), '流光动效 change 未写入 state.motion（会不持久/复位）');
+ok(src.includes('motion: state.motion,'), 'persist() 未写入 motion');
 
 const changeAt = src.indexOf("fx.addEventListener('change'");
 ok(changeAt > 0, '缺开关即时预览的 change 监听');
