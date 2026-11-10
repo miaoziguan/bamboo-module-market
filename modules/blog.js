@@ -351,7 +351,7 @@ var __bamboo_module_blog = (function () {
       // letter-spacing 会在末字之后再留 .3px（居中时整行因此左偏 .15px），
       // 用 text-indent:.3px 补偿 —— 居中时缩进的实际位移是它的一半，正好 .15px
       // 状态栏现在是手动刷新的入口（原快门），故加可点样式：悬停提亮 + 竹青提示色
-      '.bm-status{padding:8px 14px;font-size:11px;color:var(--text-faint,var(--bm-faint));border-top:1px solid var(--background-modifier-border,var(--bm-border));letter-spacing:.3px;text-align:center;text-indent:.3px;cursor:pointer;user-select:none;transition:color .12s;}',
+      '.bm-status{padding:8px 14px;font-size:11px;color:var(--text-faint,var(--bm-faint));border-top:1px solid hsla(var(--accent-hue),22%,calc(60% + var(--accent-lightness-offset,0%)),.14);letter-spacing:.3px;text-align:center;text-indent:.3px;cursor:pointer;user-select:none;transition:color .12s;}',
       '.bm-status:hover{color:' + BAMBOO + ';}',
       // ────────────── 暗色（宿主暗色 + Obsidian 暗色）──────────────
       // 下面整块必须同时认两个选择器，缺一个就会在另一种环境里整套静默失效：
