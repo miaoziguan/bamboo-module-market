@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.9.17","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.10.0","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.9.17';
+  var VERSION = '0.10.0';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -38,7 +38,14 @@
   /* 茶托径向缩一档：作者要求「托小一号」。只缩半径、不动竖直尺寸 —— 竖直一动，
      碗足就会离开盘心（原稿碗底 y=0.05、盘心 y≈0.02，本来就顶着）。 */
   var SAUCER_SCALE = 0.90;   // 以 y=0.02（碗足落点）为基准整体缩放，接触面不动
-  var ROT_SPEED = 0.15;          // 原稿 gaiwan.rotation.y = elapsed * 0.15
+  var ROT_SPEED = 0.15;          // 原地自转：绕器物竖轴（回转体，仅冰裂/叶底可见）
+  /* 环绕自转：相机绕器物巡视，真正「多角度」。方位角匀速 + 俯仰角正弦摆动。
+     注意：回转体绕自身轴转 ≡ 相机绕对称轴转，所以纯方位角无效——多角必须靠俯仰摆动。
+     44°..68° 是 POLAR_MIN(30°)/MAX(84°) 内收窄的安全带，避免顶视/平视畸变。 */
+  var AZIM_SPEED = 0.12;                       // 方位角匀速 rad/s（整圈约 52s）
+  var POLAR_MID = 51 * Math.PI / 180;          // 俯仰摆动中值
+  var POLAR_AMP = 17 * Math.PI / 180;          // 俯仰摆动幅度（34°↔68°）
+  var POLAR_FREQ = 2 * Math.PI / 36;           // 俯仰摆动频率（周期约 36s）
   var LEAF_COLOR = [0.20, 0.26, 0.10];  // 叶底（线性色）
   /* 汤色亮度低于此值就不画叶底：深色茶汤浮绿叶是假的 */
   var LEAF_MIN_Y = 0.36;
@@ -827,7 +834,9 @@
 
     var state = {
       w: 0, h: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
-      yaw: 0, lift: 0, bob: 0, pattern: 'crackle', spin: opts.spin !== false,
+      yaw: 0, lift: 0, bob: 0, pattern: 'crackle',
+      spinMode: (opts.spinMode === 'yaw' || opts.spinMode === 'orbit') ? opts.spinMode : 'off',
+      polarPhase: 0, autoPaused: false,
       teaColor: [0.7, 0.5, 0.2], leaves: true, leafColor: LEAF_COLOR, porcelain: [1, 1, 1], glow: 0, bodyDim: 1, lineGlow: 0, last: 0, raf: 0, alive: true,
       /* 釉色：'porcelain' 白瓷（半球光 × 反照率）/ 'jade' 青玉（四段结构单独着色） */
       mat: opts.mat === 'jade' ? 'jade' : 'porcelain',
@@ -1187,11 +1196,20 @@
       if (Math.abs(cam.tPolar - cam.polar) > 1e-4) { cam.polar += (cam.tPolar - cam.polar) * k; camMoved = true; }
       if (Math.abs(cam.tZoom - cam.zoom) > 1e-4) { cam.zoom += (cam.tZoom - cam.zoom) * k; camMoved = true; }
       var spun = false;
-      if (state.spin) {
-        state.yaw += dt * ROT_SPEED;
+      if (state.spinMode !== 'off') {
         state.elapsed = (state.elapsed || 0) + dt;
-        state.bob = Math.sin(state.elapsed * 1.5) * 0.010;
-        spun = true;
+        if (state.spinMode === 'yaw') {
+          // 原地自转：器物绕自身竖轴，仅冰裂纹理与浮叶可见（回转体几何决定）
+          state.yaw = state.elapsed * ROT_SPEED;
+          state.bob = Math.sin(state.elapsed * 1.5) * 0.010;
+          spun = true;
+        } else if (!state.autoPaused) {
+          // 环绕：相机绕器物巡视，俯仰角正弦摆动（拖拽时暂停，见 setAutoPaused）
+          state.polarPhase += dt * POLAR_FREQ;
+          cam.tAzim += dt * AZIM_SPEED;
+          cam.tPolar = POLAR_MID + Math.sin(state.polarPhase) * POLAR_AMP;
+          spun = true;
+        }
       }
       if (camMoved || spun) render();
       if (camMoved && opts.onView) {
@@ -1202,7 +1220,7 @@
 
     resize();
     render();
-    if (state.spin) state.raf = requestAnimationFrame(loop);
+    if (state.spinMode !== 'off') state.raf = requestAnimationFrame(loop);
 
     /** 供 UI 层定位命中区：盖子在画布里的归一化矩形 + 世界单位↔CSS 像素 */
     function metrics() {
@@ -1233,7 +1251,7 @@
       canvas: canvas,
       render: render,
       metrics: metrics,
-      setLift: function (v) { state.lift = Math.max(0, Math.min(1, v)); if (!state.spin) render(); },
+      setLift: function (v) { state.lift = Math.max(0, Math.min(1, v)); if (state.spinMode === 'off') render(); },
       /** 设置纹样：'none' | 'bamboo' | 'blue' | 'crackle' */
       setPattern: function (kind) {
         state.pattern = PATTERNS.indexOf(kind) >= 0 ? kind : 'none';
@@ -1302,13 +1320,13 @@
         state.teaColor = hex2linArray(hex);
         var c = state.teaColor;
         state.leaves = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) >= LEAF_MIN_Y;
-        if (!state.spin) render();
+        if (state.spinMode === 'off') render();
       },
       /** 瓷色：随主题色相走。三件瓷共用一个底色，明暗仍由灯位铺出来 */
       /* 叶底色按茶种给，见 TEAS 的 lf 字段（依据 GB/T 23776-2018 与评茶术语的叶底色系） */
       setLeafColor: function (hex) {
         state.leafColor = hex2linArray(hex);
-        if (!state.spin) render();
+        if (state.spinMode === 'off') render();
       },
       /* 夜色效果：三个系数一起下发，避免多口径打架
          glow 周身微光 / bodyDim 器身压暗 / lineGlow 裂纹自发光 */
@@ -1317,7 +1335,7 @@
         state.glow = +o.glow || 0;
         state.bodyDim = (o.bodyDim == null) ? 1 : +o.bodyDim;
         state.lineGlow = +o.lineGlow || 0;
-        if (!state.spin) render();
+        if (state.spinMode === 'off') render();
       },
       setPorcelain: function (hex) {
         state.porcelain = hex2linArray(hex);
@@ -1338,14 +1356,16 @@
       },
       /** P0 质感档开关：关掉即把 uFx 归零，瓷器/合盖逐像素回到 three 原稿基线 */
       setEnhance: function (on) { state.enhance = !!on; render(); },
-      setSpin: function (on) {
-        state.spin = !!on;
-        if (on) { state.last = 0; if (!state.raf) state.raf = requestAnimationFrame(loop); }
+      setSpinMode: function (mode) {
+        state.spinMode = (mode === 'yaw' || mode === 'orbit') ? mode : 'off';
+        if (state.spinMode !== 'off') { state.last = 0; if (!state.raf) state.raf = requestAnimationFrame(loop); }
         else if (state.raf) { cancelAnimationFrame(state.raf); state.raf = 0; render(); }
       },
+      /* 环绕模式下用户按住拖拽时暂停自动巡视（转盘语义：放下即继续），原地/关闭模式忽略 */
+      setAutoPaused: function (v) { state.autoPaused = !!v; },
       pause: function () { if (state.raf) { cancelAnimationFrame(state.raf); state.raf = 0; } },
       resume: function () {
-        if (state.spin && !state.raf && state.alive) { state.last = 0; state.raf = requestAnimationFrame(loop); }
+        if (state.spinMode !== 'off' && !state.raf && state.alive) { state.last = 0; state.raf = requestAnimationFrame(loop); }
       },
       dispose: function () {
         state.alive = false;
@@ -1450,6 +1470,7 @@
   var PATTERNS = ['none', 'crackle'];
   var PATTERN_NAMES = { none: '素瓷', crackle: '冰裂' };
   var MAT_NAMES = { porcelain: '白瓷', jade: '青玉' };
+  var SPIN_NAMES = { off: '自转已关', yaw: '原地自转', orbit: '环绕自转' };
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
@@ -1809,7 +1830,9 @@
     var _tyRef = { v: 0 };
     var state = {
       open: false, lift: 0, tea: null, types: [], steam: true, pattern: 'crackle', night: 'body', nightFx: { body: 0.5, crackle: 0.5 }, cabinet: [],
-      spin: !reduceMotion, spinUserSet: false, sound: true,
+      /* 自转三态：off / yaw（原地，绕竖轴，几乎看不见）/ orbit（环绕，相机巡视，真正多角度）。
+         默认 orbit：因为只有它让回转体「转起来」看得见；reduced-motion 下关。 */
+      spinMode: reduceMotion ? 'off' : 'orbit', spinUserSet: false, sound: true,
       /* 釉色：'porcelain' 白瓷（默认）/ 'jade' 青玉（参考稿的碧玉盖碗） */
       mat: 'porcelain',
       /* P0 质感档：默认开。关掉 = 原稿对照档（柔影/蒸汽脉冲/液面增强全退，逐像素回基线） */
@@ -1939,8 +1962,15 @@
             '<div class="tea-sec-h">动效与声音</div>' +
             '<label class="tea-field tea-switch"><span class="tea-field-label">蒸汽</span>' +
               '<input type="checkbox" class="tea-steam-input" /><span class="track" aria-hidden="true"></span></label>' +
-            '<label class="tea-field tea-switch"><span class="tea-field-label">缓慢自转</span>' +
-              '<input type="checkbox" class="tea-spin-input" /><span class="track" aria-hidden="true"></span></label>' +
+            /* 自转三态：关 / 原地 / 环绕。与纹样/釉色/夜色同款 chips（data-row），沿用现有视觉语言 */
+            '<div class="tea-field">' +
+              '<span class="tea-field-label">自转</span>' +
+              '<div class="tea-chips" data-row="spin">' +
+                '<button type="button" class="tea-chip spin" data-s="off">关</button>' +
+                '<button type="button" class="tea-chip spin" data-s="yaw">原地</button>' +
+                '<button type="button" class="tea-chip spin" data-s="orbit">环绕</button>' +
+              '</div>' +
+            '</div>' +
             '<label class="tea-field tea-switch"><span class="tea-field-label">瓷器音效</span>' +
               '<input type="checkbox" class="tea-sound-input" /><span class="track" aria-hidden="true"></span></label>' +
           '</section>' +
@@ -2011,14 +2041,17 @@
     el.rangeVal = wrap.querySelector('.tea-range-val');
     el.enhanceInput = wrap.querySelector('.tea-enhance-input');
     el.steamInput = wrap.querySelector('.tea-steam-input');
-    el.spinInput = wrap.querySelector('.tea-spin-input');
+    el.spinChips = wrap.querySelector('.tea-chips[data-row="spin"]');
     el.soundInput = wrap.querySelector('.tea-sound-input');
 
     loadConfig();
 
     /* ── 渲染器 ── */
     try {
-      gl = GaiwanMount(el.stage, { spin: state.spin, tyRef: _tyRef, mat: state.mat, jadeGain: JADE_GAIN, enhance: state.enhance });
+      gl = GaiwanMount(el.stage, { spinMode: state.spinMode, tyRef: _tyRef, mat: state.mat, jadeGain: JADE_GAIN, enhance: state.enhance,
+        /* 环绕时相机移动会让盖子命中区过期：每帧把最新的 metrics 写回 M（只算投影，不读布局，零成本）。
+           这同时修掉了此前「手动拖拽后盖子命中区错位」的隐患。 */
+        onView: function (m) { if (m) M = m; } });
     } catch (e) {
       LOG.warn('[' + ID + '] WebGL 初始化失败', e);
       gl = null;
@@ -2163,8 +2196,8 @@
     var _visible = true;
     function syncSpin() {
       if (!gl) return;
-      var on = state.spin && _visible;
-      gl.setSpin(on);
+      /* 不可见时停 rAF（省电）；可见时按当前三态恢复（orbit/yaw 重启循环，off 停） */
+      gl.setSpinMode(_visible ? state.spinMode : 'off');
     }
     function onVisibility() {
       _visible = !document.hidden;
@@ -2209,7 +2242,14 @@
           crackle: clamp(+raw.nightFx.crackle || 0, 0, 1)
         };
       }
-      if (raw && typeof raw.spin === 'boolean') { state.spin = raw.spin; state.spinUserSet = true; }
+      /* 自转三态迁移：新字段 spinMode 优先；旧字段 spin(boolean) 映射为 关→off / 开→orbit（开=用户想看动，环绕才看得见） */
+      if (raw && typeof raw.spinMode === 'string') {
+        state.spinMode = (raw.spinMode === 'yaw' || raw.spinMode === 'orbit') ? raw.spinMode : 'off';
+        state.spinUserSet = true;
+      } else if (raw && typeof raw.spin === 'boolean') {
+        state.spinMode = raw.spin ? 'orbit' : 'off';
+        state.spinUserSet = true;
+      }
       /* 音效默认开：老配置里没有这个字段，不能因为 undefined 就判成关 */
       state.sound = !(raw && raw.sound === false);
       /* 质感档默认开；老配置没有该字段时保持增强（不会莫名退回旧画面） */
@@ -2218,18 +2258,17 @@
       /* 异步到达时 UI 已按默认值画过一遍：各处按真值补刷 */
       setPattern(state.pattern, false);
       renderNightChips(); syncRange(); applyTheme();
-      renderChips();
+      renderChips(); renderSpinChips();
       setEnhance(state.enhance);
       if (el.steamInput) el.steamInput.checked = state.steam;
-      if (el.spinInput) el.spinInput.checked = state.spin;
       if (el.soundInput) el.soundInput.checked = state.sound;
       if (audio) audio.setEnabled(state.sound);
-      if (gl && gl.setSpin) gl.setSpin(state.spin);
+      if (gl) gl.setSpinMode(state.spinMode);
       paintCount(); paintSaveBtn();
     }
     function saveConfig() {
       try {
-        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, mat: state.mat, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice(), enhance: !!state.enhance });
+        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spinMode: state.spinMode, sound: !!state.sound, mat: state.mat, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice(), enhance: !!state.enhance });
       } catch (e) { LOG.warn('[' + ID + '] 保存设置失败', e); }
     }
 
@@ -2485,6 +2524,13 @@
         list[i].classList.toggle('on', list[i].getAttribute('data-n') === state.night);
       }
     }
+    function renderSpinChips() {
+      if (!el.spinChips) return;
+      var list = el.spinChips.querySelectorAll('.tea-chip');
+      for (var i = 0; i < list.length; i++) {
+        list[i].classList.toggle('on', list[i].getAttribute('data-s') === state.spinMode);
+      }
+    }
     /* 渲染开关：面板打开时、或模块滚出视野时停掉渲染循环。
        模块是常驻 DOM，之前无论看不看得见都在每帧画，笔记本上就是持续耗电与卡顿来源。 */
     var _vis = true;
@@ -2511,6 +2557,14 @@
       if (gl) gl.setPattern(state.pattern);
       renderPatChips();
       if (announce) flashTip(PATTERN_NAMES[state.pattern]);
+    }
+    /* 自转三态切换：关 / 原地 / 环绕。改运行态并即时写盘（与纹样/釉色同口径） */
+    function setSpinMode(mode, announce) {
+      state.spinMode = (mode === 'yaw' || mode === 'orbit') ? mode : 'off';
+      state.spinUserSet = true;
+      renderSpinChips();
+      syncSpin();
+      if (announce) flashTip(SPIN_NAMES[state.spinMode]);
     }
     /* 釉色：白瓷（半球光 × 反照率）/ 青玉（四段结构单独着色，见 jadeBody） */
     function setMaterial(kind, announce) {
@@ -2602,6 +2656,8 @@
         if (_g.kind === 'lid') audio.rubStart();          // 摩擦底噪只在按住盖子期间存在
       }
       wrap.classList.add(_g.kind === 'lid' ? 'is-dragging' : 'is-orbiting');
+      /* 环绕自转时按住拖拽 → 暂停自动巡视（转盘语义：放下即继续），让用户定格观察 */
+      if (gl && _g.kind === 'orbit') gl.setAutoPaused(true);
       try { if (el.stage.setPointerCapture) el.stage.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
     }
     function onPointerMove(e) {
@@ -2622,6 +2678,7 @@
       if (!_g.active) return;
       _g.active = false;
       if (audio) audio.rubStop();
+      if (gl) gl.setAutoPaused(false);
       wrap.classList.remove('is-dragging', 'is-orbiting');
       var tap = _g.moved <= 4;
       if (_g.kind === 'lid') {
@@ -2663,14 +2720,14 @@
       }
     }
     function openSettings() {
-      _snapCfg = { types: state.types.slice(), steam: !!state.steam, spin: !!state.spin, sound: !!state.sound, pattern: state.pattern, mat: state.mat, enhance: !!state.enhance };
+      _snapCfg = { types: state.types.slice(), steam: !!state.steam, spinMode: state.spinMode, sound: !!state.sound, pattern: state.pattern, mat: state.mat, enhance: !!state.enhance };
       renderNightChips();
       renderChips();
       renderMatChips();
+      renderSpinChips();
       syncRange();
       if (el.enhanceInput) el.enhanceInput.checked = !!state.enhance;
       if (el.steamInput) el.steamInput.checked = !!state.steam;
-      if (el.spinInput) el.spinInput.checked = !!state.spin;
       if (el.soundInput) el.soundInput.checked = !!state.sound;
       wrap.classList.add('is-set');
       syncSpinState();
@@ -2688,7 +2745,7 @@
         state.night = _snapCfg.night || 'body';
         renderNightChips();
         state.steam = _snapCfg.steam;
-        state.spin = _snapCfg.spin;
+        state.spinMode = _snapCfg.spinMode;
         state.sound = _snapCfg.sound;
         if (el.soundInput) el.soundInput.checked = state.sound;
         if (audio) audio.setEnabled(state.sound);
@@ -2849,10 +2906,11 @@
         scheduleSave();
       });
     }
-    if (el.spinInput) {
-      el.spinInput.addEventListener('change', function () {
-        state.spin = !!el.spinInput.checked;
-        syncSpin();
+    if (el.spinChips) {
+      el.spinChips.addEventListener('click', function (e) {
+        var chip = e.target && e.target.closest ? e.target.closest('.tea-chip') : null;
+        if (!chip) return;
+        setSpinMode(chip.getAttribute('data-s'), false);
         scheduleSave();
       });
     }
