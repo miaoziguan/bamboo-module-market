@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.10.0","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.11.0","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,22 +17,28 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.10.0';
+  var VERSION = '0.11.0';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
 
   /* ══ 资产 ══════════════════════════════════════════════════════ */
+  /* 三件器物的剖面控制点。精细化只发生在「工艺转折」处 —— 把 Catmull-Rom 会抹圆的
+     圈足足端、盖钮、托沿用紧邻控制点重新定义；整体轮廓与所有极值点保持不变，
+     所以取景、盖子命中区、茶汤半径都不受影响。新增点让该圆的圆、该挺的挺。 */
   var PROFILES = {
-    saucer: [[0, .15], [.80, .15], [.85, .20], [.85, .25], [1.20, .25], [1.60, .25], [2.20, .30], [2.50, .40],
-             [2.55, .45], [2.50, .48], [2.30, .35], [1.80, .15], [1.20, .08], [1.15, .00], [1.15, -.35],
-             [1.05, -.40], [1.05, .00], [.50, .02], [0, .02]],
-    bowl: [[0, .40], [.60, .40], [.65, .35], [.65, .05], [.75, .05], [.75, .35], [.95, .50], [1.30, .80],
-           [1.60, 1.30], [1.80, 1.80], [1.92, 2.10], [2.02, 2.20], [2.08, 2.18], [2.04, 2.14], [1.94, 2.08],
-           [1.86, 1.95], [1.60, 1.60], [1.20, 1.00], [.80, .60], [.50, .45], [0, .45]],
-    lid: [[0, 2.75], [.40, 2.75], [.45, 2.80], [.50, 2.85], [.52, 2.86], [.52, 2.78], [.45, 2.60], [.55, 2.55],
-          [.80, 2.50], [1.20, 2.40], [1.50, 2.25], [1.70, 2.12], [1.78, 2.05], [1.82, 1.95], [1.82, 1.90],
-          [1.78, 1.86], [1.70, 2.00], [1.50, 2.15], [1.00, 2.35], [.60, 2.45], [0, 2.45]]
+    saucer: [[0, .15], [.80, .15], [.85, .20], [.85, .25], [1.20, .25], [1.60, .25], [2.20, .30], [2.42, .37],
+             [2.49, .41], [2.54, .45], [2.55, .47], [2.53, .485], [2.49, .48], [2.44, .44], [2.30, .35],
+             [1.80, .15], [1.20, .08], [1.16, .02], [1.15, -.02], [1.15, -.34], [1.14, -.38], [1.11, -.40],
+             [1.08, -.40], [1.05, -.38], [1.05, -.34], [1.05, .00], [.50, .02], [0, .02]],
+    bowl: [[0, .40], [.60, .40], [.65, .35], [.65, .12], [.655, .08], [.67, .055], [.70, .05], [.73, .055],
+           [.745, .08], [.75, .12], [.75, .35], [.95, .50], [1.30, .80], [1.60, 1.30], [1.80, 1.80],
+           [1.92, 2.10], [2.02, 2.20], [2.08, 2.18], [2.04, 2.14], [1.94, 2.08], [1.86, 1.95],
+           [1.60, 1.60], [1.20, 1.00], [.80, .60], [.50, .45], [0, .45]],
+    lid: [[0, 2.86], [.18, 2.855], [.32, 2.84], [.42, 2.81], [.48, 2.77], [.50, 2.72], [.49, 2.69],
+          [.52, 2.65], [.55, 2.58], [.62, 2.55], [.80, 2.50], [1.20, 2.40], [1.50, 2.25], [1.70, 2.12],
+          [1.78, 2.05], [1.82, 1.95], [1.82, 1.90], [1.78, 1.86], [1.70, 2.00], [1.50, 2.15],
+          [1.00, 2.35], [.60, 2.45], [0, 2.45]]
   };
   var TEA = { y: 1.66, r: 1.645 };
   /* 茶托径向缩一档：作者要求「托小一号」。只缩半径、不动竖直尺寸 —— 竖直一动，
@@ -47,6 +53,10 @@
   var POLAR_AMP = 17 * Math.PI / 180;          // 俯仰摆动幅度（34°↔68°）
   var POLAR_FREQ = 2 * Math.PI / 36;           // 俯仰摆动频率（周期约 36s）
   var LEAF_COLOR = [0.20, 0.26, 0.10];  // 叶底（线性色）
+  /* 叶底在汤面上的缓慢相对漂移（rad/s，约 70 秒一圈）。只作用在叶底网格上，
+     不碰茶汤盘（汤色是内容常数）；仅质感档启用，原稿档恒为 0 逐像素回基线。
+     时间相位复用 state.elapsed —— 关自转时定格，不新增常驻 rAF。 */
+  var LEAF_DRIFT = 0.09;
   /* 汤色亮度低于此值就不画叶底：深色茶汤浮绿叶是假的 */
   var LEAF_MIN_Y = 0.36;
   /* P2/P3 釉面系数（质感档专用，实机标定就改这里，别散落到 shader 里）：
@@ -390,24 +400,14 @@
     '  gl_Position = uMVP * vec4(aPos,1.0); }'
   ].join('\n');
 
-  var GLSL_PACK = [
-    'vec4 packD(float v){',
-    '  vec4 e = vec4(1.0,255.0,65025.0,16581375.0) * v;',
-    '  e = fract(e);',
-    '  e -= e.yzww * vec4(1.0/255.0,1.0/255.0,1.0/255.0,0.0);',
-    '  return e; }',
-    'float unpackD(vec4 v){ return dot(v, vec4(1.0, 1.0/255.0, 1.0/65025.0, 1.0/16581375.0)); }'
-  ].join('\n');
-
   // 与 three r160 的 MeshStandardMaterial + 四灯 + ACES 逐式对齐（含 useLegacyLights=false）
   var FS_MAIN = [
     'precision highp float;',
-    GLSL_PACK,
     'varying vec3 vN; varying vec3 vW;',
     'uniform vec3 uAlbedo; uniform vec3 uKeyDir; uniform vec3 uFillDir;',
     'uniform vec3 uSky; uniform vec3 uGround; uniform float uAmbient;',
     'uniform float uRough; uniform vec3 uEye; uniform float uOpacity;',
-    'uniform sampler2D uShadowTex; uniform mat4 uShadowMat; uniform float uShadowOn; uniform float uShSelf; uniform float uKeyK; uniform float uGlow; uniform float uBodyDim; uniform float uLineGlow; uniform float uNightK;',
+    'uniform float uKeyK; uniform float uGlow; uniform float uBodyDim; uniform float uLineGlow; uniform float uNightK;',
     'uniform sampler2D uPattern; uniform float uPatternOn; uniform float uPatMask;',
     /* 质感档：uFx 是总增益（0=原稿档，P1 液面 / P2 釉面一起归零）；
        uFxKind 区分 0=瓷器 1=茶汤 2=叶底；三组增强互斥，互不叠加。 */
@@ -443,19 +443,6 @@
        修掉自阴影后整器亮约 6%，此处按「素瓷中位数回到 0.5457」重新定标（实测扫描 2.34~2.36 为平顶）。 */
     '  c *= (2.62/0.6); c = IN*c; c = RRT(c); c = OUT*c; return clamp(c,0.0,1.0); }',
     'vec3 lin2srgb(vec3 c){ return mix(c*12.92, 1.055*pow(max(c,vec3(0.0)),vec3(1.0/2.4))-0.055, step(vec3(0.0031308),c)); }',
-    // VSM（variance shadow map）：与 three 的 VSMShadowMap 同思路，moments = (d, d²)
-    'float shadowFactor(vec3 wp){',
-    '  if (uShadowOn < 0.5) return 1.0;',
-    '  vec4 sc = uShadowMat * vec4(wp,1.0);',
-    '  vec3 p = sc.xyz / sc.w * 0.5 + 0.5;',
-    '  if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0 || p.z > 1.0) return 1.0;',
-    '  float sd = unpackD(texture2D(uShadowTex, p.xy));',
-    /* 偏置 0.0010（≈0.03 世界单位 ≈ 2.5 texel）只够压住碗托与碗身的自身精度误差。
-       盖子的自阴影（受光面 86% 被判为遮挡）不是偏置能兼顾的：把偏置放大到 0.0040 虽能压住它，
-       却等于 0.12 世界单位，会把盖对碗的真实投影整块推离投射物（碗身出现悬空的一块暗斑）。
-       故盖子改为不参与自身遮挡（uShSelf=0，见绘制循环），盖子本身恒为受光。 */
-    '  return smoothstep(0.0, 0.0035, sd - (p.z - 0.0010));',
-    '}',
     /* 青玉釉：参考稿是一只碧玉盖碗，按它的实际结构拆成五层 ——
        ① 一条方向明确的主光（世界坐标的「镜头前上方偏左」），只做连续渐变、不做明暗交界；
        ② 受光面推向浅黄绿（玉的「水头」）；
@@ -598,41 +585,6 @@
     '}'
   ].join('\n');
 
-  var VS_DEPTH = [
-    'attribute vec3 aPos;',
-    'uniform mat4 uLightMat; uniform mat4 uModel;',
-    'void main(){ gl_Position = uLightMat * uModel * vec4(aPos,1.0); }'
-  ].join('\n');
-  /* 深度必须取 gl_FragCoord.z（逐片元精确），不能用 varying 插值：
-     深度对屏幕空间是仿射的，透视校正插值会产生与三角形斜率相关的系统性偏差，
-     实测在盖顶约 0.003（≈0.09 世界单位），迫使偏置放大到 0.0040 才能压住自阴影，
-     而该偏置同时把盖对碗的真实投影整块推离投射物。 */
-  var FS_DEPTH = [
-    'precision highp float;',
-    GLSL_PACK,
-    'void main(){ gl_FragColor = packD(clamp(gl_FragCoord.z, 0.0, 0.998)); }'
-  ].join('\n');
-
-  var VS_QUAD = ['attribute vec2 aP; varying vec2 vUv;',
-    'void main(){ vUv = aP*0.5+0.5; gl_Position = vec4(aP,0.0,1.0); }'].join('\n');
-  var FS_BLUR = [
-    'precision highp float; varying vec2 vUv;',
-    'uniform sampler2D uTex; uniform vec2 uDir;',
-    GLSL_PACK,
-    'float S(float w, float o){ return unpackD(texture2D(uTex, vUv + uDir*o)) * w; }',
-    'void main(){',
-    // 取「更近的那一层」做偏保守的平均：纯平均会把两层缝的深度拉到中间，产生漏光
-    '  float c = unpackD(texture2D(uTex, vUv));',
-    '  float a1 = unpackD(texture2D(uTex, vUv + uDir*1.3846153846));',
-    '  float a2 = unpackD(texture2D(uTex, vUv - uDir*1.3846153846));',
-    '  float b1 = unpackD(texture2D(uTex, vUv + uDir*3.2307692308));',
-    '  float b2 = unpackD(texture2D(uTex, vUv - uDir*3.2307692308));',
-    '  float mn = min(min(min(c,a1),min(a2,b1)),b2);',
-    '  float wsum = 0.2270270270 + 2.0*0.3162162162 + 2.0*0.0702702703;',
-    '  float avg = (c*0.2270270270 + (a1+a2)*0.3162162162 + (b1+b2)*0.0702702703) / wsum;',
-    '  gl_FragColor = packD(clamp(mix(avg, mn, 0.15), 0.0, 0.999)); }'
-  ].join('\n');
-
   var VS_PICK = [
     'attribute vec3 aPos;',
     'uniform mat4 uMVP;',
@@ -686,31 +638,7 @@
     if (!gl) { el.removeChild(canvas); return null; }
 
     var progMain = program(gl, VS_MAIN, FS_MAIN);
-    var progDepth = program(gl, VS_DEPTH, FS_DEPTH);
-    var progBlur = program(gl, VS_QUAD, FS_BLUR);
     var progPick = program(gl, VS_PICK, FS_PICK);
-
-    /* 阴影目标：1024（与 three 默认 shadow.mapSize 一致），moments 存 RG */
-    var SHADOW_SIZE = 1024;
-    function makeTarget() {
-      var tex = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, SHADOW_SIZE, SHADOW_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      var fb = gl.createFramebuffer();
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-      var depth = gl.createRenderbuffer();
-      gl.bindRenderbuffer(gl.RENDERBUFFER, depth);
-      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, SHADOW_SIZE, SHADOW_SIZE);
-      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depth);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      return { tex: tex, fb: fb, depth: depth };
-    }
-    var shadowA = makeTarget(), shadowB = makeTarget();
 
     /* 纹样贴图 */
     var patTex = gl.createTexture();
@@ -745,7 +673,6 @@
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, 1, 1);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, pickDepth);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    var quadBuf = buffer(gl, new Float32Array([-1, -1, 3, -1, -1, 3]));
 
     /* 网格 */
     var SEG = 128;
@@ -798,16 +725,11 @@
     /* 统一量 */
     var U = {};
     ['uMVP', 'uModel', 'uAlbedo', 'uKeyDir', 'uFillDir', 'uSky', 'uGround', 'uAmbient', 'uRough', 'uEye',
-      'uOpacity', 'uShadowTex', 'uShadowMat', 'uShadowOn', 'uShSelf', 'uKeyK', 'uGlow', 'uBodyDim', 'uLineGlow', 'uNightK', 'uPattern', 'uPatternOn', 'uPatMask',
+      'uOpacity', 'uKeyK', 'uGlow', 'uBodyDim', 'uLineGlow', 'uNightK', 'uPattern', 'uPatternOn', 'uPatMask',
       'uJade', 'uJadeDeep', 'uJadeMid', 'uJadeLite', 'uJadeCool', 'uJadeGain',
       'uFx', 'uFxKind', 'uTime', 'uFxPbr', 'uEnvTex', 'uEnvK'].forEach(function (k) {
       U[k] = gl.getUniformLocation(progMain, k);
     });
-    var D = {
-      uLightMat: gl.getUniformLocation(progDepth, 'uLightMat'),
-      uModel: gl.getUniformLocation(progDepth, 'uModel')
-    };
-    var BW = { uTex: gl.getUniformLocation(progBlur, 'uTex'), uDir: gl.getUniformLocation(progBlur, 'uDir') };
 
     /* 轨道相机：与原稿 OrbitControls 同一组约束
        （target(0,1.4,0)、polar 30°..84°、zoom .5..3、dampingFactor .05、enablePan=false） */
@@ -828,9 +750,6 @@
     }
     function norm(v) { var l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; }
     var KEY = norm([5, 10, 7]), FILL = norm([-6, 3, 5]);
-    var LIGHT_VIEW = lookAt([5, 10, 7], [0, 0, 0], [0, 1, 0]);
-    var LIGHT_PROJ = ortho(6, 6, 0.1, 30);
-    var LIGHT_MAT = mul(LIGHT_PROJ, LIGHT_VIEW);
 
     var state = {
       w: 0, h: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
@@ -880,52 +799,13 @@
       return m;
     }
 
-    function drawShadowPass(model, lidM) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, shadowA.fb);
-      gl.viewport(0, 0, SHADOW_SIZE, SHADOW_SIZE);
-      gl.clearColor(1, 1, 1, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      gl.enable(gl.DEPTH_TEST);
-      gl.disable(gl.CULL_FACE);
-      gl.useProgram(progDepth);
-      gl.uniformMatrix4fv(D.uLightMat, false, LIGHT_MAT);
-
-      var list = [[M.saucer, model], [M.bowl, model], [M.lid, mul(model, lidM)]];
-      for (var i = 0; i < list.length; i++) {
-        gl.uniformMatrix4fv(D.uModel, false, list[i][1]);
-        bindMesh(progDepth, list[i][0]);
-        gl.drawElements(gl.TRIANGLES, list[i][0].count, gl.UNSIGNED_SHORT, 0);
-      }
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    }
-
-    function blurPass(src, dst, dx, dy) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fb);
-      gl.viewport(0, 0, SHADOW_SIZE, SHADOW_SIZE);
-      gl.disable(gl.DEPTH_TEST);
-      gl.useProgram(progBlur);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, src.tex);
-      gl.uniform1i(BW.uTex, 0);
-      gl.uniform2f(BW.uDir, dx / SHADOW_SIZE, dy / SHADOW_SIZE);
-      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
-      var aP = gl.getAttribLocation(progBlur, 'aP');
-      gl.enableVertexAttribArray(aP);
-      gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    }
-
     function render() {
       resize();
       var yawM = rotY(state.yaw);
       var lidM = lidMatrix(state.lift);
-
-      /* 只留半球环境光，没有方向光可投影 —— 阴影 pass 与两次模糊一并停掉，
-         省掉每帧一次整场景的额外渲染。要恢复投影，取消下面三行的注释即可。 */
-      // drawShadowPass(yawM, lidM);
-      // blurPass(shadowA, shadowB, 4.5, 0);
-      // blurPass(shadowB, shadowA, 0, 4.5);
+      /* 叶底相对茶汤的慢速漂移：只给叶底多叠一层 Y 轴旋转（茶汤盘仍用 yawM 不动）。
+         原稿档 enhance=0 时相位恒为 0，矩阵退化成纯 yawM，逐像素回到基线。 */
+      var leafM = mul(yawM, rotY(state.enhance ? (state.elapsed || 0) * LEAF_DRIFT : 0));
 
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);
@@ -971,15 +851,10 @@
         gl.uniform1f(U.uJadeGain, state.jadeGain);
       }
       gl.uniform3fv(U.uEye, EYE);
-      gl.uniformMatrix4fv(U.uShadowMat, false, LIGHT_MAT);
-      gl.uniform1f(U.uShadowOn, 1);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, shadowA.tex);
-      gl.uniform1i(U.uShadowTex, 0);
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, patTex);
       gl.uniform1i(U.uPattern, 1);
-      /* P3 窗光环境贴图占 TEXTURE2（0 是停用的阴影图、1 是冰裂），逐帧只绑定不重传 */
+      /* P3 窗光环境贴图占 TEXTURE2（1 是冰裂），逐帧只绑定不重传 */
       gl.activeTexture(gl.TEXTURE2);
       gl.bindTexture(gl.TEXTURE_2D, envTex);
       gl.uniform1i(U.uEnvTex, 2);
@@ -999,7 +874,7 @@
         [M.bowl, yawM, state.porcelain, 1, 1],
         [M.lid, mul(yawM, lidM), state.porcelain, 1, 1],
         [M.tea, yawM, state.teaColor, state.lift > 0.5 ? 1 : 0, 0],
-        [M.leaves, yawM, state.leafColor, (state.lift > 0.5 && state.leaves) ? 1 : 0, 0]
+        [M.leaves, leafM, state.leafColor, (state.lift > 0.5 && state.leaves) ? 1 : 0, 0]
       ];
       for (var i = 0; i < pieces.length; i++) {
         var pc = pieces[i];
@@ -1008,9 +883,6 @@
         gl.uniformMatrix4fv(U.uModel, false, pc[1]);
         gl.uniform3fv(U.uAlbedo, pc[2]);
         gl.uniform1f(U.uPatMask, pc[4] || 0);
-        /* 盖子（pc[0]===M.lid）不参与自身遮挡：它是全场景最高点，除了自己的钮没有别的遮挡物，
-           而它的自阴影恰恰是开盖时颜色跳动与碗上那块暗斑的来源。 */
-        gl.uniform1f(U.uShSelf, pc[0] === M.lid ? 0 : 1);
         /* 茶汤与叶底是「内容」不是器身：夜色·裂纹模式的压暗只作用于瓷器，
            汤色必须与浅色主题完全一致——否则深色茶在暗处根本读不出色，
            「裂纹发光」的对照物（发亮的纹 vs 沉着的汤）也就不存在了。 */
@@ -1376,13 +1248,9 @@
           if (m.nrmHard) gl.deleteBuffer(m.nrmHard);
           if (m.uv) gl.deleteBuffer(m.uv);
         });
-        [shadowA, shadowB].forEach(function (t) {
-          gl.deleteFramebuffer(t.fb); gl.deleteRenderbuffer(t.depth); gl.deleteTexture(t.tex);
-        });
-        gl.deleteBuffer(quadBuf);
         gl.deleteTexture(patTex);
         gl.deleteTexture(envTex);
-        [progMain, progDepth, progBlur].forEach(function (p) { gl.deleteProgram(p); });
+        gl.deleteProgram(progMain);
         var lose = gl.getExtension('WEBGL_lose_context');
         if (lose) lose.loseContext();
         if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
