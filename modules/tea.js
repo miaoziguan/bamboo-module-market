@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.11.0","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.11.1","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -2698,9 +2698,11 @@
     /* 悬停检测改走舞台 mousemove 几何命中，绕过可能盖住 .tea-count 的透明层
        （WebGL 画布 / 拖动手柄等）；只认几何位置不认元素自身事件，稳定显示「我的茶柜」 */
     if (el.stage) {
+      /* 用本作用域的 countBox，不能引用 vCountEl —— 那是 GaiwanMount 闭包里的局部变量，
+         跨函数访问会抛 ReferenceError（鼠标一进舞台就报错，悬停切换「我的茶柜」失效）。 */
       var teaCountHit = function (x, y) {
-        if (!vCountEl) return false;
-        var r = vCountEl.getBoundingClientRect();
+        if (!countBox) return false;
+        var r = countBox.getBoundingClientRect();
         return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
       };
       el.stage.addEventListener('mousemove', function (e) {
