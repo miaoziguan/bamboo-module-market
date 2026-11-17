@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.8","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
+/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.9","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
 /**
  * 将进酒 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -18,7 +18,7 @@
 
   var ID = 'wine';
   var TITLE = '将进酒杯莫停';
-  var VERSION = '0.3.8';
+  var VERSION = '0.3.9';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -1676,6 +1676,8 @@
        读档兜底与此保持一致：缺字段或非法值都落到这三项。 */
     var state = {
       open: false, lift: 0, tea: null, types: [], steam: true, pattern: 'crackle', night: 'crackle', nightFx: { body: 0.5, crackle: 0.5 }, cabinet: [],
+      /* 抽酒范围：默认全库——酒柜只是收藏，不该偷偷缩小随机范围；true = 只喝柜内的 */
+      cabOnly: false,
       /* 自转三态：off / yaw（原地，绕竖轴，几乎看不见）/ orbit（环绕，相机巡视，真正多角度）。
          默认 orbit：因为只有它让回转体「转起来」看得见；reduced-motion 下关。 */
       spinMode: reduceMotion ? 'off' : 'orbit', spinUserSet: false, sound: true,
@@ -1764,6 +1766,14 @@
             '<div class="wine-chips wine-chips-types">' +
               TYPES.map(function (t) { return '<button type="button" class="wine-chip" data-t="' + t + '">' + t + '</button>'; }).join('') +
             '</div>' +
+            /* 抽酒范围单独一行：酒柜只是收藏，默认不影响随机池（旧版会偷偷缩到柜内） */
+            '<div class="wine-field">' +
+              '<span class="wine-field-label">抽酒范围</span>' +
+              '<div class="wine-chips wine-chips-scope" data-row="scope">' +
+                '<button type="button" class="wine-chip scope" data-scope="all">全库</button>' +
+                '<button type="button" class="wine-chip scope" data-scope="cab">只喝柜内</button>' +
+              '</div>' +
+            '</div>' +
           '</section>' +
           /* 分组 2：器物外观 —— 每行「字段名 + 控件」走同一套两列网格 */
           '<section class="wine-sec">' +
@@ -1797,6 +1807,9 @@
                 '<span class="wine-range-val"></span>' +
               '</div>' +
             '</div>' +
+            /* 亮色主题下 gl.setNightFx 全被 isDark 压成 0，两档与强度都无视觉效果；
+               这里明说，避免用户判定「开关坏了」 */
+            '<div class="wine-night-note">夜色效果只在暗色主题下可见</div>' +
             /* 开关与上面的「选哪项」不是同类，用一道淡线隔开 */
             '<label class="wine-field wine-switch wine-field-divider" title="关闭后回到与 three 原稿逐像素一致的对照画面">' +
               '<span class="wine-field-label">质感增强</span>' +
@@ -1880,6 +1893,7 @@
     el.gear = wrap.querySelector('.wine-gear');
     el.maskEl = wrap.querySelector('.wine-mask');
     el.chips = wrap.querySelector('.wine-chips:not([data-row])');
+    el.scopeChips = wrap.querySelector('.wine-chips[data-row="scope"]');
     el.patChips = wrap.querySelector('.wine-chips[data-row="pattern"]');
     el.matChips = wrap.querySelector('.wine-chips[data-row="mat"]');
     el.nightChips = wrap.querySelector('.wine-chips[data-row="night"]');
@@ -1990,6 +2004,8 @@
       wrap.style.setProperty('--th', String(Math.round(THEME.hue)));
       wrap.style.setProperty('--lo', THEME.lo + '%');
       wrap.classList.toggle('wine-dark', !!THEME.isDark);
+      /* 夜色效果只在暗色下生效：亮色时把两档 chip 与强度滑块置灰，并显示说明 */
+      wrap.classList.toggle('wine-nofx', !THEME.isDark);
       wrap.classList.toggle('wine-no-steam', !state.steam);
       if (gl) {
         try { gl.setPorcelain(porcelainHex(THEME.hue, THEME.lo, THEME.isDark)); } catch (e) { LOG.warn('[' + ID + '] 釉色更新失败', e); }
@@ -2085,8 +2101,9 @@
       }
       if (raw && raw.nightFx) {
         state.nightFx = {
-          body: clamp(+raw.nightFx.body || 0, 0, 1),
-          crackle: clamp(+raw.nightFx.crackle || 0, 0, 1)
+          /* 缺键/非法值才回默认 0.5；0 是用户拉到底的合法值，不能被兜掉 */
+          body: isFinite(+raw.nightFx.body) ? clamp(+raw.nightFx.body, 0, 1) : 0.5,
+          crackle: isFinite(+raw.nightFx.crackle) ? clamp(+raw.nightFx.crackle, 0, 1) : 0.5
         };
       }
       /* 自转三态迁移：新字段 spinMode 优先；旧字段 spin(boolean) 映射为 关→off / 开→orbit（开=用户想看动，环绕才看得见） */
@@ -2101,11 +2118,13 @@
       state.sound = !(raw && raw.sound === false);
       /* 质感档默认开；老配置没有该字段时保持增强（不会莫名退回旧画面） */
       state.enhance = !(raw && raw.enhance === false);
+      /* 老配置没有该字段：默认全库，保持「酒柜只是收藏」的语义 */
+      state.cabOnly = !!(raw && raw.cabOnly);
       wrap.classList.toggle('wine-no-steam', !state.steam);
       /* 异步到达时 UI 已按默认值画过一遍：各处按真值补刷 */
       setPattern(state.pattern, false);
       renderNightChips(); syncRange(); applyTheme();
-      renderChips(); renderSpinChips();
+      renderChips(); renderScopeChips(); renderSpinChips();
       setEnhance(state.enhance);
       if (el.steamInput) el.steamInput.checked = state.steam;
       if (el.soundInput) el.soundInput.checked = state.sound;
@@ -2115,25 +2134,35 @@
     }
     function saveConfig() {
       try {
-        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spinMode: state.spinMode, sound: !!state.sound, mat: state.mat, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice(), enhance: !!state.enhance });
+        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spinMode: state.spinMode, sound: !!state.sound, mat: state.mat, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice(), enhance: !!state.enhance, cabOnly: !!state.cabOnly });
       } catch (e) { LOG.warn('[' + ID + '] 保存设置失败', e); }
     }
 
-    /* ── 抽茶 ── */
-    /* 抽茶池：先茶柜、后类型筛选。
-       柜为空 → 全库；柜非空但筛完没剩 → 退回柜内全部（绝不出现空池）。 */
+    /* ── 抽酒 ── */
+    /* 抽酒池：酒柜默认只是收藏，不缩小随机范围；cabOnly 显式开启时才只喝柜内。
+       类型筛选是强意图：柜内没有选中类型 → 放宽到全库该类型，并记一句提示。 */
+    var _poolNote = '';
+    var _lastPoolLen = 0;
     function pool() {
+      _poolNote = '';
       var base = TEAS;
-      if (state.cabinet.length) {
+      if (state.cabOnly && state.cabinet.length) {
         var inCab = TEAS.filter(function (t) { return state.cabinet.indexOf(t.id) >= 0; });
         if (inCab.length) base = inCab;
       }
       if (!state.types.length) return base;
       var list = base.filter(function (t) { return state.types.indexOf(t.t) >= 0; });
-      return list.length ? list : base;
+      if (list.length) return list;
+      var global = TEAS.filter(function (t) { return state.types.indexOf(t.t) >= 0; });
+      if (global.length) {
+        if (state.cabOnly && state.cabinet.length) _poolNote = '柜内没有这类，已从全库抽';
+        return global;
+      }
+      return base;
     }
     function pickTea() {
       var list = pool();
+      _lastPoolLen = list.length;
       if (list.length === 1) return list[0];
       var t = list[Math.floor(Math.random() * list.length)];
       if (state.tea && t.n === state.tea.n) {
@@ -2147,8 +2176,9 @@
       var t = state.tea;
       /* 无茶时保留空按钮而不是 display:none —— 卡片高度是在挂载时按「空状态」预留的，
          按钮若此时不占位，开盖后内容会溢出卡片盒，被页脚压住点不到。 */
-      if (!t) { el.save.style.display = ''; el.save.textContent = ''; return; }
+      if (!t) { el.save.style.display = ''; el.save.style.visibility = 'hidden'; el.save.textContent = ''; return; }
       el.save.style.display = '';
+      el.save.style.visibility = '';
       el.save.textContent = inCabinet(t.id) ? '已入柜 · 移出' : '存入酒柜';
     }
     /* 竖向题字双态：默认「录茶N」= 库统计；悬停/聚焦换成「我的酒柜」= 入口名。
@@ -2189,7 +2219,7 @@
       if (el.cabTitle) {
         /* 标题跟着筛选走：搜索→找到 N；柜中→茶柜 N；分类→该分类 N；否则全库。
            窄面板放不下「名称 · 数字」，只留两字标题（数量由分页与列表体现）。 */
-        var head = cabQ ? '找到' : (cabMode === 'cab' ? '茶柜' : (cabType || '录茶'));
+        var head = cabQ ? '找到' : (cabMode === 'cab' ? '酒柜' : (cabType || '录酒'));
         el.cabTitle.textContent = _narrow ? head : (head + ' · ' + cnNum(items.length));
       }
       var segs = el.cabPanel.querySelectorAll('.wine-seg-btn');
@@ -2211,7 +2241,7 @@
             : '<div class="wine-cab-empty">这一类没有酒<br />换个分类看看</div>');
         return;
       }
-      /* 分页取代滚动：每页 12 款（两列 × 6 行），面板高度恒定，最长也只有一屏 */
+      /* 分页取代滚动：每页上限 CAB_PER=8 款（两列 × 4 行），矮视口再按容器高度往下缩 */
       /* 每页行数按容器实际高度自适应（上限 CAB_PER）：固定页容量在矮视口下会把面板
          撑到内部滚动（300×420 实测），违背「面板不需要滚动」的承诺。
          行高 30 + 面板骨架约 244px 为实测值（行高 28 + 呼吸 2）。 */
@@ -2265,8 +2295,8 @@
         btn.setAttribute('aria-label', on ? '移出酒柜' : '存入酒柜');
         if (el.cabTitle) {
           el.cabTitle.textContent = cabMode === 'cab'
-            ? ('茶柜 · ' + cnNum(state.cabinet.length))
-            : ('录茶 · ' + cnNum(TEAS.length));
+            ? ('酒柜 · ' + cnNum(state.cabinet.length))
+            : ('录酒 · ' + cnNum(TEAS.length));
         }
       }
       paintCount(); paintSaveBtn(); saveConfig();
@@ -2364,6 +2394,14 @@
         list[i].classList.toggle('on', list[i].getAttribute('data-p') === state.pattern);
       }
     }
+    function renderScopeChips() {
+      if (!el.scopeChips) return;
+      var list = el.scopeChips.querySelectorAll('.wine-chip');
+      var want = state.cabOnly ? 'cab' : 'all';
+      for (var i = 0; i < list.length; i++) {
+        list[i].classList.toggle('on', list[i].getAttribute('data-scope') === want);
+      }
+    }
     function renderMatChips() {
       if (!el.matChips) return;
       var list = el.matChips.querySelectorAll('.wine-chip');
@@ -2444,8 +2482,10 @@
       for (var i = 0; i < TEAS.length; i++) if (TEAS[i].id === id) { t = TEAS[i]; break; }
       if (!t) return;
       closeCabinet();
+      /* 开盖状态下点名换酒：先合上再揭，保证器物真的换了，提示不落空 */
+      if (state.open) close();
       open(t);
-      flashTip('换泡 ' + t.n);
+      flashTip('换酒 ' + t.n);
     }
     function open(forced) {
       if (state.open) return;
@@ -2461,7 +2501,11 @@
       }
       applyLift(1);
       syncSpin();
-      if (el.tip) el.tip.textContent = '再拔一次，换一杯';
+      if (el.tip) {
+        if (!forced && _poolNote) el.tip.textContent = _poolNote;
+        else if (!forced && _lastPoolLen <= 1) el.tip.textContent = '只此一款，换不了';
+        else el.tip.textContent = '再拔一次，换一杯';
+      }
       if (_revealTimer) clearTimeout(_revealTimer);
       _revealTimer = setTimeout(function () {
         paintTea(state.tea);
@@ -2572,10 +2616,16 @@
       }
     }
     function openSettings() {
-      _snapCfg = { types: state.types.slice(), steam: !!state.steam, spinMode: state.spinMode, sound: !!state.sound, pattern: state.pattern, mat: state.mat, enhance: !!state.enhance };
+      _snapCfg = {
+        types: state.types.slice(), steam: !!state.steam, spinMode: state.spinMode, sound: !!state.sound,
+        pattern: state.pattern, mat: state.mat, enhance: !!state.enhance,
+        night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle },
+        cabOnly: !!state.cabOnly
+      };
       renderNightChips();
       renderChips();
       renderMatChips();
+      renderScopeChips();
       renderSpinChips();
       syncRange();
       if (el.enhanceInput) el.enhanceInput.checked = !!state.enhance;
@@ -2594,8 +2644,12 @@
     function cancelSettings() {
       if (_snapCfg) {
         state.types = _snapCfg.types.slice();
-        state.night = _snapCfg.night || 'body';
+        state.night = _snapCfg.night || 'crackle';
+        if (_snapCfg.nightFx) state.nightFx = { body: _snapCfg.nightFx.body, crackle: _snapCfg.nightFx.crackle };
+        state.cabOnly = !!_snapCfg.cabOnly;
         renderNightChips();
+        renderScopeChips();
+        syncRange();
         state.steam = _snapCfg.steam;
         state.spinMode = _snapCfg.spinMode;
         state.sound = _snapCfg.sound;
@@ -2627,6 +2681,15 @@
         var i = state.types.indexOf(t);
         if (i >= 0) state.types.splice(i, 1); else state.types.push(t);
         chip.classList.toggle('on', i < 0);
+        scheduleSave();
+      });
+    }
+    if (el.scopeChips) {
+      el.scopeChips.addEventListener('click', function (e) {
+        var chip = e.target && e.target.closest ? e.target.closest('.wine-chip') : null;
+        if (!chip) return;
+        state.cabOnly = chip.getAttribute('data-scope') === 'cab';
+        renderScopeChips();
         scheduleSave();
       });
     }
@@ -2782,16 +2845,15 @@
     /* ── 卸载 ── */
     function destroy() {
       if (_revealTimer) { clearTimeout(_revealTimer); _revealTimer = null; }
+      if (_saveT) { clearTimeout(_saveT); _saveT = null; }
+      if (_tipTimer) { clearTimeout(_tipTimer); _tipTimer = null; }
       if (_puffTimer) { clearTimeout(_puffTimer); _puffTimer = null; }
       if (_themeRaf) { cancelAnimationFrame(_themeRaf); _themeRaf = 0; }
       window.removeEventListener('message', onThemeMessage);
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-      window.removeEventListener('blur', onUp);
-      window.removeEventListener('pointermove', onOrbitMove);
-      window.removeEventListener('pointerup', onOrbitUp);
-      window.removeEventListener('pointercancel', onOrbitUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+      window.removeEventListener('blur', onPointerUp);
       document.removeEventListener('visibilitychange', onVisibility);
       if (_darkObs) { _darkObs.disconnect(); _darkObs = null; }
       if (_visObs) { _visObs.disconnect(); _visObs = null; }
@@ -2946,6 +3008,14 @@
        所以悬停只换颜色，不加下划线 */
     '.wine-count:hover>span,.wine-count:focus-visible>span{color:var(--bm-primary,#3a7a3a);opacity:1;}' +
     '.wine-wrap.is-open .wine-count{opacity:0;pointer-events:none;}' +
+    /* 开盖时设置/酒柜入口一并让位：否则能打开面板点名换酒，与「开盖中不可换」冲突 */
+    '.wine-wrap.is-open .wine-tools{opacity:0;pointer-events:none;}' +
+    '.wine-tools{transition:opacity var(--duration-normal) var(--ease-cn);}' +
+    /* 亮色主题下夜色两档与强度无视觉效果，置灰并说明；暗色恢复 */
+    '.wine-nofx .wine-chip.night{opacity:.4;pointer-events:none;}' +
+    '.wine-nofx .wine-field-sub{opacity:.4;pointer-events:none;}' +
+    '.wine-night-note{display:none;margin-top:4px;font-size:11px;line-height:1.45;opacity:.5;}' +
+    '.wine-nofx .wine-night-note{display:block;}' +
     /* ── 窄面板（<210px）：单列列表、分类三列、留白收紧 ── */
     '.wine-narrow .wine-dialog,.wine-narrow .wine-cab-panel{padding:12px;' +
       'max-width:none;width:calc(100% - 8px);}' +
@@ -3178,6 +3248,8 @@
     /* 选项改成栅格列：茶类 4 列、器物 2 列，列首对齐，不再 flex-wrap 随机散开 */
     '.wine-chips{display:grid;gap:6px 8px;margin:0;min-width:0;}' +
     '.wine-chips-types{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:2px;}' +
+    /* 抽酒范围：两个 chip 横排，不占满整行 */
+    '.wine-chips-scope{grid-auto-flow:column;grid-auto-columns:max-content;justify-content:start;}' +
     '.wine-chips-types .wine-chip{text-align:center;}' +
     '.wine-chips[data-row]{display:inline-flex;gap:0;justify-self:end;' +
       'border:1px solid var(--bamboo-border,rgba(0,0,0,.16));border-radius:999px;overflow:hidden;vertical-align:middle;}' +

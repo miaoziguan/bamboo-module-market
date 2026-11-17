@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.11.1","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.11.2","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.11.0';
+  var VERSION = '0.11.2';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -2799,15 +2799,16 @@
     function destroy() {
       if (_revealTimer) { clearTimeout(_revealTimer); _revealTimer = null; }
       if (_puffTimer) { clearTimeout(_puffTimer); _puffTimer = null; }
+      if (_saveT) { clearTimeout(_saveT); _saveT = null; }
+      if (_tipTimer) { clearTimeout(_tipTimer); _tipTimer = null; }
       if (_themeRaf) { cancelAnimationFrame(_themeRaf); _themeRaf = 0; }
       window.removeEventListener('message', onThemeMessage);
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-      window.removeEventListener('blur', onUp);
-      window.removeEventListener('pointermove', onOrbitMove);
-      window.removeEventListener('pointerup', onOrbitUp);
-      window.removeEventListener('pointercancel', onOrbitUp);
+      /* 与注册处同名：原来写的是不存在的 onMove/onUp/onOrbit*，
+         执行到这行即 ReferenceError，其后的 Observer / 音频 / WebGL 清理全被跳过 */
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+      window.removeEventListener('blur', onPointerUp);
       document.removeEventListener('visibilitychange', onVisibility);
       if (_darkObs) { _darkObs.disconnect(); _darkObs = null; }
       if (_visObs) { _visObs.disconnect(); _visObs = null; }
