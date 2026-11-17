@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"wine","name":"将进酒","version":"0.3.7","fab":{"icon":"gourd","label":"杯莫停"},"location":"left"} */
+/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.8","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
 /**
  * 将进酒 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,8 +17,8 @@
   'use strict';
 
   var ID = 'wine';
-  var TITLE = '将进酒';
-  var VERSION = '0.3.7';
+  var TITLE = '将进酒杯莫停';
+  var VERSION = '0.3.8';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
