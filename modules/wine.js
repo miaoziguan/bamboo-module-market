@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.9","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
+/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.10","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
 /**
  * 将进酒 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -18,7 +18,7 @@
 
   var ID = 'wine';
   var TITLE = '将进酒杯莫停';
-  var VERSION = '0.3.9';
+  var VERSION = '0.3.10';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -1758,21 +1758,21 @@
           /* 页头：一级信息（这盏茶抽什么），说明独占一行，不与控件混排 */
           '<div class="wine-head">' +
             '<div class="wine-title">今天想喝点什么</div>' +
-            '<div class="wine-hint">不选就整柜都算，选了就只从这几类里抽</div>' +
+            '<div class="wine-hint">酒类不选就整个范围都算，选了就只从这几类里抽</div>' +
           '</div>' +
           /* 分组 1：抽茶范围 */
           '<section class="wine-sec">' +
             '<div class="wine-sec-h">酒类</div>' +
-            '<div class="wine-chips wine-chips-types">' +
-              TYPES.map(function (t) { return '<button type="button" class="wine-chip" data-t="' + t + '">' + t + '</button>'; }).join('') +
-            '</div>' +
-            /* 抽酒范围单独一行：酒柜只是收藏，默认不影响随机池（旧版会偷偷缩到柜内） */
+            /* 范围在上、酒类在下：先定「从哪抽」，再定「抽哪几类」 */
             '<div class="wine-field">' +
               '<span class="wine-field-label">抽酒范围</span>' +
-              '<div class="wine-chips wine-chips-scope" data-row="scope">' +
+              '<div class="wine-chips" data-row="scope">' +
                 '<button type="button" class="wine-chip scope" data-scope="all">全库</button>' +
                 '<button type="button" class="wine-chip scope" data-scope="cab">只喝柜内</button>' +
               '</div>' +
+            '</div>' +
+            '<div class="wine-chips wine-chips-types">' +
+              TYPES.map(function (t) { return '<button type="button" class="wine-chip" data-t="' + t + '">' + t + '</button>'; }).join('') +
             '</div>' +
           '</section>' +
           /* 分组 2：器物外观 —— 每行「字段名 + 控件」走同一套两列网格 */
@@ -2146,16 +2146,17 @@
     function pool() {
       _poolNote = '';
       var base = TEAS;
-      if (state.cabOnly && state.cabinet.length) {
+      if (state.cabOnly) {
         var inCab = TEAS.filter(function (t) { return state.cabinet.indexOf(t.id) >= 0; });
         if (inCab.length) base = inCab;
+        else _poolNote = '酒柜还是空的，已从全库抽';
       }
       if (!state.types.length) return base;
       var list = base.filter(function (t) { return state.types.indexOf(t.t) >= 0; });
       if (list.length) return list;
       var global = TEAS.filter(function (t) { return state.types.indexOf(t.t) >= 0; });
       if (global.length) {
-        if (state.cabOnly && state.cabinet.length) _poolNote = '柜内没有这类，已从全库抽';
+        if (state.cabOnly) _poolNote = '酒柜里没有这类，已从全库抽';
         return global;
       }
       return base;
@@ -3008,9 +3009,7 @@
        所以悬停只换颜色，不加下划线 */
     '.wine-count:hover>span,.wine-count:focus-visible>span{color:var(--bm-primary,#3a7a3a);opacity:1;}' +
     '.wine-wrap.is-open .wine-count{opacity:0;pointer-events:none;}' +
-    /* 开盖时设置/酒柜入口一并让位：否则能打开面板点名换酒，与「开盖中不可换」冲突 */
-    '.wine-wrap.is-open .wine-tools{opacity:0;pointer-events:none;}' +
-    '.wine-tools{transition:opacity var(--duration-normal) var(--ease-cn);}' +
+    /* 设置入口不随开盖让位：brewFromList 已能先合上再揭盖，且工具行只有齿轮，禁用等于拔塞后打不开设置 */
     /* 亮色主题下夜色两档与强度无视觉效果，置灰并说明；暗色恢复 */
     '.wine-nofx .wine-chip.night{opacity:.4;pointer-events:none;}' +
     '.wine-nofx .wine-field-sub{opacity:.4;pointer-events:none;}' +
@@ -3248,8 +3247,6 @@
     /* 选项改成栅格列：茶类 4 列、器物 2 列，列首对齐，不再 flex-wrap 随机散开 */
     '.wine-chips{display:grid;gap:6px 8px;margin:0;min-width:0;}' +
     '.wine-chips-types{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:2px;}' +
-    /* 抽酒范围：两个 chip 横排，不占满整行 */
-    '.wine-chips-scope{grid-auto-flow:column;grid-auto-columns:max-content;justify-content:start;}' +
     '.wine-chips-types .wine-chip{text-align:center;}' +
     '.wine-chips[data-row]{display:inline-flex;gap:0;justify-self:end;' +
       'border:1px solid var(--bamboo-border,rgba(0,0,0,.16));border-radius:999px;overflow:hidden;vertical-align:middle;}' +

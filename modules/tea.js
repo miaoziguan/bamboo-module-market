@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.11.2","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.11.3","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.11.2';
+  var VERSION = '0.11.3';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -1697,7 +1697,7 @@
     /* 渲染器与 placeVerse 共享的取景偏移（NDC）：盖碗居中校正写这里，三处 ortho 读它 */
     var _tyRef = { v: 0 };
     var state = {
-      open: false, lift: 0, tea: null, types: [], steam: true, pattern: 'crackle', night: 'body', nightFx: { body: 0.5, crackle: 0.5 }, cabinet: [],
+      open: false, lift: 0, tea: null, types: [], cabOnly: false, steam: true, pattern: 'crackle', night: 'body', nightFx: { body: 0.5, crackle: 0.5 }, cabinet: [],
       /* 自转三态：off / yaw（原地，绕竖轴，几乎看不见）/ orbit（环绕，相机巡视，真正多角度）。
          默认 orbit：因为只有它让回转体「转起来」看得见；reduced-motion 下关。 */
       spinMode: reduceMotion ? 'off' : 'orbit', spinUserSet: false, sound: true,
@@ -1715,6 +1715,9 @@
     var _revealTimer = null;
     var _puffTimer = null;
     var _snapCfg = null;
+    /* 抽茶池放宽说明：柜内没有所选茶类时改从全库抽，揭盖时把原因写到提示行 */
+    var _poolNote = '';
+    var _lastPoolLen = 0;
     var _themeRaf = 0;
     var _darkObs = null;
     var _drag = { active: false, y0: 0, base: 0, moved: 0, pid: null };
@@ -1778,11 +1781,19 @@
           /* 页头：一级信息（这盏茶抽什么），说明独占一行，不与控件混排 */
           '<div class="tea-head">' +
             '<div class="tea-title">今天想喝什么</div>' +
-            '<div class="tea-hint">不选就整柜都算，选了就只从这几类里抽</div>' +
+            '<div class="tea-hint">茶类不选就整个范围都算，选了就只从这几类里抽</div>' +
           '</div>' +
           /* 分组 1：抽茶范围 */
           '<section class="tea-sec">' +
             '<div class="tea-sec-h">茶类</div>' +
+            /* 范围在上、茶类在下：先定「从哪抽」，再定「抽哪几类」 */
+            '<div class="tea-field">' +
+              '<span class="tea-field-label">抽茶范围</span>' +
+              '<div class="tea-chips" data-row="scope">' +
+                '<button type="button" class="tea-chip scope" data-scope="all">全库</button>' +
+                '<button type="button" class="tea-chip scope" data-scope="cab">只喝柜内</button>' +
+              '</div>' +
+            '</div>' +
             '<div class="tea-chips tea-chips-types">' +
               TYPES.map(function (t) { return '<button type="button" class="tea-chip" data-t="' + t + '">' + t + '</button>'; }).join('') +
             '</div>' +
@@ -1819,6 +1830,9 @@
                 '<span class="tea-range-val"></span>' +
               '</div>' +
             '</div>' +
+            /* 亮色主题下 gl.setNightFx 全被 isDark 压成 0，两档与强度都无视觉效果；
+               这里明说，避免用户判定「开关坏了」 */
+            '<div class="tea-night-note">夜色效果只在暗色主题下可见</div>' +
             /* 开关与上面的「选哪项」不是同类，用一道淡线隔开 */
             '<label class="tea-field tea-switch tea-field-divider" title="关闭后回到与 three 原稿逐像素一致的对照画面">' +
               '<span class="tea-field-label">质感增强</span>' +
@@ -1902,6 +1916,7 @@
     el.gear = wrap.querySelector('.tea-gear');
     el.maskEl = wrap.querySelector('.tea-mask');
     el.chips = wrap.querySelector('.tea-chips:not([data-row])');
+    el.scopeChips = wrap.querySelector('.tea-chips[data-row="scope"]');
     el.patChips = wrap.querySelector('.tea-chips[data-row="pattern"]');
     el.matChips = wrap.querySelector('.tea-chips[data-row="mat"]');
     el.nightChips = wrap.querySelector('.tea-chips[data-row="night"]');
@@ -2012,6 +2027,8 @@
       wrap.style.setProperty('--th', String(Math.round(THEME.hue)));
       wrap.style.setProperty('--lo', THEME.lo + '%');
       wrap.classList.toggle('tea-dark', !!THEME.isDark);
+      /* 夜色效果只在暗色下生效：亮色时把两档 chip 与强度滑块置灰，并显示说明 */
+      wrap.classList.toggle('tea-nofx', !THEME.isDark);
       wrap.classList.toggle('tea-no-steam', !state.steam);
       if (gl) {
         try { gl.setPorcelain(porcelainHex(THEME.hue, THEME.lo, THEME.isDark)); } catch (e) { LOG.warn('[' + ID + '] 瓷色更新失败', e); }
@@ -2095,6 +2112,7 @@
     function applyConfig(raw) {
       var types = (raw && raw.types) || [];
       state.types = types.filter(function (t) { return TYPES.indexOf(t) >= 0; });
+      state.cabOnly = !!(raw && raw.cabOnly);
       state.steam = !(raw && raw.steam === false);
       state.mat = (raw && raw.mat === 'jade') ? 'jade' : 'porcelain';
       state.pattern = (raw && PATTERNS.indexOf(raw.pattern) >= 0) ? raw.pattern : 'crackle';
@@ -2126,7 +2144,7 @@
       /* 异步到达时 UI 已按默认值画过一遍：各处按真值补刷 */
       setPattern(state.pattern, false);
       renderNightChips(); syncRange(); applyTheme();
-      renderChips(); renderSpinChips();
+      renderChips(); renderSpinChips(); renderScopeChips();
       setEnhance(state.enhance);
       if (el.steamInput) el.steamInput.checked = state.steam;
       if (el.soundInput) el.soundInput.checked = state.sound;
@@ -2136,25 +2154,34 @@
     }
     function saveConfig() {
       try {
-        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spinMode: state.spinMode, sound: !!state.sound, mat: state.mat, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice(), enhance: !!state.enhance });
+        if (api.saveData) api.saveData({ types: state.types.slice(), steam: !!state.steam, spinMode: state.spinMode, sound: !!state.sound, mat: state.mat, pattern: state.pattern, cabOnly: !!state.cabOnly, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice(), enhance: !!state.enhance });
       } catch (e) { LOG.warn('[' + ID + '] 保存设置失败', e); }
     }
 
     /* ── 抽茶 ── */
-    /* 抽茶池：先茶柜、后类型筛选。
-       柜为空 → 全库；柜非空但筛完没剩 → 退回柜内全部（绝不出现空池）。 */
+    /* 抽茶池：茶柜默认只是收藏，不缩小随机范围；cabOnly 显式开启时才只喝茶柜。
+       类型筛选是强意图：柜内没有选中类型 → 放宽到全库该类型，并记一句提示。 */
     function pool() {
+      _poolNote = '';
       var base = TEAS;
-      if (state.cabinet.length) {
+      if (state.cabOnly) {
         var inCab = TEAS.filter(function (t) { return state.cabinet.indexOf(t.id) >= 0; });
         if (inCab.length) base = inCab;
+        else _poolNote = '茶柜还是空的，已从全库抽';
       }
       if (!state.types.length) return base;
       var list = base.filter(function (t) { return state.types.indexOf(t.t) >= 0; });
-      return list.length ? list : base;
+      if (list.length) return list;
+      var global = TEAS.filter(function (t) { return state.types.indexOf(t.t) >= 0; });
+      if (global.length) {
+        if (state.cabOnly) _poolNote = '茶柜里没有这类，已从全库抽';
+        return global;
+      }
+      return base;
     }
     function pickTea() {
       var list = pool();
+      _lastPoolLen = list.length;
       if (list.length === 1) return list[0];
       var t = list[Math.floor(Math.random() * list.length)];
       if (state.tea && t.n === state.tea.n) {
@@ -2371,6 +2398,14 @@
       }, 1000);
     }
 
+    function renderScopeChips() {
+      if (!el.scopeChips) return;
+      var list = el.scopeChips.querySelectorAll('.tea-chip');
+      var want = state.cabOnly ? 'cab' : 'all';
+      for (var i = 0; i < list.length; i++) {
+        list[i].classList.toggle('on', list[i].getAttribute('data-scope') === want);
+      }
+    }
     function renderPatChips() {
       if (!el.patChips) return;
       var list = el.patChips.querySelectorAll('.tea-chip');
@@ -2474,7 +2509,11 @@
       }
       applyLift(1);
       syncSpin();
-      if (el.tip) el.tip.textContent = '再揭一次，换一盏';
+      if (el.tip) {
+        if (!forced && _poolNote) el.tip.textContent = _poolNote;
+        else if (!forced && _lastPoolLen <= 1) el.tip.textContent = '只此一款，换不了';
+        else el.tip.textContent = '再揭一次，换一盏';
+      }
       if (_revealTimer) clearTimeout(_revealTimer);
       _revealTimer = setTimeout(function () {
         paintTea(state.tea);
@@ -2588,8 +2627,14 @@
       }
     }
     function openSettings() {
-      _snapCfg = { types: state.types.slice(), steam: !!state.steam, spinMode: state.spinMode, sound: !!state.sound, pattern: state.pattern, mat: state.mat, enhance: !!state.enhance };
+      _snapCfg = {
+        types: state.types.slice(), steam: !!state.steam, spinMode: state.spinMode, sound: !!state.sound,
+        pattern: state.pattern, mat: state.mat, enhance: !!state.enhance,
+        night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle },
+        cabOnly: !!state.cabOnly
+      };
       renderNightChips();
+      renderScopeChips();
       renderChips();
       renderMatChips();
       renderSpinChips();
@@ -2610,8 +2655,12 @@
     function cancelSettings() {
       if (_snapCfg) {
         state.types = _snapCfg.types.slice();
-        state.night = _snapCfg.night || 'body';
+        state.night = _snapCfg.night || 'crackle';
+        if (_snapCfg.nightFx) state.nightFx = { body: _snapCfg.nightFx.body, crackle: _snapCfg.nightFx.crackle };
+        state.cabOnly = !!_snapCfg.cabOnly;
         renderNightChips();
+        renderScopeChips();
+        syncRange();
         state.steam = _snapCfg.steam;
         state.spinMode = _snapCfg.spinMode;
         state.sound = _snapCfg.sound;
@@ -2643,6 +2692,15 @@
         var i = state.types.indexOf(t);
         if (i >= 0) state.types.splice(i, 1); else state.types.push(t);
         chip.classList.toggle('on', i < 0);
+        scheduleSave();
+      });
+    }
+    if (el.scopeChips) {
+      el.scopeChips.addEventListener('click', function (e) {
+        var chip = e.target && e.target.closest ? e.target.closest('.tea-chip') : null;
+        if (!chip) return;
+        state.cabOnly = chip.getAttribute('data-scope') === 'cab';
+        renderScopeChips();
         scheduleSave();
       });
     }
@@ -3193,6 +3251,11 @@
     '.tea-field-sub .tea-field-label{padding-left:10px;font-size:10px;opacity:.72;}' +
     '.tea-field.tea-field-divider{border-top:1px solid var(--bamboo-border,rgba(0,0,0,.12));' +
       'padding-top:9px;margin-top:12px;}' +
+    /* 亮色主题下夜色无视觉效果：置灰不可点，并显示说明 */
+    '.tea-nofx .tea-chip.night{opacity:.4;pointer-events:none;}' +
+    '.tea-nofx .tea-field-sub{opacity:.4;pointer-events:none;}' +
+    '.tea-night-note{display:none;margin-top:4px;font-size:11px;line-height:1.45;opacity:.5;}' +
+    '.tea-nofx .tea-night-note{display:block;}' +
     /* 选项改成栅格列：茶类 4 列、器物 2 列，列首对齐，不再 flex-wrap 随机散开 */
     '.tea-chips{display:grid;gap:6px 8px;margin:0;min-width:0;}' +
     '.tea-chips-types{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:2px;}' +
