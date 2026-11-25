@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.16","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
+/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.17","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
 /**
  * 将进酒 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -18,7 +18,7 @@
 
   var ID = 'wine';
   var TITLE = '将进酒杯莫停';
-  var VERSION = '0.3.16';
+  var VERSION = '0.3.17';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -557,10 +557,13 @@
        之前两档都做成青玉链路，所以粉青档永远出不来茶那种淡雅通透。 */
     '      float ink = clamp(crackA * 1.28, 0.0, 1.0);',
     '      if (ink > 0.0) dc = mix(dc, srgb2lin(pat.rgb), ink);',
-    '      vec3 irr = vec3(uAmbient) + mix(uGround, uSky, 0.5 + 0.5*n.y);',
+    '      vec3 irr = vec3(uAmbient) + mix(uGround, uSky, 0.5 + 0.30*n.y);',
     '      col = irr * dc * RPI;',
-    '      col += sat(dot(n, uKeyDir)) * uKeyK * dc * RPI;',
-    '      col += sat(dot(n, uFillDir)) * dc * RPI * 0.08;',
+    /* v0.3.17：主光改半兰伯特。葫芦腰部两肚法线方向相反，硬 sat(dot) 会在上肚底面切出
+       一大块死黑，暗色下发光的开片反而把这块黑衬得更明显；半兰伯特把明暗交界揉开。 */
+    '      float keyL = pow(sat(dot(n, uKeyDir) * 0.5 + 0.5), 2.0);',
+    '      col += keyL * uKeyK * dc * RPI;',
+    '      col += sat(dot(n, uFillDir)) * dc * RPI * 0.16;',
     /* 浅底上给轮廓一点暗边：不是描线，是瓷胎在掠射角的自然压暗；P2 的亮釉边随后叠上来，形成厚胎感。 */
     '      col *= 1.0 - 0.10 * pow(1.0 - nv, 3.0);',
     '    }',
@@ -606,9 +609,9 @@
        既不会像 deep/mid 混色那样在亮色下冲到荧光绿，也不会在暗色下被压成纯黑。
        暗金/铜色口沿不额外建网格（那会多一次拾取与动画同步），直接按物体局部 y 取一圈：
        y=2.936~2.949 是圆肩最外那一线，视觉上正好是“塞帽压住瓶口”的金属细边。 */
-    '    vec3 irr = vec3(uAmbient) + mix(uGround, uSky, 0.5 + 0.5*n.y);',
+    '    vec3 irr = vec3(uAmbient) + mix(uGround, uSky, 0.5 + 0.30*n.y);',
     '    vec3 ceramic = uAlbedo;',
-    '    col = irr * ceramic * 0.72 + sat(dot(n, uKeyDir)) * uKeyK * ceramic;',
+    '    col = irr * ceramic * 0.72 + pow(sat(dot(n, uKeyDir) * 0.5 + 0.5), 2.0) * uKeyK * ceramic;',
     '    col += sat(dot(n, uFillDir)) * ceramic * 0.10;',
     '    vec3 H = normalize(uKeyDir + V);',
     '    col += mix(uGlassLite, vec3(1.0), 0.45) * pow(sat(dot(n, H)), 80.0) * 0.14;',
@@ -624,7 +627,7 @@
     '    }',
     '    float band = smoothstep(2.932, 2.936, vP.y) * (1.0 - smoothstep(2.949, 2.953, vP.y));',
     '    vec3 gold = vec3(0.332, 0.227, 0.087);',
-    '    col = mix(col, irr * gold * 0.72 + sat(dot(n, uKeyDir)) * uKeyK * gold, band);',
+    '    col = mix(col, irr * gold * 0.72 + pow(sat(dot(n, uKeyDir) * 0.5 + 0.5), 2.0) * uKeyK * gold, band);',
     '    alpha = 1.0;',
     '  }',
     /* 夜色三种：① 周身微光（uGlow）② 器身压暗（uBodyDim）③ **裂纹自发光（uLineGlow）**。
