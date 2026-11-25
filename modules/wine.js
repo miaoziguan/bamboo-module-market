@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.19","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
+/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.20","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
 /**
  * 将进酒 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -18,14 +18,14 @@
 
   var ID = 'wine';
   var TITLE = '将进酒杯莫停';
-  var VERSION = '0.3.19';
+  var VERSION = '0.3.20';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
 
   /* ══ 资产 ══════════════════════════════════════════════════════ */
   /* 青瓷葫芦瓶剖面（[半径 r, 高度 y]，Catmull-Rom 采样成车削壳）。
-     比例照参考图量：总高 3.32、下肚最大半径 1.0、上肚 0.73、腰 0.47、口径 0.145。
+     现比例：总高约 3.76、下肚最大半径 1.0、上肚 0.76、腰最窄 0.520、口径 0.145。
      两处圆润是这次的重点（初版底太平、下肚像截开的球）：
        · 下肚从「底心 → 最宽点」按椭圆弧逐点采（r = sinθ、y 按 cosθ），
          底部只留 r=0.10 的极小平面坐地，其余全是连续球面 —— 不再是「平底 + 硬折角」。
@@ -34,33 +34,33 @@
      不是把葫芦铺成胖梨，只把最窄处 .47→.52、过渡 1.12→1.24。
      闭合剖面：底心 → 外壁 → 口沿 → 内壁 → 内底心；口径仅 0.29，塞着塞子看不见内腔。 */
   var PROFILES = {
-    /* 下肚 = 两段真椭圆弧（这是「底部太平」的根治）：
-       下半 ry=0.64、中心 y=0.22，从底心 y=-0.42 一路球面张开到最宽 r=1.00；
-       底部只留 r≈0.07 的极小平面坐地，其余全是连续球面，不再是「平底 + 硬折角」。
+    /* 下肚 = 两段真椭圆弧：
+       下半 ry=0.77、中心 y=0.25，从底心 y=-0.52 一路球面张开到最宽 r=1.00；
+       较之前 ry=0.67 / 底心 -0.418 更深，底弧更接近圆球，解决「底部偏平」。
        上半 ry=1.0 的缓椭圆收到腰（y≈1.16~1.24 处 r≈0.52），让下肚读作饱满的球而不是桶。 */
-    vessel: [[0, -.418], [.07, -.417], [.13, -.412], [.20, -.404], [.28, -.390],
-             [.36, -.371], [.45, -.345], [.55, -.310], [.65, -.265], [.74, -.212],
-             [.82, -.150], [.885, -.080], [.935, -.002], [.968, .080], [.988, .163],
+    vessel: [[0, -.520], [.07, -.516], [.13, -.511], [.20, -.502], [.28, -.487],
+             [.36, -.466], [.45, -.437], [.55, -.393], [.65, -.335], [.74, -.269],
+             [.82, -.193], [.885, -.112], [.935, -.025], [.968, .058], [.988, .132],
              [1.00, .250], [.995, .340], [.985, .394], [.968, .474], [.940, .562],
              [.902, .646], [.866, .720], [.820, .796], [.766, .858], [.707, .927],
-             [.643, .986], [.590, 1.040], [.545, 1.100], [.520, 1.160],
-             /* 腰后进入上肚：加宽并拉长过渡，两肚不再像相切球，去掉光下的硬明暗带。 */
-             [.520, 1.240], [.548, 1.330], [.600, 1.410], [.668, 1.490], [.712, 1.566],
-             [.730, 1.664], [.728, 1.762], [.706, 1.856], [.664, 1.944], [.606, 2.026],
-             [.532, 2.098], [.446, 2.160], [.352, 2.212], [.262, 2.258], [.200, 2.300],
+             [.643, .986], [.600, 1.050], [.560, 1.115], [.530, 1.180], [.520, 1.220],
+             /* 腰纵向缩短：窄段约 1.18~1.26，随后顺势张开，仍是浅缓凹弧。 */
+             [.525, 1.260], [.545, 1.310], [.590, 1.370], [.690, 1.470], [.740, 1.566],
+             [.760, 1.664], [.758, 1.762], [.742, 1.856], [.700, 1.944], [.645, 2.026],
+             [.575, 2.098], [.490, 2.160], [.400, 2.212], [.290, 2.258], [.200, 2.300],
              [.182, 2.400], [.175, 2.520], [.168, 2.640], [.160, 2.760], [.150, 2.844],
              [.145, 2.900],
              /* 内壁：口沿内唇 → 颈 → 上肚 → 内腰 → 内下肚 → 内底。
-                与外壁同心的两条小椭圆（ry=0.95 / 0.58，rx 各减 0.06~0.10），
+                与外壁同心的两条小椭圆（ry=0.95 / 0.66，rx 各减 0.06~0.10），
                 保证全器壁厚 0.04~0.09 —— 内底必须高于外底，否则会穿出瓶底。 */
              [.115, 2.885], [.101, 2.810], [.096, 2.700], [.104, 2.560], [.126, 2.450],
-             [.160, 2.352], [.208, 2.262], [.286, 2.206], [.380, 2.148], [.470, 2.082],
-             [.548, 2.006], [.612, 1.918], [.652, 1.822], [.664, 1.722], [.650, 1.622],
-             [.612, 1.532], [.580, 1.452], [.510, 1.376], [.460, 1.300], [.430, 1.240],
-             [.430, 1.160], [.470, 1.080], [.508, 1.000], [.596, .918], [.680, .832],
+             [.160, 2.352], [.228, 2.262], [.315, 2.206], [.405, 2.148], [.495, 2.082],
+             [.565, 2.006], [.625, 1.918], [.665, 1.822], [.675, 1.722], [.668, 1.622],
+             [.632, 1.532], [.600, 1.452], [.540, 1.376], [.490, 1.310], [.445, 1.260],
+             [.440, 1.220], [.450, 1.180], [.470, 1.115], [.508, 1.000], [.596, .918], [.680, .832],
              [.760, .742], [.828, .648], [.884, .550], [.926, .448], [.950, .344],
-             [.956, .240], [.944, .140], [.914, .048], [.862, -.036], [.790, -.112],
-             [.700, -.178], [.588, -.232], [.450, -.272], [.290, -.296], [0, -.312]],
+             [.956, .240], [.944, .126], [.914, .028], [.862, -.066], [.790, -.152],
+             [.700, -.228], [.588, -.292], [.450, -.342], [.290, -.372], [0, -.414]],
     /* 瓶塞 = 深青釉瓷塞 + v0.3.11 短颈如意竖柄。
        下段 y≈2.72~2.88 仍是原入孔锥度，与瓶颈内腔匹配；
        上段 3.045→3.155 是短颈（细腰微收），云头网格另建并合并进同一 stopper 网格；
@@ -92,7 +92,7 @@
      若按 50° 判成硬边，腰上会插一道亮线，读起来像上下两节拼起来的（实测）。 */
   var HARD_EDGE_COS = Math.cos(70 * Math.PI / 180);
 
-  /* ══ 曲线：逐字复刻 five 的 CatmullRomCurve3(...,'catmullrom',0.1).getPoints(150) ══ */
+  /* ══ 曲线：Catmull-Rom(0.1) + 弧长均匀重采样（轮廓不变，环分布更合理） ══ */
   function crAxis(x0, x1, x2, x3, tension, t) {
     var ta = tension * (x2 - x0), tb = tension * (x3 - x1);
     var c0 = x1, c1 = ta;
@@ -101,17 +101,33 @@
     return ((c3 * t + c2) * t + c1) * t + c0;
   }
   function sampleProfile(pts, divisions, tension) {
-    var l = pts.length, out = [];
+    var l = pts.length;
     var ex0 = [pts[0][0] * 2 - pts[1][0], pts[0][1] * 2 - pts[1][1]];
     var exN = [pts[l - 1][0] * 2 - pts[l - 2][0], pts[l - 1][1] * 2 - pts[l - 2][1]];
-    for (var i = 0; i <= divisions; i++) {
-      var p = (l - 1) * (i / divisions);
+    /* 先在参数域密采样，再按弧长等距重采样：控制点密的地方（底/腰）不再挤满环，
+       控制点疏的地方（上肚）也不再被拉出大段稀环。曲线本身不变，只是环的分布更均匀。 */
+    var denseN = Math.max(900, divisions * 8), raw = [];
+    for (var i = 0; i <= denseN; i++) {
+      var p = (l - 1) * (i / denseN);
       var k = Math.floor(p), w = p - k;
       if (w === 0 && k === l - 1) { k = l - 2; w = 1; }
       var p0 = k > 0 ? pts[k - 1] : ex0;
       var p1 = pts[k % l], p2 = pts[(k + 1) % l];
       var p3 = k + 2 < l ? pts[(k + 2) % l] : exN;
-      out.push([crAxis(p0[0], p1[0], p2[0], p3[0], tension, w), crAxis(p0[1], p1[1], p2[1], p3[1], tension, w)]);
+      raw.push([crAxis(p0[0], p1[0], p2[0], p3[0], tension, w), crAxis(p0[1], p1[1], p2[1], p3[1], tension, w)]);
+    }
+    var cum = [0];
+    for (var a = 1; a < raw.length; a++) {
+      cum.push(cum[a - 1] + Math.hypot(raw[a][0] - raw[a - 1][0], raw[a][1] - raw[a - 1][1]));
+    }
+    var total = cum[cum.length - 1] || 1, out = [], j = 0;
+    for (var b = 0; b <= divisions; b++) {
+      var target = total * (b / divisions);
+      while (j < cum.length - 2 && cum[j + 1] < target) j++;
+      var seg = cum[j + 1] - cum[j] || 1;
+      var s = (target - cum[j]) / seg;
+      out.push([raw[j][0] + (raw[j + 1][0] - raw[j][0]) * s,
+                raw[j][1] + (raw[j + 1][1] - raw[j][1]) * s]);
     }
     return out;
   }
@@ -502,28 +518,26 @@
        之前这里用的是另写的简化版（irr×albedo 打底、高光指数 14/70、边缘光 0.50），
        加上 ACES 色调映射，结果比茶模块灰、糊、开片看不见 —— 实测对比确认后整体换回。
        器物不透明：alpha 恒为 uOpacity(=1)，葫芦里装什么从外面看不见。 */
+    /* v0.3.20 trial：器身改「环绕对称」着色——明暗只跟高度(n.y)有关，不跟方位有关。
+       这样任何斜向/左右暗带都不可能在器身上产生；体积由轻微上下差 + 轮廓亮边承担。 */
     'vec3 celadonBody(vec3 n, vec3 V, vec3 wp, out float a){',
-    '  vec3 L = normalize(uKeyDir);',
-    '  float ndl = sat(dot(n, L));',
-    '  float nv = sat(dot(n, V));',
     '  float ny = sat(n.y);',
-    '  float k = 0.92 + 0.45 * ndl + 0.12 * ny;',
-    '  vec3 base = uGlassMid * k;',
-    '  base = mix(base, uGlassLite, pow(ndl, 2.0) * 0.55);',
-    '  base += uGlassLite * sat(dot(n, uFillDir)) * 0.06;',
-    '  float back = pow(1.0 - ndl, 3.0);',
-    /* 【必须按葫芦改阈值】茶碗主体在 y>0.4，under 只覆盖托那一圈；
-       而葫芦下肚整个在 y<0.4 内，照抄茶的值会把**整块下肚**掺冷并压暗 22% ——
-       这正是「比茶模块暗、灰」的直接原因。葫芦坐地，真正的贴案自遮挡只在最底部。 */
+    '  float nv = sat(dot(n, V));',
     '  float under = smoothstep(0.02, -0.38, wp.y);',
-    '  base = mix(base, uGlassCool, clamp(back * 0.26 + under * 0.24, 0.0, 0.50));',
-    '  base *= 1.0 - 0.22 * under;',
-    '  vec3 H = normalize(L + V);',
-    '  float dnh = sat(dot(n, H));',
-    '  float spec = pow(dnh, 10.0) * 0.40 + pow(dnh, 90.0) * 0.35;',
-    '  base += mix(uGlassLite, vec3(1.0), 0.55) * spec;',
-    '  float rim = pow(1.0 - nv, 6.0);',
-    '  base += uGlassLite * rim * 0.85;',
+    '  vec3 base = uGlassMid * (0.94 + 0.14 * ny);',
+    '  base = mix(base, uGlassLite, pow(ny, 2.0) * 0.42);',
+    '  base = mix(base, uGlassCool, under * 0.18);',
+    /* 光感三件套全部环绕对称：顶部天光、视角中心柔釉、轮廓 Fresnel。 */
+    '  base += uGlassLite * pow(ny, 6.0) * 0.18;',
+    '  base += mix(uGlassLite, vec3(1.0), 0.45) * pow(nv, 5.0) * 0.10;',
+    /* 双层轮廓光：学吃茶的宽+窄两层；再按屏幕上缘加权，让顶边更亮、底边收敛。 */
+    '  float rimK = mix(1.0, 0.55, smoothstep(0.90, 1.0, uBodyDim));',
+    '  vec3 cc = normalize(uEye);',
+    '  vec3 cr = normalize(cross(vec3(0.0, 1.0, 0.0), cc));',
+    '  vec3 cu = normalize(cross(cc, cr));',
+    '  float rimUp = 0.85 + 0.25 * dot(n, cu);',
+    '  base += mix(uGlassLite, vec3(1.0), 0.45) * pow(1.0 - nv, 2.6) * 0.26 * rimK * rimUp;',
+    '  base += mix(uGlassLite, vec3(1.0), 0.82) * pow(1.0 - nv, 8.0) * 0.75 * rimK * rimUp;',
     '  a = uOpacity;',
     '  return base;',
     '}',
@@ -535,6 +549,11 @@
     '  vec3 V = normalize(uEye - vW);',
     '  if (dot(n, V) < 0.0) n = -n;',
     '  float nv = sat(dot(n, V));',
+    /* 相机锁定光源基：高光固定在画面左上前方，不随环绕自转漂移。 */
+    '  vec3 camC = normalize(uEye);',
+    '  vec3 camRx = normalize(cross(vec3(0.0, 1.0, 0.0), camC));',
+    '  vec3 camUy = normalize(cross(camC, camRx));',
+    '  vec3 camL = normalize(-0.45 * camRx + 0.65 * camUy + 0.85 * camC);',
     '  vec3 col;',
     '  float alpha = uOpacity;',
     /* 【提到外层】开片强度与「纹光基准色」：夜色·裂纹档要在压暗之后用它们发光，
@@ -558,25 +577,29 @@
        之前两档都做成青玉链路，所以粉青档永远出不来茶那种淡雅通透。 */
     '      float ink = clamp(crackA * 1.28, 0.0, 1.0);',
     '      if (ink > 0.0) dc = mix(dc, srgb2lin(pat.rgb), ink);',
-    '      vec3 irr = vec3(uAmbient) + mix(uGround, uSky, 0.5 + 0.30*n.y);',
-    '      col = irr * dc * RPI;',
-    /* v0.3.17：主光改半兰伯特。葫芦腰部两肚法线方向相反，硬 sat(dot) 会在上肚底面切出
-       一大块死黑，暗色下发光的开片反而把这块黑衬得更明显；半兰伯特把明暗交界揉开。 */
-    '      float keyL = pow(sat(dot(n, uKeyDir) * 0.5 + 0.5), 2.0);',
-    '      col += keyL * uKeyK * dc * RPI;',
-    '      col += sat(dot(n, uFillDir)) * dc * RPI * 0.16;',
-    /* 浅底上给轮廓一点暗边：不是描线，是瓷胎在掠射角的自然压暗；P2 的亮釉边随后叠上来，形成厚胎感。 */
-    '      col *= 1.0 - 0.10 * pow(1.0 - nv, 3.0);',
+    /* v0.3.20 trial：白瓷档同样改环绕对称。只留高度渐变与轮廓亮边，不留任何方位性明暗。 */
+    '      float ny = sat(n.y);',
+    '      float vertical = 0.92 + 0.16 * (0.5 + 0.5 * ny);',
+    '      col = dc * vertical * 0.75;',
+    /* 与吃茶同源的光感，但只用轴对称项：天光 + 中心柔釉 + 轮廓 Fresnel。 */
+    '      col += mix(dc, vec3(1.0), 0.50) * pow(ny, 6.0) * 0.10;',
+    '      col += mix(dc, vec3(1.0), 0.65) * pow(nv, 5.0) * 0.12;',
+    /* 双层轮廓光：宽层铺胎体、窄层提釉边；屏幕上缘略强。 */
+    '      float rimK = mix(1.0, 0.55, smoothstep(0.90, 1.0, uBodyDim));',
+    '      float rimUp = 0.85 + 0.25 * dot(n, camUy);',
+    '      col += mix(dc, vec3(1.0), 0.40) * pow(1.0 - nv, 2.6) * 0.18 * rimK * rimUp;',
+    '      col += mix(dc, vec3(1.0), 0.78) * pow(1.0 - nv, 8.0) * 0.55 * rimK * rimUp;',
+    /* 亮色档整体收暗，避免白瓷在近白背景上糊成一片。 */
+    '      col *= mix(1.0, 0.62, smoothstep(0.90, 1.0, uBodyDim));',
     '    }',
     /* 器身压暗必须发生在 P2 之前：茶模块就是这个顺序 —— 先把瓷胎压下去，
        釉面的窄高光、掠射亮边与窗光反射最后再叠，暗色下才「胎暗釉亮」。
        放在 P2 之后会把高光一起乘成 15%，裂纹档于是整只葫芦发闷发灰。 */
     '  col *= uBodyDim;',
-    /* P2 釉面增强（质感档才跑）：GGX 基础镜面 + clearcoat 窄高光 + 薄胎透射 + 掠射亮边 + 窗光反射 */
-    '    if (uFx > 0.0) {',
-    '      vec3 L = normalize(uKeyDir);',
-    '      vec3 H = normalize(L + V);',
-    '      float dnl = sat(dot(n, L));',
+    /* P2 釉面增强：光源改为相机锁定 camL，只加高光不刮暗面；暗色/亮色都安全。 */
+    '    if (uFx > 0.5) {',
+    '      vec3 H = normalize(camL + V);',
+    '      float dnl = sat(dot(n, camL));',
     '      float dnh = sat(dot(n, H));',
     '      float dvh = sat(dot(V, H));',
     '      float a2 = pow2(uRough);',
@@ -584,23 +607,20 @@
     '      float gv = dnl*sqrt(a2+(1.0-a2)*pow2(nv));',
     '      float gl = nv*sqrt(a2+(1.0-a2)*pow2(dnl));',
     '      float spec = (RPI*a2/pow2(dd)) * (0.5/max(gv+gl,1e-6)) * F_Schlick(vec3(0.04),1.0,dvh).r;',
-    /* 与茶模块同款：青玉档压半档防塑料（jadeK=0.45）；粉青走白瓷档，全量。 */
     '      float jadeK = (uGlassJade > 0.5) ? 0.45 : 1.0;',
     '      col += vec3(spec) * uFxPbr.x * min(1.0, dnl * 1.4) * jadeK;',
-    /* ② clearcoat 要乘 Schlick：高光边缘才抬得起来，否则是一块平白斑 */
     '      vec3 cf = F_Schlick(vec3(0.04), 1.0, dvh);',
     '      vec3 coatTint = (uGlassJade > 0.5) ? mix(vec3(1.0), uGlassLite, 0.4) : vec3(1.0);',
     '      col += coatTint * pow(dnh, 180.0) * cf * uFxPbr.y * jadeK;',
-    /* ③ 薄胎透射：白瓷用「瓷胎暖色」，不能再拿青玉的 lite（绿），否则白瓷泛菜色 */
     '      vec3 trans = (uGlassJade > 0.5) ? uGlassLite : (dc * vec3(1.0, 0.72, 0.48));',
     '      col += trans * pow(1.0 - dnl, 2.0) * uFxPbr.z * jadeK;',
-    /* ④ 掠射角亮边：釉口那一圈，白瓷此前完全没有；暗色下「釉面有光」主要靠它 */
     '      col += trans * pow(1.0 - nv, 5.0) * uFxPbr.y * 0.30 * jadeK;',
+    /* 相机坐标柔光箱：反射向量投到相机基，光斑固定在画面同一侧，不用世界 env 贴图。 */
     '      vec3 R = reflect(-V, n);',
-    '      float phi = atan(R.z, R.x) * 0.1591549431 + 0.5;',
-    '      float ev = clamp(R.y * 0.5 + 0.5, 0.0, 1.0);',
-    '      vec3 env = texture2D(uEnvTex, vec2(phi, 1.0 - ev)).rgb;',
-    '      col += env * F_Schlick(vec3(0.04), 1.0, nv).r * uEnvK * jadeK;',
+    '      vec3 Rcam = vec3(dot(R, camRx), dot(R, camUy), dot(R, camC));',
+    '      float soft = exp(-pow((Rcam.x + 0.35) / 0.45, 2.0)) *',
+    '        exp(-pow((Rcam.y - 0.35) / 0.55, 2.0));',
+    '      col += mix(uGlassLite, vec3(1.0), 0.70) * soft * uEnvK * 0.35 * jadeK;',
     '    }',
     '  } else {',
     /* 深釉瓷塞：不透明釉面，半球光 + 主光 + 一道窄釉光。
@@ -612,23 +632,23 @@
        y=2.936~2.949 是圆肩最外那一线，视觉上正好是“塞帽压住瓶口”的金属细边。 */
     '    vec3 irr = vec3(uAmbient) + mix(uGround, uSky, 0.5 + 0.30*n.y);',
     '    vec3 ceramic = uAlbedo;',
-    '    col = irr * ceramic * 0.72 + pow(sat(dot(n, uKeyDir) * 0.5 + 0.5), 2.0) * uKeyK * ceramic;',
-    '    col += sat(dot(n, uFillDir)) * ceramic * 0.10;',
-    '    vec3 H = normalize(uKeyDir + V);',
+    '    col = irr * ceramic * 0.72 + pow(sat(dot(n, camL) * 0.5 + 0.5), 2.0) * uKeyK * ceramic;',
+    '    col += sat(dot(n, camUy)) * ceramic * 0.10;',
+    '    vec3 H = normalize(camL + V);',
     '    col += mix(uGlassLite, vec3(1.0), 0.45) * pow(sat(dot(n, H)), 80.0) * 0.14;',
-    /* 质感档给瓷塞一线 clearcoat 和极弱窗光，让它和瓶身共享同一套釉面语言。 */
+    /* 质感档：瓷塞也用相机锁定光源与相机坐标柔光箱。 */
     '    if (uFx > 0.0) {',
     '      vec3 cf = F_Schlick(vec3(0.04), 1.0, sat(dot(V, H)));',
     '      col += mix(uGlassLite, vec3(1.0), 0.45) * pow(sat(dot(n, H)), 120.0) * cf * 0.055;',
     '      vec3 R = reflect(-V, n);',
-    '      float phi = atan(R.z, R.x) * 0.1591549431 + 0.5;',
-    '      float ev = clamp(R.y * 0.5 + 0.5, 0.0, 1.0);',
-    '      vec3 env = texture2D(uEnvTex, vec2(phi, 1.0 - ev)).rgb;',
-    '      col += env * F_Schlick(vec3(0.04), 1.0, nv).r * uEnvK * 0.28;',
+    '      vec3 Rcam = vec3(dot(R, camRx), dot(R, camUy), dot(R, camC));',
+    '      float soft = exp(-pow((Rcam.x + 0.35) / 0.45, 2.0)) *',
+    '        exp(-pow((Rcam.y - 0.35) / 0.55, 2.0));',
+    '      col += mix(uGlassLite, vec3(1.0), 0.70) * soft * uEnvK * 0.10;',
     '    }',
     '    float band = smoothstep(2.932, 2.936, vP.y) * (1.0 - smoothstep(2.949, 2.953, vP.y));',
     '    vec3 gold = vec3(0.332, 0.227, 0.087);',
-    '    col = mix(col, irr * gold * 0.72 + pow(sat(dot(n, uKeyDir) * 0.5 + 0.5), 2.0) * uKeyK * gold, band);',
+    '    col = mix(col, irr * gold * 0.72 + pow(sat(dot(n, camL) * 0.5 + 0.5), 2.0) * uKeyK * gold, band);',
     '    alpha = 1.0;',
     '  }',
     /* 夜色三种：① 周身微光（uGlow）② 器身压暗（uBodyDim）③ **裂纹自发光（uLineGlow）**。
@@ -636,7 +656,8 @@
        少了这一行，bodyDim 会把整只葫芦压成纯黑剪影（实测：用户截图就是这个现象）。 */
     '  float rim = pow(1.0 - nv, 2.2);',
     '  col += uGlow * mix(uGlassMid, uAlbedo, 0.5) * (0.45 + 1.35 * rim) * uNightK;',
-    '  col += uLineGlow * crackA * dc * uNightK;',
+    '  float shimmer = 0.9 + 0.1 * pow(sat(dot(n, normalize(camL + V))), 16.0);',
+    '  col += uLineGlow * crackA * dc * uNightK * shimmer;',
     /* 与茶模块同一套分工：青玉档走轻压缩保色相，白瓷 / 瓷塞走 ACES */
     '  col = (uFxKind < 0.5 && uGlassJade > 0.5) ? toneCeladon(col) : aces(col);',
     '  gl_FragColor = vec4(lin2srgb(col) * alpha, alpha);',
@@ -792,9 +813,9 @@
 
     /* 轨道相机：与原稿 OrbitControls 同一组约束
        （target(0,1.4,0)、polar 30°..84°、zoom .5..3、dampingFactor .05、enablePan=false） */
-    /* 取景目标点：葫芦可见范围 y = -0.35（底）~ 3.236（如意云头顶），几何中心约 1.44。
-       v0.3.11 加竖柄后目标略上移，配合 BOX.hh 小幅放大，给上联留白。 */
-    var AT = [0, 1.42, 0];
+    /* 取景目标点：葫芦可见范围 y = -0.52（加深后的底）~ 3.236（如意云头顶），几何中心约 1.36。
+       底弧加深后目标下移一档，保持上下题字留白均衡。 */
+    var AT = [0, 1.38, 0];
     var CAM_R = 8.35;
 
     var POLAR_MIN = Math.PI / 6, POLAR_MAX = Math.PI / 2 - 0.1;
@@ -830,9 +851,9 @@
     };
 
     /** 包围球取景：轨道转到任何角度都不裁（用球而不是盒，避免转动时画面忽大忽小）。
-     *  葫芦最大半径 1.0；加如意竖柄后高约 3.59，包围球 ≈ 2.04，仍小于 2.5；
-     *  hh 只小幅放大到 2.66，给上联留一档空白，不让器物一下子缩太多。 */
-    var BOX = { hw: 2.5, hh: 2.66 };
+     *  葫芦最大半径 1.0；底弧加深后总高约 3.76，包围球 ≈ 2.09，仍小于 2.5；
+     *  hh 小幅放大到 2.70，给上下题字留白，不让器物一下子缩太多。 */
+    var BOX = { hw: 2.5, hh: 2.70 };
     function fitView(aspect) {
       if (opts.fixedFrustum) return { hw: 3.9 * aspect, hh: 3.9 };   // 仅用于与原稿做同画幅像素对照
       var hw = BOX.hw, hh = BOX.hh;
@@ -895,7 +916,9 @@
       gl.uniform3f(U.uSky, 0.80, 0.80, 0.80);
       gl.uniform3f(U.uGround, 0.45, 0.45, 0.45);
       gl.uniform1f(U.uAmbient, 0.33);
-      gl.uniform1f(U.uKeyK, 0.35);
+      /* v0.3.20 trial：方向主光从 .35 收到 .12。窄栏素瓷档仍会被侧光读出一大块暗面，
+         这里先压到近乎平光，只靠半球光、边缘光与开片发光保留体积；等用户确认后再发版。 */
+      gl.uniform1f(U.uKeyK, 0.12);
       gl.uniform1f(U.uGlow, state.glow);
       gl.uniform1f(U.uBodyDim, state.bodyDim);
       gl.uniform1f(U.uLineGlow, state.lineGlow);
@@ -1486,8 +1509,9 @@
      明度只随主题明度微调，保持「深釉小盖」与器身的明度差。 */
   function stopperHex(hue, lo, isDark) {
     var h = ((hue + 36) % 360 + 360) % 360;
-    var l = 43 + (lo || 0) * 0.25 - (isDark ? 3 : 0);
-    return hslToHex(h, 12, clamp(l, 34, 50));
+    /* 亮色档酒盖要接近白瓷胎色，不能再压到 43% 明度；暗色档保持低明度深釉。 */
+    var l = (isDark ? 43 : 58) + (lo || 0) * 0.25 - (isDark ? 3 : 0);
+    return hslToHex(h, isDark ? 12 : 10, clamp(l, isDark ? 34 : 52, isDark ? 50 : 68));
   }
 
   function esc(s) {
