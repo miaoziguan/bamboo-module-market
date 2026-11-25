@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.14","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
+/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.15","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
 /**
  * 将进酒 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -18,7 +18,7 @@
 
   var ID = 'wine';
   var TITLE = '将进酒杯莫停';
-  var VERSION = '0.3.14';
+  var VERSION = '0.3.15';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -452,7 +452,7 @@
     'precision highp float;',
     'varying vec3 vN; varying vec3 vW; varying vec2 vUv;',
     'varying vec3 vP; varying vec3 vLN;',
-    'uniform vec3 uAlbedo; uniform vec3 uKeyDir;',
+    'uniform vec3 uAlbedo; uniform vec3 uKeyDir; uniform vec3 uFillDir;',
     'uniform vec3 uSky; uniform vec3 uGround; uniform float uAmbient;',
     'uniform float uRough; uniform vec3 uEye; uniform float uOpacity;',
     'uniform float uKeyK; uniform float uGlow; uniform float uBodyDim; uniform float uLineGlow; uniform float uNightK;',
@@ -501,13 +501,14 @@
        加上 ACES 色调映射，结果比茶模块灰、糊、开片看不见 —— 实测对比确认后整体换回。
        器物不透明：alpha 恒为 uOpacity(=1)，葫芦里装什么从外面看不见。 */
     'vec3 celadonBody(vec3 n, vec3 V, vec3 wp, out float a){',
-    '  vec3 L = normalize(vec3(-0.28, 0.57, 0.77));',
+    '  vec3 L = normalize(uKeyDir);',
     '  float ndl = sat(dot(n, L));',
     '  float nv = sat(dot(n, V));',
     '  float ny = sat(n.y);',
     '  float k = 0.92 + 0.45 * ndl + 0.12 * ny;',
     '  vec3 base = uGlassMid * k;',
     '  base = mix(base, uGlassLite, pow(ndl, 2.0) * 0.55);',
+    '  base += uGlassLite * sat(dot(n, uFillDir)) * 0.06;',
     '  float back = pow(1.0 - ndl, 3.0);',
     /* 【必须按葫芦改阈值】茶碗主体在 y>0.4，under 只覆盖托那一圈；
        而葫芦下肚整个在 y<0.4 内，照抄茶的值会把**整块下肚**掺冷并压暗 22% ——
@@ -553,10 +554,14 @@
        这是「酒不如茶亮/透」的真正答案：茶截图里那档走的是 irr×反照率×RPI + 弱主光，
        裂纹用「混墨」画成深线；而青玉链路是自求和、裂纹压暗，观感更沉更闷。
        之前两档都做成青玉链路，所以粉青档永远出不来茶那种淡雅通透。 */
-    '      if (crackA > 0.0) dc = mix(dc, srgb2lin(pat.rgb), crackA);',
+    '      float ink = clamp(crackA * 1.28, 0.0, 1.0);',
+    '      if (ink > 0.0) dc = mix(dc, srgb2lin(pat.rgb), ink);',
     '      vec3 irr = vec3(uAmbient) + mix(uGround, uSky, 0.5 + 0.5*n.y);',
     '      col = irr * dc * RPI;',
     '      col += sat(dot(n, uKeyDir)) * uKeyK * dc * RPI;',
+    '      col += sat(dot(n, uFillDir)) * dc * RPI * 0.08;',
+    /* 浅底上给轮廓一点暗边：不是描线，是瓷胎在掠射角的自然压暗；P2 的亮釉边随后叠上来，形成厚胎感。 */
+    '      col *= 1.0 - 0.10 * pow(1.0 - nv, 3.0);',
     '    }',
     /* 器身压暗必须发生在 P2 之前：茶模块就是这个顺序 —— 先把瓷胎压下去，
        釉面的窄高光、掠射亮边与窗光反射最后再叠，暗色下才「胎暗釉亮」。
@@ -603,8 +608,19 @@
     '    vec3 irr = vec3(uAmbient) + mix(uGround, uSky, 0.5 + 0.5*n.y);',
     '    vec3 ceramic = uAlbedo;',
     '    col = irr * ceramic * 0.72 + sat(dot(n, uKeyDir)) * uKeyK * ceramic;',
+    '    col += sat(dot(n, uFillDir)) * ceramic * 0.10;',
     '    vec3 H = normalize(uKeyDir + V);',
     '    col += mix(uGlassLite, vec3(1.0), 0.45) * pow(sat(dot(n, H)), 80.0) * 0.14;',
+    /* 质感档给瓷塞一线 clearcoat 和极弱窗光，让它和瓶身共享同一套釉面语言。 */
+    '    if (uFx > 0.0) {',
+    '      vec3 cf = F_Schlick(vec3(0.04), 1.0, sat(dot(V, H)));',
+    '      col += mix(uGlassLite, vec3(1.0), 0.45) * pow(sat(dot(n, H)), 120.0) * cf * 0.055;',
+    '      vec3 R = reflect(-V, n);',
+    '      float phi = atan(R.z, R.x) * 0.1591549431 + 0.5;',
+    '      float ev = clamp(R.y * 0.5 + 0.5, 0.0, 1.0);',
+    '      vec3 env = texture2D(uEnvTex, vec2(phi, 1.0 - ev)).rgb;',
+    '      col += env * F_Schlick(vec3(0.04), 1.0, nv).r * uEnvK * 0.28;',
+    '    }',
     '    float band = smoothstep(2.932, 2.936, vP.y) * (1.0 - smoothstep(2.949, 2.953, vP.y));',
     '    vec3 gold = vec3(0.332, 0.227, 0.087);',
     '    col = mix(col, irr * gold * 0.72 + sat(dot(n, uKeyDir)) * uKeyK * gold, band);',
@@ -762,7 +778,7 @@
 
     /* 统一量 */
     var U = {};
-    ['uMVP', 'uModel', 'uAlbedo', 'uKeyDir', 'uSky', 'uGround', 'uAmbient', 'uRough', 'uEye',
+    ['uMVP', 'uModel', 'uAlbedo', 'uKeyDir', 'uFillDir', 'uSky', 'uGround', 'uAmbient', 'uRough', 'uEye',
       'uOpacity', 'uKeyK', 'uGlow', 'uBodyDim', 'uLineGlow', 'uNightK',
       'uFx', 'uFxKind', 'uTime', 'uFxPbr', 'uEnvTex', 'uEnvK', 'uPattern', 'uPatternOn',
       'uGlassDeep', 'uGlassMid', 'uGlassLite', 'uGlassCool', 'uGlassGain', 'uGlassJade'].forEach(function (k) {
@@ -787,7 +803,8 @@
       return [AT[0] + CAM_R * sp * Math.sin(cam.azim), AT[1] + CAM_R * cp, AT[2] + CAM_R * sp * Math.cos(cam.azim)];
     }
     function norm(v) { var l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; }
-    var KEY = norm([5, 10, 7]), FILL = norm([-6, 3, 5]);
+    /* 主光沿用青玉链路原方向（左上前方），补光用旧 KEY 的右上前方：两条材质分支从此共用同一组方向。 */
+    var KEY = norm([-0.28, 0.57, 0.77]), FILL = norm([5, 10, 7]);
 
     var state = {
       w: 0, h: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
@@ -865,6 +882,7 @@
       /* ── 器物 ── */
       gl.useProgram(progMain);
       gl.uniform3fv(U.uKeyDir, KEY);
+      gl.uniform3fv(U.uFillDir, FILL);
       /* 与茶模块逐值对齐：茶模块实机标定过这组数（天/地差约 28% 连续渐变），
          改掉原先偏亮的 0.86/0.42/0.32/0.40 —— 那是玻璃档留下来的，套到瓷器上会冲淡釉面。 */
       gl.uniform3f(U.uSky, 0.80, 0.80, 0.80);
@@ -977,6 +995,8 @@
       var lk = Math.round(top) + ':' + Math.round(bot) + ':' + state.w + 'x' + state.h + ':' + (opts.tyRef ? opts.tyRef.v.toFixed(4) : '0');
       if (el._vKey === lk) return;
       el._vKey = lk;
+      /* 落地暗部跟着投影出来的瓶底走：不写死 bottom，窄栏/不同字号下都不会掉到题字下面。 */
+      if (el.stage) el.stage.style.setProperty('--wine-ground-y', Math.round(bot - 2) + 'px');
 
       /* 酒气锚点：器物顶缘（拔塞后即瓶口）在舞台内的 y → viewBox 单位（0~100）。
          气缕的局部原点就在瓶口，故整组只做 translate；值只在布局变化时重算。 */
@@ -1096,7 +1116,7 @@
     /* 竖排后元素高度 = 字数 × 行距；空白区小时必须缩字号，否则会顶出画布 */
     function verseSize(gap, node) {
       var n = (node.textContent || '').length || 1;
-      return Math.max(8, Math.min(15, (gap - 8) / (n * 1.18)));
+      return Math.max(8, Math.min(16, (gap - 8) / (n * 1.18)));
     }
 
     function loop(ts) {
@@ -1752,6 +1772,7 @@
     var _pan = 0;            // 当前声音的声像，按指针横向位置取
     var _revealTimer = null;
     var _puffTimer = null;
+    var _liftRaf = 0;
     var _snapCfg = null;
     var _themeRaf = 0;
     var _darkObs = null;
@@ -1763,7 +1784,7 @@
     ensureStyle(root);
 
     var wrap = document.createElement('div');
-    wrap.className = 'wine-wrap';
+    wrap.className = 'wine-wrap' + (reduceMotion ? ' wine-reduce' : '');
     wrap.innerHTML =
       '<div class="wine-stage">' +
         '<svg class="wine-steam" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
@@ -2415,18 +2436,13 @@
        拖到一半又拖回去，该响的两声一声不少；拖到 0.5 停住不撒手，也不会凭空多响。
        迟滞 0.04（0.02 判合、0.06 判开）吃掉手抖与触控板的亚像素噪声。
        _lidSeated 在 mount 顶部随 state 一起初始化（见那里的注释）。 */
-    function applyLift(v) {
+    function setLiftImmediate(v, dropOverride) {
       var prev = state.lift;
       state.lift = clamp(v, 0, 1);
       if (gl) gl.setLift(state.lift);
-      /* 命中区跟着盖走：与渲染器同一套投影，位移 1.30 / 1.02 世界单位 */
-      if (el.hitArea && M.pxPerWorldY) {
-        el.hitArea.style.transform = 'translate(' + (1.05 * state.lift * M.pxPerWorldY).toFixed(1) +
-          'px,' + (-0.95 * state.lift * M.pxPerWorldY).toFixed(1) + 'px)';
-      }
       if (!audio) return;
-      /* 落塞的响度由「这一帧掉了多远」决定：拖到一半松手是轻轻放回，点按开合是整只塞落口 */
-      var drop = Math.abs(state.lift - prev);
+      /* 响度按整次开合的位移给，不按补间每一帧的小步给，否则点按落塞会轻得像没发生。 */
+      var drop = dropOverride == null ? Math.abs(state.lift - prev) : dropOverride;
       if (_lidSeated && state.lift > 0.06) {
         _lidSeated = false;
         audio.unseat(_pan);
@@ -2434,6 +2450,25 @@
         _lidSeated = true;
         audio.seat(_pan, clamp(drop * 1.6, 0.35, 1.1));
       }
+    }
+
+    function applyLift(v, animate) {
+      var target = clamp(v, 0, 1);
+      if (_liftRaf) { cancelAnimationFrame(_liftRaf); _liftRaf = 0; }
+      if (!animate || reduceMotion || Math.abs(target - state.lift) < 0.01) {
+        setLiftImmediate(target);
+        return;
+      }
+      var from = state.lift, t0 = null, dur = 220, drop = Math.abs(target - from);
+      function step(now) {
+        if (t0 === null) t0 = now;
+        var p = Math.min(1, (now - t0) / dur);
+        var e = 1 - Math.pow(1 - p, 3);   // ease-out：起手快、落位稳，云头轻轻回正
+        setLiftImmediate(from + (target - from) * e, drop);
+        if (p < 1) _liftRaf = requestAnimationFrame(step);
+        else _liftRaf = 0;
+      }
+      _liftRaf = requestAnimationFrame(step);
     }
     var _tipTimer = null;
     function flashTip(text) {
@@ -2558,7 +2593,7 @@
         if (_puffTimer) clearTimeout(_puffTimer);
         _puffTimer = setTimeout(function () { wrap.classList.remove('wine-puff'); _puffTimer = null; }, 600);
       }
-      applyLift(1);
+      applyLift(1, true);
       syncSpin();
       if (el.tip) {
         if (!forced && _poolNote) el.tip.textContent = _poolNote;
@@ -2579,7 +2614,7 @@
       wrap.classList.remove('wine-puff');
       if (el.card) el.card.classList.remove('is-live');
       if (el.tip) el.tip.textContent = '拔塞喝酒 · 拖动可转';
-      applyLift(0);
+      applyLift(0, true);
       syncSpin();
       if (_revealTimer) { clearTimeout(_revealTimer); _revealTimer = null; }
     }
@@ -2907,6 +2942,7 @@
       if (_saveT) { clearTimeout(_saveT); _saveT = null; }
       if (_tipTimer) { clearTimeout(_tipTimer); _tipTimer = null; }
       if (_puffTimer) { clearTimeout(_puffTimer); _puffTimer = null; }
+      if (_liftRaf) { cancelAnimationFrame(_liftRaf); _liftRaf = 0; }
       if (_themeRaf) { cancelAnimationFrame(_themeRaf); _themeRaf = 0; }
       window.removeEventListener('message', onThemeMessage);
       window.removeEventListener('pointermove', onPointerMove);
@@ -2999,6 +3035,14 @@
     /* z-index:0 让舞台自成层叠上下文：酒香才能用负层压到画布（器物）后面，
        同时不影响工具行、命中区这些 z-index:auto 的定位子元素（它们仍在画布之上） */
     '.wine-stage{position:relative;z-index:0;flex:1 1 auto;min-height:0;touch-action:none;}' +
+    /* 极淡落地暗部：不是投影网格，只给葫芦一点「坐在案上」的重量。z-index -1 压在画布下。 */
+    '.wine-stage::after{content:"";position:absolute;z-index:-1;left:50%;' +
+      'top:var(--wine-ground-y,60%);width:38%;height:5%;' +
+      'transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;' +
+      'background:radial-gradient(ellipse at center,hsla(var(--th),22%,28%,.16),transparent 72%);' +
+      'filter:blur(6px);}' +
+    '.wine-wrap.wine-dark .wine-stage::after{' +
+      'background:radial-gradient(ellipse at center,rgba(0,0,0,.30),transparent 72%);}' +
     /* 命中区：盖子在视口里的投影（相机固定 → 比例固定） */
     '.wine-kbd{position:absolute;left:0;top:0;width:100%;height:100%;padding:0;border:0;background:transparent;' +
       'opacity:0;pointer-events:none;}' +
@@ -3041,7 +3085,7 @@
     /* 竖排：外层满宽只负责水平居中，内层 span 用 vertical-rl 把字竖着叠；
        高度随字数变化，故用 translateY(-50%) 以自身中心对齐 placeVerse() 给出的 y */
     '.wine-verse{position:absolute;left:0;right:0;text-align:center;pointer-events:none;' +
-      'font-size:15px;line-height:1;opacity:.62;transform:translateY(-50%);' +
+      'font-size:15px;line-height:1;opacity:.74;font-weight:500;transform:translateY(-50%);' +
       'white-space:nowrap;transition:opacity var(--duration-slow) var(--ease-cn);}' +
     /* 收录数量：竖排、默认显示（未开盖），开盖后让位给茶样文案 */
     /* 这一列本身就是「柜 / 库」的状态显示，点击直达茶柜 —— 比另加图标更省地方 */
@@ -3097,7 +3141,7 @@
     '' +
     '.wine-verse>span{display:inline-block;writing-mode:vertical-rl;text-orientation:mixed;' +
       'letter-spacing:.18em;margin-inline-end:-.18em;}' +
-    '.wine-wrap:hover .wine-verse{opacity:.78;}' +
+    '.wine-wrap:hover .wine-verse{opacity:.92;}' +
     /* 滑块行已并入 .wine-field 两列网格（见设置面板段），此处只补栅格内的宽度。
        同上：注释行不带 `+`，否则下一行字符串会被一元加号吞成 NaN。 */
     '.wine-range-wrap{display:flex;align-items:center;gap:8px;width:100%;}' +
@@ -3117,13 +3161,9 @@
     '.wine-range::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;' +
       'background:hsl(var(--th),36%,40%);box-shadow:0 1px 2px rgba(0,0,0,.3);}' +
     '.wine-range:focus-visible{outline:2px solid hsl(var(--th),40%,46%);outline-offset:2px;}' +
-    '.wine-hit{position:absolute;left:22%;top:27%;width:56%;height:14%;' +
-      'cursor:grab;outline:none;transition:transform var(--duration-slower) cubic-bezier(.2,.8,.2,1);}' +
-    '.wine-wrap.is-dragging .wine-hit{cursor:grabbing;transition:none;}' +
     '.wine-stage{cursor:grab;}' +
     '.gaiwan-canvas{position:absolute;inset:0;pointer-events:none;}' +
     '.wine-wrap.is-orbiting .wine-stage{cursor:grabbing;}' +
-    '.wine-hit:focus-visible{outline:2px dashed hsl(var(--th),32%,52%);outline-offset:4px;border-radius:50%;}' +
     '.wine-wrap.wine-nogl .wine-stage{display:none;}' +
 
     /* 文案整体上提：用 relative+top 而不是 margin/transform ——
@@ -3346,8 +3386,15 @@
     '.wine-btn.ghost:hover{opacity:.8;}' +
     '.wine-btn.primary:hover{opacity:.9;}' +
 
+    /* 减弱动效：模块标记与系统偏好都关掉酒香动画，卡片/题字不再缓动；JS 自转在 mount 时已关。 */
+    '.wine-wrap.wine-reduce .wine-wisp,' +
+    '.wine-wrap.wine-reduce .wine-steam,' +
+    '.wine-wrap.wine-reduce.wine-puff .wine-steam{animation:none !important;}' +
+    '.wine-wrap.wine-reduce .wine-card,' +
+    '.wine-wrap.wine-reduce .wine-verse,' +
+    '.wine-wrap.wine-reduce .wine-count{transition-duration:.01ms !important;}' +
     '@media (prefers-reduced-motion:reduce){' +
-      '.wine-hit,.wine-card{transition-duration:.01ms !important;}' +
+      '.wine-card,.wine-verse,.wine-count{transition-duration:.01ms !important;}' +
     '}';
   }
 
