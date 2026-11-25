@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.18","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
+/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.19","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
 /**
  * 将进酒 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -18,7 +18,7 @@
 
   var ID = 'wine';
   var TITLE = '将进酒杯莫停';
-  var VERSION = '0.3.18';
+  var VERSION = '0.3.19';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -86,7 +86,7 @@
      窄高光、sss = 薄胎背光透射、env = 窗光环境反射。玻璃那套（更重的镜面与环境）已弃用 ——
      瓷器靠「宽高光 + 边缘光」读形，不靠环境反射。 */
   /* 窗光反射从 .42 降到 .20：三扇窗在窄栏小瓶上会并成一条竖向亮带，和主光分界叠成色块。 */
-  var FX_PBR = { spec: 0.08, coat: 0.28, sss: 0.10, env: 0.20 };
+  var FX_PBR = { spec: 0.08, coat: 0.28, sss: 0.10, env: 0.16 };
   /* 硬边法线阈值：只保留真正尖锐的折角（薄口沿 108°、盖/塞边）。
      提到 70° 是为了放过葫芦的「腰」——腰的折角约 67°，是一只吹出来的葫芦该有的圆滑过渡，
      若按 50° 判成硬边，腰上会插一道亮线，读起来像上下两节拼起来的（实测）。 */
@@ -275,19 +275,19 @@
     var ctx = c.getContext('2d');
     var img = ctx.createImageData(ENV_W, ENV_H);
     var d = img.data;
-    var centers = [0.12, 0.46, 0.80];
+    /* v0.3.19：三扇窄窗改成一整面柔光。原先 3 个 σ=.045 的窗格映到小葫芦上会并成
+       竖向亮条，和主光一起读成“左暗右亮/中间一道光”。现在只保留一片宽柔反射，
+       竹影压到近乎不可见——环境提供水头，不负责造形。 */
     for (var y = 0; y < ENV_H; y++) {
       var vy = y / (ENV_H - 1);
-      var sky = 1.0 - 0.55 * vy;                  // 上亮下暗
+      var sky = 1.0 - 0.42 * vy;                  // 上亮下暗（差也收小）
       for (var x = 0; x < ENV_W; x++) {
-        var u = x / ENV_W, win = 0;
-        for (var i = 0; i < centers.length; i++) {
-          var dx = Math.abs(u - centers[i]);
-          dx = Math.min(dx, 1 - dx);             // 环面距离，首尾无缝
-          win += Math.exp(-Math.pow(dx / 0.045, 2));
-        }
-        var bamboo = 0.06 * Math.sin(u * 6.2831853 * 7.0) + 0.04 * Math.sin(u * 6.2831853 * 13.0 + 1.1);
-        var v = Math.min(1, Math.max(0, (win * 0.92 + 0.06 + bamboo) * sky));
+        var u = x / ENV_W;
+        var dx = Math.abs(u - 0.5);
+        dx = Math.min(dx, 1 - dx);                 // 环面距离，首尾无缝
+        var win = Math.exp(-Math.pow(dx / 0.32, 2));
+        var bamboo = 0.012 * Math.sin(u * 6.2831853 * 7.0) + 0.008 * Math.sin(u * 6.2831853 * 13.0 + 1.1);
+        var v = Math.min(1, Math.max(0, (win * 0.62 + 0.24 + bamboo) * sky));
         var k = (y * ENV_W + x) * 4;
         d[k] = Math.round(255 * v);
         d[k + 1] = Math.round(250 * v);
