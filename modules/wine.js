@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.11","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
+/* __bamboo_module_ {"id":"wine","name":"将进酒杯莫停","version":"0.3.12","fab":{"icon":"gourd","label":"饮酒"},"location":"left"} */
 /**
  * 将进酒 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -18,7 +18,7 @@
 
   var ID = 'wine';
   var TITLE = '将进酒杯莫停';
-  var VERSION = '0.3.11';
+  var VERSION = '0.3.12';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -60,14 +60,16 @@
              [.760, .742], [.828, .648], [.884, .550], [.926, .448], [.950, .344],
              [.956, .240], [.944, .140], [.914, .048], [.862, -.036], [.790, -.112],
              [.700, -.178], [.588, -.232], [.450, -.272], [.290, -.296], [0, -.312]],
-    /* 瓶塞 = 深青釉瓷塞 + v0.3.11 短颈如意竖柄。
+    /* 瓶塞 = 深青釉瓷塞 + v0.3.12 小喇叭口。
+       剖面按「底心 → 外壁 → 细颈 → 外翻口沿 → 内壁 → 杯底心」闭合：
+       顶部是一只浅杯，斜视下自然呈椭圆口（就是参考图的样子），不需要额外网格；
        下段 y≈2.72~2.88 仍是原入孔锥度，与瓶颈内腔匹配；
-       上段 3.045→3.155 是短颈（细腰微收），云头网格另建并合并进同一 stopper 网格；
        y=2.932~2.953 仍留给 shader 画极细暗金/铜色口沿。 */
-    stopper: [[0, 3.155], [.055, 3.153], [.068, 3.140], [.068, 3.115],
-              [.060, 3.085], [.070, 3.060], [.090, 3.036], [.115, 3.012],
-              [.136, 2.978], [.146, 2.950], [.146, 2.925],
-              [.140, 2.885], [.130, 2.780], [.115, 2.735], [.075, 2.720], [0, 2.715]]
+    stopper: [[0, 2.715], [.075, 2.720], [.115, 2.735], [.130, 2.780], [.140, 2.885],
+              [.146, 2.925], [.146, 2.950], [.136, 2.978], [.115, 3.012], [.090, 3.036],
+              [.070, 3.060], [.052, 3.090], [.050, 3.120], [.058, 3.150], [.085, 3.180],
+              [.130, 3.205], [.160, 3.220], [.150, 3.230], [.130, 3.220], [.100, 3.190],
+              [.070, 3.160], [0, 3.150]]
   };
   var ROT_SPEED = 0.15;          // 原地自转：绕器物竖轴（回转体，靠开片/窗光可见）
   /* 环绕自转：相机绕器物巡视，真正「多角度」。方位角匀速 + 俯仰角正弦摆动。 */
@@ -199,56 +201,6 @@
       }
     }
     return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), nrmHard: new Float32Array(nrmHard), idx: new Uint16Array(idx), uv: new Float32Array(uv) };
-  }
-
-  /* ══ 如意竖柄：短颈上的三瓣云头 ══
-     云头用扁球做底，再按 3θ 做轻微三瓣起伏；从任何环绕角度都能读出「如意」，
-     又不做成薄片——回转巡视时不会消失。几何与瓶塞合并进同一网格，绘制/拾取/避让都不增加条目。 */
-  function buildRuyiKnob(cx, cy, cz, rx, ry, rz, su, sv) {
-    var pos = [], nrm = [], nrmHard = [], idx = [], row = su + 1;
-    for (var v = 0; v <= sv; v++) {
-      var phi = v / sv * Math.PI, sp = Math.sin(phi), cp = Math.cos(phi);
-      for (var u = 0; u <= su; u++) {
-        var th = u / su * Math.PI * 2;
-        var lobe = 1 + 0.17 * Math.cos(3 * th) + 0.045 * Math.cos(6 * th);
-        var x = cx + rx * sp * lobe * Math.cos(th);
-        var y = cy + ry * cp;
-        var z = cz + rz * sp * lobe * Math.sin(th);
-        pos.push(x, y, z);
-        var nx = (x - cx) / (rx * rx), ny = (y - cy) / (ry * ry), nz = (z - cz) / (rz * rz);
-        var l = Math.hypot(nx, ny, nz) || 1;
-        nrm.push(nx / l, ny / l, nz / l);
-        nrmHard.push(nx / l, ny / l, nz / l);
-      }
-    }
-    for (var v2 = 0; v2 < sv; v2++) {
-      for (var u2 = 0; u2 < su; u2++) {
-        var A = v2 * row + u2, B = A + 1, C = A + row, D = C + 1;
-        idx.push(A, B, C, B, D, C);
-      }
-    }
-    return {
-      pos: new Float32Array(pos), nrm: new Float32Array(nrm),
-      nrmHard: new Float32Array(nrmHard), idx: new Uint16Array(idx), uv: new Float32Array(0)
-    };
-  }
-
-  function mergeGeom(parts) {
-    var pos = [], nrm = [], nrmHard = [], uv = [], idx = [], off = 0;
-    function push(dst, src) { for (var i = 0; i < src.length; i++) dst.push(src[i]); }
-    for (var k = 0; k < parts.length; k++) {
-      var m = parts[k];
-      push(pos, m.pos); push(nrm, m.nrm);
-      if (m.nrmHard && m.nrmHard.length) push(nrmHard, m.nrmHard);
-      else for (var z = 0; z < m.pos.length; z++) nrmHard.push(0);
-      if (m.uv && m.uv.length) push(uv, m.uv);
-      for (var j = 0; j < m.idx.length; j++) idx.push(m.idx[j] + off);
-      off += m.pos.length / 3;
-    }
-    return {
-      pos: new Float32Array(pos), nrm: new Float32Array(nrm),
-      nrmHard: new Float32Array(nrmHard), idx: new Uint16Array(idx), uv: new Float32Array(uv)
-    };
   }
 
   /* ══ 纹样：画在 2D 画布上再上传成贴图 ══
@@ -726,11 +678,7 @@
     var M = {
       /* 青瓷葫芦（不透明，含内壁）与深青釉瓷塞。不再是玻璃 —— 没有酒液/气泡网格了。 */
       vessel: mesh(buildLathe(PROFILES.vessel, SEG, 1, true)),
-      /* 云头合并进 stopper：保持 drawList / pick / scanMesh 都只有一个塞子条目。 */
-      stopper: mesh(mergeGeom([
-        buildLathe(PROFILES.stopper, SEG, 1, false, { rim: 'min', foot: 'start' }),
-        buildRuyiKnob(0, 3.168, 0, 0.170, 0.065, 0.095, 48, 20)
-      ])),
+      stopper: mesh(buildLathe(PROFILES.stopper, SEG, 1, false)),
     };
 
     function bindMesh(prog, m) {
@@ -771,8 +719,8 @@
 
     /* 轨道相机：与原稿 OrbitControls 同一组约束
        （target(0,1.4,0)、polar 30°..84°、zoom .5..3、dampingFactor .05、enablePan=false） */
-    /* 取景目标点：葫芦可见范围 y = -0.35（底）~ 3.236（如意云头顶），几何中心约 1.44。
-       v0.3.11 加竖柄后目标略上移，配合 BOX.hh 小幅放大，给上联留白。 */
+    /* 取景目标点：葫芦可见范围 y = -0.35（底）~ 3.230（小喇叭口沿），几何中心约 1.44。
+       v0.3.12 改小喇叭口后目标略上移，配合 BOX.hh 小幅放大，给上联留白。 */
     var AT = [0, 1.42, 0];
     var CAM_R = 8.35;
 
@@ -806,7 +754,7 @@
     };
 
     /** 包围球取景：轨道转到任何角度都不裁（用球而不是盒，避免转动时画面忽大忽小）。
-     *  葫芦最大半径 1.0；加如意竖柄后高约 3.59，包围球 ≈ 2.04，仍小于 2.5；
+     *  葫芦最大半径 1.0；加小喇叭口后高约 3.58，包围球 ≈ 2.04，仍小于 2.5；
      *  hh 只小幅放大到 2.66，给上联留一档空白，不让器物一下子缩太多。 */
     var BOX = { hw: 2.5, hh: 2.66 };
     function fitView(aspect) {
@@ -826,16 +774,17 @@
       gl.viewport(0, 0, canvas.width, canvas.height);
     }
 
-    /** 瓶塞的局部变换：竖直拔出 + 微倾（比盖碗的侧倾抬起幅度小） */
+    /** 瓶塞的局部变换：小喇叭口略歪静置；拔起时向右上让开。 */
     /** 瓶塞：向上拔出 + 向右让开 + 微倾。
      *  **必须侧移**：塞子原先是纯竖直抬起，抬到位时正好顶在上题字「将进酒」那里，
      *  把字盖住（实测）。茶模块的盖子是侧倾抬起，天然让开；塞子拔起也该往边上放。 */
     function stopperMatrix(lift) {
-      if (lift <= 0.001) return trans(0, state.bob * 0.5, 0);
-      /* v0.3.11 如意竖柄：重心由塞肩升到短颈中段，故 pivot 上移；
-         多让一点侧向、少一点纯上抬，避免云头拔起后顶住上联。 */
-      var dy = 0.42 * lift, dx = 0.95 * lift, ang = 0.26 * lift;
-      var pivot = 3.02;
+      var t = Math.max(0, Math.min(1, lift || 0));
+      /* v0.3.12 小喇叭口：静止时略歪，像随手搁上的塞子；拔起时继续向右上让开上联。 */
+      var pivot = 2.95;
+      var dx = 0.95 * t;
+      var dy = 0.42 * t + (state.bob * 0.5) * (1 - t);
+      var ang = 0.09 + 0.20 * t;
       var t0 = trans(0, -pivot, 0);
       var t1 = trans(0, pivot, 0);
       return mul(t1, mul(rotZ(ang), mul(t0, trans(dx, dy, 0))));
