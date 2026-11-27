@@ -1,6 +1,6 @@
-/* __bamboo_module_ {"id":"coffee","name":"来杯咖啡","version":"0.1.0","fab":{"icon":"flame","label":"喝咖啡"},"location":"left"} */
+/* __bamboo_module_ {"id":"coffee","name":"咖啡时刻","version":"0.1.1","fab":{"icon":"flame","label":"喝咖啡"},"location":"left"} */
 /**
- * 来杯咖啡 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
+ * 咖啡时刻 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
  * 继承「不如吃茶去」与「将进酒杯莫停」的体系：器物实时三维渲染、正交相机、
  * 相机锁定光源、程序化纹理、三态自转、GPU 拾取、柜子/分类抽选与瓷器音效合成。
@@ -13,8 +13,8 @@
   'use strict';
 
   var ID = 'coffee';
-  var TITLE = '来杯咖啡';
-  var VERSION = '0.1.0';
+  var TITLE = '咖啡时刻';
+  var VERSION = '0.1.1';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -1495,7 +1495,7 @@
         '</svg>' +
         '<button type="button" class="coffee-kbd" aria-label="拔出或塞回瓶塞；按 P 切换瓶身纹样"></button>' +
         '<div class="coffee-verse v-top"><span>告别是非</span></div>' +
-        '<div class="coffee-verse v-bot"><span>来杯咖啡</span></div>' +
+        '<div class="coffee-verse v-bot"><span>咖啡时刻</span></div>' +
         '<div class="coffee-count"><span class="t-num"></span><span class="t-cab">我的咖啡柜</span></div>' +
 '<div class="coffee-tools">' +
                 '<button class="coffee-gear" type="button" aria-label="咖啡设置">' +
