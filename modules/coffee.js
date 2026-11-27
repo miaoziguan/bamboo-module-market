@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"coffee","name":"咖啡时刻","version":"0.1.1","fab":{"icon":"flame","label":"喝咖啡"},"location":"left"} */
+/* __bamboo_module_ {"id":"coffee","name":"咖啡时刻","version":"0.1.2","fab":{"icon":"flame","label":"喝咖啡"},"location":"left"} */
 /**
  * 咖啡时刻 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -11,14 +11,10 @@
  */
 (function () {
   'use strict';
-
   var ID = 'coffee';
   var TITLE = '咖啡时刻';
-  var VERSION = '0.1.1';
-
+  var VERSION = '0.1.2';
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
-
-
   /* ══ 资产 ══════════════════════════════════════════════════════ */
   /* 单节竹节长杯剖面（[半径 r, 高度 y]）。
      参考图造型：低矮圈足 → 足上外鼓 → 中腰微收 → 上段再外撇 → 薄口沿；
@@ -36,7 +32,6 @@
     liquid: [[0, 1.780], [.30, 1.782], [.55, 1.785], [.66, 1.788],
              [.66, 1.808], [.55, 1.810], [.30, 1.808], [0, 1.806]]
   };
-
   var ROT_SPEED = 0.15;          // 原地自转：绕器物竖轴（回转体，靠开片/窗光可见）
   /* 环绕自转：相机绕器物巡视，真正「多角度」。方位角匀速 + 俯仰角正弦摆动。 */
   var AZIM_SPEED = 0.12;                       // 方位角匀速 rad/s（整圈约 52s）
@@ -59,7 +54,6 @@
      提到 70° 是为了放过葫芦的「腰」——腰的折角约 67°，是一只吹出来的葫芦该有的圆滑过渡，
      若按 50° 判成硬边，腰上会插一道亮线，读起来像上下两节拼起来的（实测）。 */
   var HARD_EDGE_COS = Math.cos(70 * Math.PI / 180);
-
   /* ══ 曲线：Catmull-Rom(0.1) + 弧长均匀重采样（轮廓不变，环分布更合理） ══ */
   function crAxis(x0, x1, x2, x3, tension, t) {
     var ta = tension * (x2 - x0), tb = tension * (x3 - x1);
@@ -99,7 +93,6 @@
     }
     return out;
   }
-
   /* ══ 车削网格 ══ */
   function buildLathe(profile, segments, radialScale, withUV, uvCfg) {
     var P = sampleProfile(profile, 150, 0.1), n = P.length;
@@ -132,7 +125,6 @@
     }
     var cumFoot = cum[foot] || 0;
     var wallLen = (cum[rim] - cumFoot) || 1;
-
     /* ── P4 硬边法线（质感档专用，原稿档仍用下面的平滑 nrm）──
        Catmull-Rom 把剖面控制点之间的折角全抹成了连续切线，于是口沿、圈足、盖裙
        读起来像吹出来的圆润玻璃，没有瓷的挺括。这里不改拓扑（顶点/索引完全共用），
@@ -157,7 +149,6 @@
         if (hi < n) tanHard[hi] = [hbx / hlb, hby / hlb];
       }
     }
-
     for (var i = 0; i < n; i++) {
       var r = P[i][0] * sc, y = sc === 1 ? P[i][1] : (0.02 + (P[i][1] - 0.02) * sc);
       var a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)];
@@ -186,7 +177,6 @@
     }
     return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), nrmHard: new Float32Array(nrmHard), idx: new Uint16Array(idx), uv: new Float32Array(uv) };
   }
-
   /* ══ 如意竖柄：短颈上的三瓣云头 ══
      云头用扁球做底，再按 3θ 做轻微三瓣起伏；从任何环绕角度都能读出「如意」，
      又不做成薄片——回转巡视时不会消失。几何与瓶塞合并进同一网格，绘制/拾取/避让都不增加条目。 */
@@ -218,7 +208,6 @@
       nrmHard: new Float32Array(nrmHard), idx: new Uint16Array(idx), uv: new Float32Array(0)
     };
   }
-
   function mergeGeom(parts) {
     var pos = [], nrm = [], nrmHard = [], uv = [], idx = [], off = 0;
     function push(dst, src) { for (var i = 0; i < src.length; i++) dst.push(src[i]); }
@@ -236,7 +225,6 @@
       nrmHard: new Float32Array(nrmHard), idx: new Uint16Array(idx), uv: new Float32Array(uv)
     };
   }
-
   /* ══ 纹样：画在 2D 画布上再上传成贴图 ══
      u 是环向（左右循环），v 是剖面弧长（0=足底/盖钮，1=口沿/盖沿，越过口沿后继续累加而不是钳住）。
      三件瓷整器都印；越界的那一段靠贴图在两个方向都无缝平铺来消化（见 paintCrackle）。
@@ -245,7 +233,6 @@
      贴图再大也会被缩小采样，1px 的开片线平均完就看不见了。 */
   var PAT_W = 512, PAT_H = 256;
   var PATTERNS = ['none', 'crackle'];
-
   /* ── P3 窗光环境（釉面映出的那排窗棂）──
      512×32 的横向条带：u = 反射向量的方位角 0..1（GL_REPEAT 环绕），
      v = 反射向量高度（上=天光、下=案面）。三扇柔边窗格 + 两道低频「竹影」扰动，
@@ -282,30 +269,25 @@
     ctx.putImageData(img, 0, 0);
     return c;
   }
-
   function patCanvas() {
     var c = document.createElement('canvas');
     c.width = PAT_W; c.height = PAT_H;
     return c;
   }
-
   /* 冰裂（开片）。
      参考真品：这是 Voronoi 多边形，三叉交汇（三条缝以约 120° 相交）、格子大小不一、
      大格里再细分出小格。之前两版都是「四边网格」，骨架天生不对，抖得再厉害也像渔网。
-
      做法：距离场。每个像素只查 3×3 邻域里的种子（不是全部种子，所以够快），
      取最近距离 d1 与次近距离 d2，d2−d1 落在带宽内即裂纹 ——
      三叉交汇、宽窄变化都是这个算法的自然产物，不用手画。
      两个方向都按环面算（种子按模数环绕 + 距离走近路），所以整张图是四方连续的 ——
      贴图在 u 上绕一圈、在 v 上可以越过 1 继续铺（口沿之后的弧长就靠它接住）。 */
   var CRACK_COLOR = [50, 64, 68];     // 墨色（偏青的深灰，参考图里就是这条色）
-
   function paintCrackle(ctx) {
     var W = PAT_W, H = PAT_H;
     var acc = new Float32Array(W * H);   // 逐像素裂纹强度 0..1
     var rnd = 20261030;
     function rndNext() { rnd = (rnd * 16807) % 2147483647; return rnd / 2147483647; }
-
     /** 叠一层 Voronoi 裂纹：nx×ny 个种子，线宽 w（像素），强度 gain */
     function layer(nx, ny, w, gain) {
       var cw = W / nx, ch = H / ny;
@@ -349,12 +331,10 @@
         }
       }
     }
-
     // 主裂：格子大、线粗、深
     layer(9, 5, 1.3, 1.0);
     // 次裂：格子小、线细、浅 —— 大格里被细分的感觉就来自这一层
     layer(30, 15, 0.75, 0.78);
-
     var img = ctx.createImageData(W, H);
     var d = img.data;
     for (var i = 0, n = W * H; i < n; i++) {
@@ -368,16 +348,13 @@
     }
     ctx.putImageData(img, 0, 0);
   }
-
   function makePatternCanvas(kind) {
-
     var c = patCanvas();
     var ctx = c.getContext('2d');
     ctx.clearRect(0, 0, PAT_W, PAT_H);
     if (kind === 'crackle') paintCrackle(ctx);
     return c;
   }
-
   /* ══ 矩阵 ══ */
   function mul(a, b) {
     var o = new Float32Array(16);
@@ -413,7 +390,6 @@
     return new Float32Array([c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
   function trans(x, y, z) { return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]); }
-
   /* ══ 着色器 ══ */
   var VS_MAIN = [
     'attribute vec3 aPos; attribute vec3 aNrm; attribute vec2 aUv;',
@@ -427,7 +403,6 @@
     '  vP = aPos; vLN = aNrm;',
     '  gl_Position = uMVP * vec4(aPos,1.0); }'
   ].join('\n');
-
   /* 着色器：uFxKind 0=玻璃瓶 1=酒液 2=气泡。玻璃走菲涅尔透射（中心透明见酒液、
      边缘高 alpha 现玻璃），酒液走有色液体 + 顶部弯月面，气泡走自发光小球。 */
   var FS_MAIN = [
@@ -435,6 +410,7 @@
     'varying vec3 vN; varying vec3 vW; varying vec2 vUv;',
     'varying vec3 vP; varying vec3 vLN;',
     'uniform vec3 uAlbedo; uniform vec3 uCrema; uniform vec3 uKeyDir; uniform vec3 uFillDir;',
+    'uniform float uMilk; uniform float uFoam;',
     'uniform vec3 uSky; uniform vec3 uGround; uniform float uAmbient;',
     'uniform float uRough; uniform vec3 uEye; uniform float uOpacity;',
     'uniform float uKeyK; uniform float uGlow; uniform float uBodyDim; uniform float uLineGlow; uniform float uNightK;',
@@ -556,16 +532,29 @@
     '      col += mix(uGlassLite,vec3(1.0),0.70) * soft * uEnvK * 0.35 * jadeK;',
     '    }',
     '  } else {',
+    /* 液面（浅碟）：径向明暗 + crema 金圈（按泡沫强度）+ 环境柔光 + 弯月面。
+       uMilk=1 奶咖整杯奶咖色（uAlbedo 已按制法重算）；uFoam 是真实泡沫强度：
+       浓缩/玛奇朵 1.0（厚 crema）、美式 0.15（薄且易散）、手冲/浸泡/冷萃 0（几乎无）。
+       美式不应浮出白泡沫——边缘混色、斑驳、白亮边全部乘 uFoam。 */
     '    float r = length(vP.xz);',
-    '    float top = smoothstep(0.35,0.75,n.y);',
-    '    float ny = sat(n.y), nv = sat(dot(n,V));',
-    '    col = uAlbedo * (0.82 + 0.18*ny);',
-    '    float ring = smoothstep(0.50,0.60,r) * (1.0-smoothstep(0.63,0.66,r)) * top;',
-    '    col = mix(col, uCrema, ring*0.85);',
-    '    col *= 0.98 + 0.02*sin(r*18.0-uTime*1.4)*top;',
-    '    vec3 H = normalize(camL+V);',
-    '    col += vec3(1.0) * pow(sat(dot(n,H)),60.0) * 0.20 * top;',
-    '    col += mix(uCrema,vec3(1.0),0.55) * pow(1.0-nv,5.0) * 0.18;',
+    '    float rr = clamp(r/0.66, 0.0, 1.0);',
+    '    float nv = sat(dot(n,V));',
+    '    col = uAlbedo * (0.88 + 0.12*rr);',
+    '    float edge = smoothstep(0.55, 1.0, rr);',
+    /* crema 金圈：强度随 uFoam，奶咖的浅色来自奶泡不是 crema，压到 0.25 */
+    '    float foamK = uMilk > 0.5 ? min(uFoam, 0.25) : uFoam;',
+    '    col = mix(col, uCrema, edge * foamK * 0.62);',
+    /* crema 斑驳：两组低频正弦叠加，缓缓流动；无泡沫的咖啡不画 */
+    '    float ang = atan(vP.z, vP.x);',
+    '    float marble = sin(ang*5.0 + rr*9.0 - uTime*0.35)*0.5 + sin(ang*9.0 - rr*14.0 + uTime*0.22)*0.5;',
+    '    col *= 1.0 + marble * 0.055 * edge * foamK;',
+    /* 弯月面白亮边：同样按泡沫强度，美式几乎不浮白 */
+    '    col += mix(uCrema, vec3(1.0), 0.45) * pow(1.0-nv, 4.0) * 0.16 * foamK;',
+    /* 环境柔光带：液面反光是物理存在，与泡沫无关，但降一档避免盖过深汤色 */
+    '    vec3 R = reflect(-V, n);',
+    '    vec3 Rcam2 = vec3(dot(R,camRx), dot(R,camUy), dot(R,camC));',
+    '    float sheen = exp(-pow((Rcam2.x+0.30)/0.55,2.0)) * exp(-pow((Rcam2.y-0.42)/0.42,2.0));',
+    '    col += vec3(1.0) * sheen * 0.09;',
     '    alpha = uOpacity;',
     '  }',
     '  float rim = pow(1.0-nv,2.2);',
@@ -576,7 +565,6 @@
     '  gl_FragColor = vec4(lin2srgb(col)*alpha, alpha);',
     '}'
   ].join('\n');
-
   var VS_PICK = [
     'attribute vec3 aPos;',
     'uniform mat4 uMVP;',
@@ -587,7 +575,6 @@
     'uniform float uId;',
     'void main(){ gl_FragColor = vec4(uId / 255.0, 0.0, 0.0, 1.0); }'
   ].join('\n');
-
   function compile(gl, type, src) {
     var s = gl.createShader(type);
     gl.shaderSource(s, src); gl.compileShader(s);
@@ -608,14 +595,12 @@
     gl.bufferData(target || gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
     return b;
   }
-
   function srgb2lin(c) { return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
   function hex2linArray(hex) {
     var h = String(hex).replace('#', '');
     var n = parseInt(h, 16);
     return [srgb2lin(((n >> 16) & 255) / 255), srgb2lin(((n >> 8) & 255) / 255), srgb2lin((n & 255) / 255)];
   }
-
   /* ══ 渲染器 ═══════════════════════════════════════════════════ */
   function GaiwanMount(el, opts) {
     opts = opts || {};
@@ -623,15 +608,12 @@
     canvas.className = 'gaiwan-canvas';
     canvas.style.cssText = 'width:100%;height:100%;display:block';
     el.appendChild(canvas);
-
     var gl = canvas.getContext('webgl', {
       alpha: true, antialias: true, premultipliedAlpha: true, preserveDrawingBuffer: false,
     }) || canvas.getContext('experimental-webgl');
     if (!gl) { el.removeChild(canvas); return null; }
-
     var progMain = program(gl, VS_MAIN, FS_MAIN);
     var progPick = program(gl, VS_PICK, FS_PICK);
-
     /* 纹样贴图 */
     var patTex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, patTex);
@@ -639,7 +621,6 @@
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-
     /* P3 环境反射贴图：启动时生成一次、上传一次，不参与逐帧开销。
        512×32 均为 2 的幂，u 方向才能用 GL_REPEAT 环绕成 360°。 */
     var envTex = gl.createTexture();
@@ -650,7 +631,6 @@
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
     /* 点击拾取：1×1 目标 + 把点击点平移到画面中心的投影 */
     var pickTex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, pickTex);
@@ -665,7 +645,6 @@
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, 1, 1);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, pickDepth);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
     /* 网格 */
     var SEG = 128;
     function mesh(m) {
@@ -682,8 +661,6 @@
       cup: mesh(buildLathe(PROFILES.cup, SEG, 1, true)),
       liquid: mesh(buildLathe(PROFILES.liquid, SEG, 1, false))
     };
-
-
     function bindMesh(prog, m) {
       var aP = gl.getAttribLocation(prog, 'aPos');
       gl.bindBuffer(gl.ARRAY_BUFFER, m.pos);
@@ -710,23 +687,20 @@
       }
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.idx);
     }
-
     /* 统一量 */
     var U = {};
-    ['uMVP', 'uModel', 'uAlbedo', 'uCrema', 'uKeyDir', 'uFillDir', 'uSky', 'uGround', 'uAmbient', 'uRough', 'uEye',
+    ['uMVP', 'uModel', 'uAlbedo', 'uCrema', 'uMilk', 'uFoam', 'uKeyDir', 'uFillDir', 'uSky', 'uGround', 'uAmbient', 'uRough', 'uEye',
       'uOpacity', 'uKeyK', 'uGlow', 'uBodyDim', 'uLineGlow', 'uNightK',
       'uFx', 'uFxKind', 'uTime', 'uFxPbr', 'uEnvTex', 'uEnvK', 'uPattern', 'uPatternOn',
       'uGlassDeep', 'uGlassMid', 'uGlassLite', 'uGlassCool', 'uGlassGain', 'uGlassJade'].forEach(function (k) {
       U[k] = gl.getUniformLocation(progMain, k);
     });
-
     /* 轨道相机：与原稿 OrbitControls 同一组约束
        （target(0,1.4,0)、polar 30°..84°、zoom .5..3、dampingFactor .05、enablePan=false） */
     /* 取景目标点：葫芦可见范围 y = -0.52（加深后的底）~ 3.236（如意云头顶），几何中心约 1.36。
        底弧加深后目标下移一档，保持上下题字留白均衡。 */
     var AT = [0, 0.62, 0];
     var CAM_R = 7.20;
-
     var POLAR_MIN = Math.PI / 6, POLAR_MAX = Math.PI / 2 - 0.1;
     var ZOOM_MIN = 0.5, ZOOM_MAX = 3;
     var cam = {
@@ -742,14 +716,13 @@
     /* v0.3.18：主光从侧前方改到近正面。旧方向 x=-0.28 在窄栏小尺寸下把葫芦切成左暗右亮两块；
        收到 x=-0.10 后左右差只剩轻微体积感，雨/雪/台灯等意境仍靠背景层表达。 */
     var KEY = norm([-0.10, 0.55, 0.90]), FILL = norm([5, 10, 7]);
-
     var state = {
       w: 0, h: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
       yaw: 0, lift: 0, bob: 0, pattern: 'crackle', elapsed: 0,
       spinMode: (opts.spinMode === 'yaw' || opts.spinMode === 'orbit') ? opts.spinMode : 'off',
       polarPhase: 0, autoPaused: false,
       /* 酒液颜色只用于详情卡的色点，不参与渲染（葫芦是实心观感的瓷器，看不见内里） */
-      coffeeColor: [0.10, 0.045, 0.020], cremaColor: [0.42, 0.24, 0.10],
+      coffeeColor: [0.10, 0.045, 0.020], cremaColor: [0.42, 0.24, 0.10], milk: 0, foam: 0,
       glassColor: [1, 1, 1], glow: 0, bodyDim: 1, lineGlow: 0, last: 0, raf: 0, alive: true,
       /* 釉面档：'porcelain' 白瓷 / 'jade' 青玉（沿用 mat 键以复用 UI 通道）。
          与吃茶模块一致：首帧即按存档档位与派生增益渲染，青玉档不闪一帧硬编码绿。 */
@@ -759,7 +732,6 @@
       /* 质感档：false 时气泡上升/酒面增强归零 */
       enhance: opts.enhance !== false
     };
-
     /** 包围球取景：轨道转到任何角度都不裁（用球而不是盒，避免转动时画面忽大忽小）。
      *  葫芦最大半径 1.0；底弧加深后总高约 3.76，包围球 ≈ 2.09，仍小于 2.5；
      *  hh 小幅放大到 2.70，给上下题字留白，不让器物一下子缩太多。 */
@@ -770,7 +742,6 @@
       if (aspect > hw / hh) hw = hh * aspect; else hh = hw / aspect;
       return { hw: hw, hh: hh };
     }
-
     function resize() {
       var r = el.getBoundingClientRect();
       var w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
@@ -780,11 +751,9 @@
       canvas.height = Math.round(h * state.dpr);
       gl.viewport(0, 0, canvas.width, canvas.height);
     }
-
     function render() {
       resize();
       var yawM = rotY(state.yaw);
-
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -793,14 +762,12 @@
       /* 瓷器不透明：关混合，只靠深度测试遮挡（内壁也因此能被正确挡住）。
          alpha 仍是 uOpacity(=1)，画布本身的 premultipliedAlpha 不受影响。 */
       gl.disable(gl.BLEND);
-
       var aspect = state.w / Math.max(1, state.h);
       var EYE = eyeOf();
       var view = lookAt(EYE, AT, [0, 1, 0]);
       var f = fitView(aspect);
       var proj = ortho(f.hw / cam.zoom, f.hh / cam.zoom, 1, 100, opts.tyRef ? opts.tyRef.v : 0);
       var vp = mul(proj, view);
-
       /* ── 器物 ── */
       gl.useProgram(progMain);
       gl.uniform3fv(U.uKeyDir, KEY);
@@ -841,15 +808,13 @@
       gl.uniform1f(U.uTime, state.elapsed || 0);
       gl.uniform3f(U.uFxPbr, FX_PBR.spec, FX_PBR.coat, FX_PBR.sss);
       gl.uniform1f(U.uEnvK, FX_PBR.env);
-
       /* 两件都是不透明实体，直接写深度、不需要混合/排序。
          元素：[网格, 模型矩阵, 反照率, 可见, uFxKind, uOpacity, uNightK] */
       /* [网格, 模型矩阵, 反照率, 可见, uFxKind, uOpacity, uNightK] */
       var drawList = [
-        [M.cup, yawM, state.glassColor, 1, 0, 1, 1],
-        [M.liquid, yawM, state.coffeeColor, 1, 1, 1, 0]
+        [M.cup, yawM, state.glassColor, 1, 0, 1, 1, 0, 0],
+        [M.liquid, yawM, state.coffeeColor, 1, 1, 1, 0, state.milk || 0, state.foam || 0]
       ];
-
       for (var i = 0; i < drawList.length; i++) {
         var pc = drawList[i];
         if (pc[3] === 0) continue;
@@ -857,6 +822,8 @@
         gl.uniformMatrix4fv(U.uModel, false, pc[1]);
         gl.uniform3fv(U.uAlbedo, pc[2]);
         gl.uniform3fv(U.uCrema, state.cremaColor);
+        gl.uniform1f(U.uMilk, pc[7]);
+        gl.uniform1f(U.uFoam, pc[8]);
         gl.uniform1f(U.uFxKind, pc[4]);
         gl.uniform1f(U.uOpacity, pc[5]);
         gl.uniform1f(U.uNightK, pc[6]);
@@ -867,10 +834,8 @@
         bindMesh(progMain, pc[0]);
         gl.drawElements(gl.TRIANGLES, pc[0].count, gl.UNSIGNED_SHORT, 0);
       }
-
       placeVerse(vp);
     }
-
     /* 上下两行题字：按器物在屏幕上的实际边界（盖顶 2.98 / 托底 -0.40 两圈采样）定位，
        再各取所在空白区的中点 —— 改画幅、拖动视角、整体下移都不会压到器物。 */
     var vTopEl = null, vBotEl = null, vCardEl = null, vCountEl = null, vGearEl = null;
@@ -919,7 +884,6 @@
       el._vKey = lk;
       /* 落地暗部跟着投影出来的瓶底走：不写死 bottom，窄栏/不同字号下都不会掉到题字下面。 */
       if (el.stage) el.stage.style.setProperty('--coffee-ground-y', Math.round(bot - 2) + 'px');
-
       /* 酒气锚点：器物顶缘（点杯后即瓶口）在舞台内的 y → viewBox 单位（0~100）。
          气缕的局部原点就在瓶口，故整组只做 translate；值只在布局变化时重算。 */
       if (!el.aromaG) el.aromaG = el.querySelector('.coffee-aroma');
@@ -930,7 +894,6 @@
           el.aromaG.setAttribute('transform', 'translate(50 ' + mouthU.toFixed(1) + ')');
         }
       }
-
       /* 两列同号，取两者都能容下的较小值。
          列是中心锚定（VERSE_TOP/VERSE_BOT-LIFT），约束是「列底/列顶不越器物 ±8px」：
          上联半高 ≤ 器物顶 - 8 - 0.17H；下联半高 ≤ (VERSE_BOT-LIFT)H - 8 - 器物底。
@@ -941,7 +904,6 @@
       [vTopEl, vBotEl].forEach(function (nd) { nd.style.fontSize = fs.toFixed(1) + 'px'; });
       vTopEl.style.visibility = top > 24 ? '' : 'hidden';
       vBotEl.style.visibility = (state.h - bot) > 24 ? '' : 'hidden';
-
       /* 文案与器物解耦（用户要求）：两列题字锚定舞台固定比例、绝不随器物移动；
          盖碗则由投影 ty 偏移校正到两句的正中间（见下方 ty 修正）。
          比例取自长期构图的实际测量（上联中心约 13.5%、下联约 71% 舞台高）。 */
@@ -953,10 +915,8 @@
       var yBot = Math.round(state.h * (VERSE_BOT - VERSE_BOT_LIFT));
       /* 下联视觉位：挂器物正下方，封顶老锚点（与吃茶模块逐式一致） */
       var yBotV = Math.min(Math.round(bot + VERSE_GAP2 + vhB / 2 - VESSEL_DROP), yBot);
-
       if (el._vTop !== yTop) { el._vTop = yTop; vTopEl.style.top = yTop + 'px'; }
       if (el._vBot !== yBotV) { el._vBot = yBotV; vBotEl.style.top = yBotV + 'px'; }
-
       /* 盖碗位置校正：屏幕位移与 ty 线性（Δpx = -Δty × state.h / 2），
          一次闭式修正即可命中；ty 变化后失效缓存，下一帧复测确认。 */
       if (opts.tyRef) {
@@ -971,7 +931,6 @@
           el._vKey = '';
         }
       }
-
       if (!vTipEl) vTipEl = el.parentNode && el.parentNode.querySelector('.coffee-tip');
       if (!vCountEl) vCountEl = el.querySelector('.coffee-count');
       var vR = vBotEl.getBoundingClientRect();
@@ -979,18 +938,15 @@
       var tipTop = vTipEl ? (vTipEl.getBoundingClientRect().top - stR.top) : state.h;
       /* 数量列挂「吃茶去」当前视觉位（yBotV）：居中于题字与工具行之间的空白（用户红框位） */
       var from = yBotV + vhB / 2 + 24;
-
       /* 「录豆七十三」与设置按钮同处下题字与页脚之间，单独给谁一个固定偏移都会互相压。
          所以把两者当成一组：总高 = 数量 + 间距 + 按钮，整体在这段空白里居中。 */
       if (!vGearEl) vGearEl = el.querySelector('.coffee-tools');
       var cntH = vCountEl ? vCountEl.offsetHeight : 0;
       var gearH = vGearEl ? vGearEl.offsetHeight : 0;
-
       /* 工具行锚在页脚之上（竖排后它变高了，不能再和数量挤在一起算整组），
          数量则在上方剩余空间里居中；空间不足就隐藏数量。 */
       var toolsTop = Math.round(tipTop - 8 - gearH);
       if (vGearEl) vGearEl.style.top = toolsTop + 'px';
-
       if (vCountEl) {
         var bandTop = from, bandBot = toolsTop - 8, bandH = bandBot - bandTop;
         /* 竖排工具行占位变高后，数量列容易放不下 —— 先按可用高度缩字号（9~15px），
@@ -1004,7 +960,6 @@
           vCountEl.style.top = Math.round(bandTop + bandH / 2) + 'px';   /* translateY(-50%)：top 是中心 */
         } else vCountEl.style.visibility = 'hidden';
       }
-
       if (!vCardEl) vCardEl = el.parentNode && el.parentNode.querySelector('.coffee-card');
       if (vCardEl) {
         /* 一次性算出目标位置再写入，不做「先写后量再改」——那种写法在小画幅下会读到旧值。
@@ -1019,7 +974,6 @@
         /* 居中要用卡片「盒子实际高度」而非文案内容高度：开盖前卡片空、内容高≈0，
            但盒子有 min-height，单凭内容高居中会算飞。开盖后内容填满，盒子高即内容高。 */
         var boxH = vCardEl.offsetHeight || 0;
-
         /* 与录豆列同带：带顶 = 吃茶去底 + 24，带底 = 工具行顶 - 8；卡片中心对齐带心 */
         var bandTopC = yBotV + vhB / 2 + 24;
         var bandBotC = toolsTop - 8;
@@ -1033,13 +987,11 @@
         if (off !== vCardLift) { vCardLift = off; vCardEl.style.top = off + 'px'; }
       }
     }
-
     /* 竖排后元素高度 = 字数 × 行距；空白区小时必须缩字号，否则会顶出画布 */
     function verseSize(gap, node) {
       var n = (node.textContent || '').length || 1;
       return Math.max(8, Math.min(16, (gap - 8) / (n * 1.18)));
     }
-
     function loop(ts) {
       if (!state.alive) return;
       var dt = state.last ? Math.min((ts - state.last) / 1000, 0.05) : 0;
@@ -1071,11 +1023,9 @@
       }
       state.raf = requestAnimationFrame(loop);
     }
-
     resize();
     render();
     if (state.spinMode !== 'off') state.raf = requestAnimationFrame(loop);
-
     /** 供 UI 层定位命中区：盖子在画布里的归一化矩形 + 世界单位↔CSS 像素 */
     function metrics() {
       var aspect = state.w / Math.max(1, state.h);
@@ -1100,7 +1050,6 @@
         lid: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }
       };
     }
-
     return {
       canvas: canvas,
       render: render,
@@ -1135,7 +1084,6 @@
         var shift = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -ndcX, -ndcY, 0, 1]);
         var mvp = mul(shift, vp);
         var yawM = rotY(state.yaw);
-
         gl.bindFramebuffer(gl.FRAMEBUFFER, pickFb);
         gl.viewport(0, 0, 1, 1);
         gl.disable(gl.BLEND);
@@ -1170,8 +1118,10 @@
       /** 咖啡色：随咖啡变，瓶内酒液实时换色 */
       /** 咖啡色：只用于详情卡的色点，**不参与渲染** —— 葫芦是实心观感的青瓷，看不见内里。
        *  保留 API 以免 UI 侧改动；刻意不触发重绘（换酒时画面不该有任何变化）。 */
-      setCoffeeColor: function (hex) {
+      setCoffeeColor: function (hex, milk, foam) {
         state.coffeeColor = hex2linArray(hex);
+        state.milk = milk ? 1 : 0;
+        state.foam = clamp(foam || 0, 0, 1);
       },
       /** 气泡已不建模（酒体不可见），保留空实现兼容既有调用点 */
       setBubbleColor: function (hex) { state.cremaColor = hex2linArray(hex); render(); },
@@ -1190,7 +1140,6 @@
         state.glassColor = hex2linArray(hex);
         render();
       },
-
       /** 釉面四色：由主题派生，deep/mid/lite/cool 四个 hex。
        *  mode = 'porcelain' 白瓷（默认） / 'jade' 青玉（环绕对称着色，见 celadonBody）。 */
       setMaterial: function (mode, glass, gain) {
@@ -1235,14 +1184,13 @@
       }
     };
   }
-
   /* ══════════════════════ 咖啡 ══════════════════════ */
   /* 字段沿用茶酒十字段：n 咖啡名 / t 类别 / o 产地或品牌 / s 一句风味语 / c 咖啡液色 /
      lf crema或奶泡色 / w 水温℃ / d 萃取时间 / l 风味或处理法
-     共 48 款：意式6 / 手冲6 / 浸泡6 / 冷萃6 / 风味6 / 低因6 / 拼配6 / 即饮6 */
+     现 81 款，按制法/处理法/品种/烘焙四维标注，权威来源见下方 SOURCES */
   /* ══════════════════════ 咖啡 · 四维分类数据 ══════════════════════
      权威口径（2026-11 核对，按维度归属，不存在覆盖全维度的官方法典）：
-     - 杯型 t：浓缩/卡布奇诺取 INEI 意大利国家规范；其余（美式/拿铁/澳白/玛奇朵/
+     - 制法 t：浓缩/卡布奇诺取 INEI 意大利国家规范；其余（美式/拿铁/澳白/玛奇朵/
        冷萃/手冲/浸泡/即饮）为行业惯例，无官方定义，条目里标「惯例」。
      - 处理法 pr：水洗 Washed / 日晒 Natural / 蜜处理 Honey / 湿刨 Wet-hulled /
        厌氧 Anaerobic 为行业通用大类（COE 按传统水洗·传统蜜日晒·实验三组竞赛）；
@@ -1253,104 +1201,106 @@
        45 Full City / 35 法式 / 25 意式）；此处归浅(95-75)/中(65-55)/深(45-25)三档。
      - 风味词 l 取 SCA×WCR 风味轮词汇；水温 w 与萃取 d 是 SCA 金杯/INEI 的
        建议值或行业惯例，非每款豆的实测值，条目里用 src 标明来源等级。
-     字段：n 名 / t 杯型 / pr 处理法 / vr 品种 / rt 烘焙 / o 产地 / s 风味语 /
+     字段：n 名 / t 制法 / pr 处理法 / vr 品种 / rt 烘焙 / o 产地 / s 风味语 /
      c 汤色 / lf 奶泡色 / w 水温℃ / d 萃取时间 / l 风味轮词 / src 来源。 */
-
   var SOURCES = {
     inei: 'INEI 意大利国家规范', sca: 'SCA 金杯建议', wcr: 'WCR 品种目录',
     coe: 'COE 处理法分组', agtron: 'Agtron/SCA 烘焙色卡', wheel: 'SCA×WCR 风味轮',
     custom: '行业惯例·无官方定义'
   };
-
   var TYPES = ['浓缩', '美式', '卡布奇诺', '拿铁', '澳白', '玛奇朵', '手冲', '浸泡', '冷萃', '即饮'];
   /* 脱因是采后处理（Decaffeination），归处理法维度；与 COE 的竞赛分组不同但同属 post-harvest */
   var PROCESS_TYPES = ['水洗', '日晒', '蜜处理', '湿刨', '厌氧', '脱因', '未标注'];
   var VARIETY_TYPES = ['铁皮卡', '波旁', '卡杜拉', '卡杜艾', '瑰夏', 'SL28', '帕卡马拉', '罗布斯塔', '拼配', '未标注'];
   var ROAST_TYPES = ['浅烘', '中烘', '深烘'];
-
   var TEAS = [
-    { id: 'c01', n: '意式浓缩', t: '浓缩', pr: '水洗', vr: '拼配', rt: '深烘', o: '意大利', s: '一小杯，把早晨叫醒。', c: '#3b1f12', lf: '#c68a4a', w: 90, d: '25s', l: '焦糖·坚果', src: 'inei' },
-    { id: 'c02', n: '短萃浓缩', t: '浓缩', pr: '水洗', vr: '拼配', rt: '深烘', o: '意大利', s: '少一点水，多一点浓。', c: '#341a0e', lf: '#cf9250', w: 90, d: '20s', l: '焦糖·可可', src: 'inei' },
-    { id: 'c03', n: '长萃浓缩', t: '浓缩', pr: '水洗', vr: '拼配', rt: '中烘', o: '意大利', s: '多一丝水，拉长尾韵。', c: '#452617', lf: '#c1874c', w: 90, d: '30s', l: '烘焙·焦糖', src: 'inei' },
-    { id: 'c04', n: '双份浓缩', t: '浓缩', pr: '水洗', vr: '拼配', rt: '深烘', o: '通用', s: '两份粉，一份清醒。', c: '#321a0f', lf: '#c88e4e', w: 90, d: '25s', l: '黑巧·坚果', src: 'inei' },
-    { id: 'c05', n: '水洗浓缩', t: '浓缩', pr: '水洗', vr: '铁皮卡', rt: '浅烘', o: '埃塞俄比亚', s: '水洗的明亮，压进三十毫升。', c: '#5a3018', lf: '#d69b58', w: 90, d: '25s', l: '柑橘·花香', src: 'inei' },
-    { id: 'c06', n: '日晒浓缩', t: '浓缩', pr: '日晒', vr: '波旁', rt: '中烘', o: '巴西', s: '日晒的甜，在短杯里更清楚。', c: '#4d2916', lf: '#d29a58', w: 90, d: '25s', l: '莓果·巧克力', src: 'inei' },
-    { id: 'c07', n: '美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '美国', s: '热水一冲，清醒变得很长。', c: '#4a2a18', lf: '#b98048', w: 90, d: '30s', l: '清爽·烘焙', src: 'custom' },
-    { id: 'c08', n: '冰美式', t: '美式', pr: '水洗', vr: '拼配', rt: '中烘', o: '通用', s: '冰块把苦味收得更干净。', c: '#472817', lf: '#b5804c', w: 90, d: '30s', l: '清爽·低酸', src: 'custom' },
-    { id: 'c09', n: '长黑', t: '美式', pr: '水洗', vr: '拼配', rt: '中烘', o: '澳新', s: '先水后酒，浮着一层金。', c: '#4d2c19', lf: '#d0a369', w: 90, d: '25s', l: '清爽·油脂', src: 'custom' },
-    { id: 'c10', n: '冷萃美式', t: '美式', pr: '水洗', vr: '拼配', rt: '中烘', o: '通用', s: '冷萃兑水，清爽但不薄。', c: '#4b2a1a', lf: '#b88a5e', w: 20, d: '12h', l: '清爽·低酸', src: 'custom' },
-    { id: 'c11', n: '燕麦美式', t: '美式', pr: '水洗', vr: '拼配', rt: '中烘', o: '通用', s: '燕麦把水也变得温顺。', c: '#563520', lf: '#d8bb93', w: 90, d: '30s', l: '谷物·柔滑', src: 'custom' },
-    { id: 'c12', n: '低因美式', t: '美式', pr: '脱因', vr: '拼配', rt: '中烘', o: '通用', s: '少一点因，多一点晚上的自由。', c: '#4a2b1a', lf: '#b88758', w: 90, d: '30s', l: '低因·清淡', src: 'custom' },
-    { id: 'c13', n: '卡布奇诺', t: '卡布奇诺', pr: '未标注', vr: '拼配', rt: '中烘', o: '意大利', s: '奶沫托着咖啡，像一座小桥。', c: '#5a321d', lf: '#e4c49a', w: 55, d: '28s', l: '均衡·奶香', src: 'inei' },
-    { id: 'c14', n: '干卡布', t: '卡布奇诺', pr: '水洗', vr: '拼配', rt: '中烘', o: '意大利', s: '奶少泡多，喝得到咖啡的骨。', c: '#54301c', lf: '#eed6b0', w: 55, d: '28s', l: '浓郁·奶泡', src: 'inei' },
-    { id: 'c15', n: '湿卡布', t: '卡布奇诺', pr: '水洗', vr: '拼配', rt: '中烘', o: '意大利', s: '奶多泡薄，顺口得像一句安慰。', c: '#5e361f', lf: '#e7c79c', w: 55, d: '28s', l: '柔滑·甜感', src: 'inei' },
-    { id: 'c16', n: '低因卡布', t: '卡布奇诺', pr: '脱因', vr: '拼配', rt: '中烘', o: '通用', s: '少一点刺激，不少一点仪式。', c: '#5c361f', lf: '#e0c298', w: 55, d: '28s', l: '低因·均衡', src: 'inei' },
-    { id: 'c17', n: '焦糖卡布', t: '卡布奇诺', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '焦糖在奶沫上画了一道边。', c: '#5a321c', lf: '#e9c893', w: 55, d: '28s', l: '焦糖·牛奶', src: 'inei' },
-    { id: 'c18', n: '肉桂卡布', t: '卡布奇诺', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '一点肉桂，像冬天的窗。', c: '#5b331d', lf: '#dfbd90', w: 55, d: '28s', l: '肉桂·香料', src: 'inei' },
-    { id: 'c19', n: '拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '意大利', s: '牛奶把锋芒磨圆。', c: '#5a331f', lf: '#e8cba5', w: 55, d: '30s', l: '柔滑·甜感', src: 'custom' },
-    { id: 'c20', n: '冰拿铁', t: '拿铁', pr: '水洗', vr: '拼配', rt: '中烘', o: '通用', s: '冰块化开时，甜也跟着醒。', c: '#583220', lf: '#e5c79f', w: 55, d: '30s', l: '冰甜·奶香', src: 'custom' },
-    { id: 'c21', n: '榛果拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '坚果香一出来，心就软了。', c: '#60391f', lf: '#e0bd94', w: 55, d: '30s', l: '榛果·奶香', src: 'custom' },
-    { id: 'c22', n: '香草拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '温柔得有点不像咖啡。', c: '#5d3821', lf: '#e5c8a4', w: 55, d: '30s', l: '香草·甜感', src: 'custom' },
-    { id: 'c23', n: '桂花拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '中国', s: '桂花开在奶泡上。', c: '#614028', lf: '#e6c79b', w: 55, d: '30s', l: '桂花·奶香', src: 'custom' },
-    { id: 'c24', n: '抹茶拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '日本', s: '茶与咖啡，各退半步。', c: '#4d4326', lf: '#d2c99a', w: 55, d: '30s', l: '抹茶·奶香', src: 'custom' },
-    { id: 'c25', n: '燕麦拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '燕麦把奶香换成谷物的暖。', c: '#5c3b25', lf: '#ddc19d', w: 55, d: '30s', l: '谷物·柔滑', src: 'custom' },
-    { id: 'c26', n: '低因拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '睡前也能有一杯热的。', c: '#5a3620', lf: '#dfc19b', w: 55, d: '30s', l: '低因·奶香', src: 'custom' },
-    { id: 'c27', n: '澳白', t: '澳白', pr: '未标注', vr: '拼配', rt: '中烘', o: '新西兰', s: '薄奶与浓咖，彼此不让。', c: '#4d2a18', lf: '#d8b58c', w: 55, d: '26s', l: '醇厚·微甜', src: 'custom' },
-    { id: 'c28', n: '冰澳白', t: '澳白', pr: '未标注', vr: '拼配', rt: '中烘', o: '澳新', s: '微泡在冰里散成一层雾。', c: '#4b2a18', lf: '#d4b389', w: 55, d: '26s', l: '清爽·醇厚', src: 'custom' },
-    { id: 'c29', n: '燕麦澳白', t: '澳白', pr: '未标注', vr: '拼配', rt: '中烘', o: '澳新', s: '燕麦与短萃，都爱小而浓。', c: '#523018', lf: '#d9bb94', w: 55, d: '26s', l: '谷物·醇厚', src: 'custom' },
-    { id: 'c30', n: '低因澳白', t: '澳白', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '短奶，长夜，也可以。', c: '#4f2c1a', lf: '#d6b48d', w: 55, d: '26s', l: '低因·醇厚', src: 'custom' },
-    { id: 'c31', n: '玛奇朵', t: '玛奇朵', pr: '未标注', vr: '拼配', rt: '深烘', o: '意大利', s: '一点奶，点上临界的好看。', c: '#432315', lf: '#d6a268', w: 90, d: '25s', l: '浓烈·焦糖', src: 'custom' },
-    { id: 'c32', n: '焦糖玛奇朵', t: '玛奇朵', pr: '未标注', vr: '拼配', rt: '中烘', o: '星巴克式', s: '甜在表面，咖啡在下面。', c: '#5a321c', lf: '#e3b77c', w: 55, d: '30s', l: '焦糖·牛奶', src: 'custom' },
-    { id: 'c33', n: '可塔朵', t: '玛奇朵', pr: '未标注', vr: '拼配', rt: '深烘', o: '西班牙', s: '等量牛奶，把浓拉回中间。', c: '#4a2818', lf: '#dcb088', w: 90, d: '25s', l: '均衡·奶香', src: 'custom' },
-    { id: 'c34', n: '康宝蓝', t: '玛奇朵', pr: '未标注', vr: '拼配', rt: '深烘', o: '意大利', s: '一勺奶油，浮在浓上。', c: '#3e2114', lf: '#f0dcc0', w: 90, d: '25s', l: '奶油·可可', src: 'custom' },
-    { id: 'c35', n: '耶加雪菲', t: '手冲', pr: '水洗', vr: '未标注', rt: '浅烘', o: '埃塞俄比亚', s: '花香先到，柑橘随后。', c: '#6a3a1f', lf: '#d59a5a', w: 93, d: '2:30', l: '花香·柑橘', src: 'sca' },
-    { id: 'c36', n: '西达摩', t: '手冲', pr: '水洗', vr: '未标注', rt: '浅烘', o: '埃塞俄比亚', s: '莓果在杯里慢慢化开。', c: '#68351f', lf: '#cf8f55', w: 93, d: '2:30', l: '莓果·红茶', src: 'sca' },
-    { id: 'c37', n: '古吉', t: '手冲', pr: '日晒', vr: '未标注', rt: '浅烘', o: '埃塞俄比亚', s: '日晒把花香烘成蜜。', c: '#704020', lf: '#d9a566', w: 93, d: '2:35', l: '花香·蜜桃', src: 'sca' },
-    { id: 'c38', n: '慧兰', t: '手冲', pr: '水洗', vr: '卡杜拉', rt: '中烘', o: '哥伦比亚', s: '焦糖与坚果，最稳的陪伴。', c: '#5f321c', lf: '#c98c52', w: 93, d: '2:40', l: '焦糖·坚果', src: 'sca' },
-    { id: 'c39', n: '蕙兰蜜处理', t: '手冲', pr: '蜜处理', vr: '卡杜拉', rt: '中烘', o: '哥伦比亚', s: '果胶留下的甜，比水洗厚。', c: '#63361e', lf: '#d09a60', w: 93, d: '2:35', l: '蜜甜·柑橘', src: 'sca' },
-    { id: 'c40', n: '翡翠庄园', t: '手冲', pr: '日晒', vr: '瑰夏', rt: '浅烘', o: '巴拿马', s: '一杯里有一整座山的雾。', c: '#704020', lf: '#d9a566', w: 93, d: '2:30', l: '茉莉·蜜桃', src: 'wcr' },
-    { id: 'c41', n: '肯尼亚AA', t: '手冲', pr: '水洗', vr: 'SL28', rt: '浅烘', o: '肯尼亚', s: '黑加仑的酸，亮得像清晨。', c: '#5a2c1a', lf: '#c47f46', w: 93, d: '2:20', l: '黑加仑·番茄', src: 'wcr' },
-    { id: 'c42', n: '涅里', t: '手冲', pr: '水洗', vr: 'SL28', rt: '浅烘', o: '肯尼亚', s: '酸质像线条，清楚到底。', c: '#5b2d1b', lf: '#c58148', w: 93, d: '2:25', l: '柑橘·黑加仑', src: 'wcr' },
-    { id: 'c43', n: '安提瓜', t: '手冲', pr: '水洗', vr: '波旁', rt: '中烘', o: '危地马拉', s: '巧克力收尾，稳妥而长。', c: '#62391f', lf: '#ca9157', w: 93, d: '2:40', l: '可可·香料', src: 'wcr' },
-    { id: 'c44', n: '薇薇特南果', t: '手冲', pr: '水洗', vr: '卡杜艾', rt: '中烘', o: '危地马拉', s: '高山的凉，留在尾韵里。', c: '#603820', lf: '#c7965c', w: 93, d: '2:40', l: '可可·坚果', src: 'wcr' },
-    { id: 'c45', n: '塔拉珠', t: '手冲', pr: '蜜处理', vr: '卡杜拉', rt: '中烘', o: '哥斯达黎加', s: '蜜处理把甜铺成一层。', c: '#653a20', lf: '#d29c62', w: 93, d: '2:35', l: '蜜甜·苹果', src: 'sca' },
-    { id: 'c46', n: '喜拉多', t: '手冲', pr: '日晒', vr: '波旁', rt: '中烘', o: '巴西', s: '日晒的果香，落在坚果上。', c: '#5d341e', lf: '#c9945c', w: 93, d: '2:40', l: '坚果·巧克力', src: 'wcr' },
-    { id: 'c47', n: '曼特宁', t: '手冲', pr: '湿刨', vr: '铁皮卡', rt: '深烘', o: '印度尼西亚', s: '湿刨的低酸，厚得像夜。', c: '#432519', lf: '#a87343', w: 93, d: '2:45', l: '草本·雪松', src: 'coe' },
-    { id: 'c48', n: '蓝山', t: '手冲', pr: '水洗', vr: '铁皮卡', rt: '浅烘', o: '牙买加', s: '干净、平衡，不抢话。', c: '#6a3c21', lf: '#d5a065', w: 93, d: '2:35', l: '坚果·奶油', src: 'wcr' },
-    { id: 'c49', n: '帕卡马拉', t: '手冲', pr: '蜜处理', vr: '帕卡马拉', rt: '浅烘', o: '萨尔瓦多', s: '大粒的甜，带着熟果。', c: '#6d3d1f', lf: '#d8a163', w: 93, d: '2:30', l: '荔枝·花香', src: 'wcr' },
-    { id: 'c50', n: '耶加雪菲厌氧', t: '手冲', pr: '厌氧', vr: '未标注', rt: '浅烘', o: '埃塞俄比亚', s: '厌氧把果香推到边上。', c: '#713c1e', lf: '#dc9f60', w: 93, d: '2:30', l: '发酵·莓果', src: 'coe' },
-    { id: 'c51', n: '法压壶', t: '浸泡', pr: '未标注', vr: '拼配', rt: '中烘', o: '法国', s: '粗一点，反而更坦白。', c: '#52301d', lf: '#b78355', w: 93, d: '4:00', l: '醇厚·油脂', src: 'sca' },
-    { id: 'c52', n: '爱乐压', t: '浸泡', pr: '未标注', vr: '拼配', rt: '中烘', o: '美国', s: '干净与浓厚之间的中间态。', c: '#5d341e', lf: '#c9945c', w: 93, d: '2:00', l: '干净·甜感', src: 'custom' },
-    { id: 'c53', n: '摩卡壶', t: '浸泡', pr: '未标注', vr: '拼配', rt: '深烘', o: '意大利', s: '灶上的小壶，煮出家常的浓。', c: '#452414', lf: '#b87a3f', w: 93, d: '5:00', l: '浓烈·焦香', src: 'custom' },
-    { id: 'c54', n: '土耳其咖啡', t: '浸泡', pr: '未标注', vr: '未标注', rt: '深烘', o: '土耳其', s: '粉不滤，喝到最后才懂。', c: '#3c2013', lf: '#a96e3b', w: 92, d: '6:00', l: '浓郁·香料', src: 'custom' },
-    { id: 'c55', n: '虹吸壶', t: '浸泡', pr: '未标注', vr: '拼配', rt: '浅烘', o: '日本', s: '看它上升，也看它落下。', c: '#603720', lf: '#d09a60', w: 93, d: '2:30', l: '清亮·层次', src: 'custom' },
-    { id: 'c56', n: '杯测', t: '浸泡', pr: '未标注', vr: '未标注', rt: '中烘', o: '通用', s: '先闻，再破渣，最后才喝。', c: '#64401f', lf: '#cf9d5d', w: 93, d: '4:00', l: '标准·评估', src: 'sca' },
-    { id: 'c57', n: '冷泡法压', t: '浸泡', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '冷一点，慢一点，柔一点。', c: '#4f2d1b', lf: '#b88758', w: 20, d: '12h', l: '低酸·醇厚', src: 'custom' },
-    { id: 'c58', n: '越南滴滤', t: '浸泡', pr: '未标注', vr: '罗布斯塔', rt: '深烘', o: '越南', s: '滴得慢，浓得扎实。', c: '#3f2113', lf: '#a86d3a', w: 93, d: '5:00', l: '浓烈·巧克力', src: 'wcr' },
-    { id: 'c59', n: '冷萃', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '美国', s: '慢冷十二小时，苦味变温柔。', c: '#4a2b1a', lf: '#b98657', w: 20, d: '12h', l: '低酸·甜感', src: 'custom' },
-    { id: 'c60', n: '氮气冷萃', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '美国', s: '细泡像雾，入口像奶油。', c: '#4d2c1b', lf: '#d8b690', w: 20, d: '12h', l: '绵密·低酸', src: 'custom' },
-    { id: 'c61', n: '冰滴', t: '冷萃', pr: '未标注', vr: '拼配', rt: '浅烘', o: '荷兰', s: '一滴一滴，把时间滤进去。', c: '#52311d', lf: '#c4935f', w: 20, d: '8h', l: '清甜·干净', src: 'custom' },
-    { id: 'c62', n: '冰酿拿铁', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '冰块化开时，甜也跟着醒。', c: '#5c3822', lf: '#e0bd94', w: 20, d: '12h', l: '冰甜·奶香', src: 'custom' },
-    { id: 'c63', n: '燕麦冷萃', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '燕麦把冷萃托得更圆。', c: '#5a3923', lf: '#dcc29e', w: 20, d: '12h', l: '谷物·柔滑', src: 'custom' },
-    { id: 'c64', n: '海盐奶盖冷萃', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '台湾', s: '一口咸，后面的甜更清楚。', c: '#56331f', lf: '#e7c99f', w: 20, d: '12h', l: '海盐·奶盖', src: 'custom' },
-    { id: 'c65', n: '低因冷萃', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '美国', s: '冰过之后，更温顺。', c: '#4c2d1b', lf: '#bd8f61', w: 20, d: '12h', l: '低因·低酸', src: 'custom' },
-    { id: 'c66', n: '冷萃咖啡液', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '家庭', s: '兑什么，都像一杯正经咖啡。', c: '#4d2d1b', lf: '#bd8d5e', w: 20, d: '12h', l: '浓缩·低酸', src: 'custom' },
-    { id: 'c67', n: '罐装黑咖', t: '即饮', pr: '未标注', vr: '拼配', rt: '中烘', o: '便利店', s: '赶时间时，也算认真喝了。', c: '#4a2b1a', lf: '#b88758', w: 20, d: '即饮', l: '便利·清爽', src: 'custom' },
-    { id: 'c68', n: '瓶装拿铁', t: '即饮', pr: '未标注', vr: '拼配', rt: '中烘', o: '便利店', s: '甜得直接，不装复杂。', c: '#5a3822', lf: '#dec09b', w: 20, d: '即饮', l: '奶香·甜感', src: 'custom' },
-    { id: 'c69', n: '冻干美式', t: '即饮', pr: '未标注', vr: '拼配', rt: '中烘', o: '便携', s: '热水一冲，旅途也有底。', c: '#4b2c1b', lf: '#bb8c5f', w: 85, d: '15s', l: '便携·烘焙', src: 'custom' },
-    { id: 'c70', n: '即饮燕麦拿铁', t: '即饮', pr: '未标注', vr: '拼配', rt: '中烘', o: '便利店', s: '燕麦味先到，咖啡随后。', c: '#5c3b25', lf: '#ddc19d', w: 20, d: '即饮', l: '谷物·奶香', src: 'custom' },
-    { id: 'c71', n: '浓缩咖啡液', t: '即饮', pr: '未标注', vr: '拼配', rt: '深烘', o: '家庭', s: '一小瓶，把早晨随身带着。', c: '#3f2113', lf: '#a86d3a', w: 20, d: '开瓶即饮', l: '浓烈·便携', src: 'custom' },
-    { id: 'c72', n: '挂耳咖啡', t: '即饮', pr: '未标注', vr: '拼配', rt: '中烘', o: '家庭', s: '撕开挂上，手冲就少了一步。', c: '#5c341e', lf: '#c9945c', w: 93, d: '2:00', l: '便利·坚果', src: 'custom' },
-    { id: 'c73', n: '胶囊咖啡', t: '即饮', pr: '未标注', vr: '拼配', rt: '深烘', o: '家庭', s: '一按就出，浓得很有分寸。', c: '#422315', lf: '#b98048', w: 90, d: '25s', l: '便利·烘焙', src: 'custom' }
+    { id: 'c01', n: '意式浓缩', t: '浓缩', pr: '水洗', vr: '拼配', rt: '深烘', o: '意大利', s: '一小杯，把早晨叫醒。', c: '#2a160d', lf: '#c68a4a', w: 90, d: '25s', l: '焦糖·坚果', src: 'inei' },
+    { id: 'c02', n: '短萃浓缩', t: '浓缩', pr: '水洗', vr: '拼配', rt: '深烘', o: '意大利', s: '少一点水，多一点浓。', c: '#2d170e', lf: '#cf9250', w: 90, d: '20s', l: '焦糖·可可', src: 'inei' },
+    { id: 'c03', n: '长萃浓缩', t: '浓缩', pr: '水洗', vr: '拼配', rt: '中烘', o: '意大利', s: '多一丝水，拉长尾韵。', c: '#3b1f12', lf: '#c1874c', w: 90, d: '30s', l: '烘焙·焦糖', src: 'inei' },
+    { id: 'c04', n: '双份浓缩', t: '浓缩', pr: '水洗', vr: '拼配', rt: '深烘', o: '通用', s: '两份粉，一份清醒。', c: '#2a160d', lf: '#c88e4e', w: 90, d: '25s', l: '黑巧·坚果', src: 'inei' },
+    { id: 'c05', n: '水洗浓缩', t: '浓缩', pr: '水洗', vr: '铁皮卡', rt: '浅烘', o: '埃塞俄比亚', s: '水洗的明亮，压进三十毫升。', c: '#432315', lf: '#d69b58', w: 90, d: '25s', l: '柑橘·花香', src: 'inei' },
+    { id: 'c06', n: '日晒浓缩', t: '浓缩', pr: '日晒', vr: '波旁', rt: '中烘', o: '巴西', s: '日晒的甜，在短杯里更清楚。', c: '#381d11', lf: '#d29a58', w: 90, d: '25s', l: '莓果·巧克力', src: 'inei' },
+    { id: 'c07', n: '美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '美国', s: '热水一冲，清醒变得很长。', c: '#3d2113', lf: '#b98048', w: 90, d: '30s', l: '清爽·烘焙', src: 'custom' },
+    { id: 'c08', n: '冰美式', t: '美式', pr: '水洗', vr: '拼配', rt: '中烘', o: '通用', s: '冰块把苦味收得更干净。', c: '#3d2113', lf: '#b5804c', w: 90, d: '30s', l: '清爽·低酸', src: 'custom' },
+    { id: 'c09', n: '长黑', t: '美式', pr: '水洗', vr: '拼配', rt: '中烘', o: '澳新', s: '先水后酒，浮着一层金。', c: '#3d2113', lf: '#d0a369', w: 90, d: '25s', l: '清爽·油脂', src: 'custom' },
+    { id: 'c10', n: '冷萃美式', t: '美式', pr: '水洗', vr: '拼配', rt: '中烘', o: '通用', s: '冷萃兑水，清爽但不薄。', c: '#3d2113', lf: '#b88a5e', w: 20, d: '12h', l: '清爽·低酸', src: 'custom' },
+    { id: 'c12', n: '低因美式', t: '美式', pr: '脱因', vr: '拼配', rt: '中烘', o: '通用', s: '少一点因，多一点晚上的自由。', c: '#3d2113', lf: '#b88758', w: 90, d: '30s', l: '低因·清淡', src: 'custom' },
+    { id: 'c13', n: '卡布奇诺', t: '卡布奇诺', pr: '未标注', vr: '拼配', rt: '中烘', o: '意大利', s: '奶沫托着咖啡，像一座小桥。', c: '#996d4a', lf: '#e4c49a', w: 55, d: '28s', l: '均衡·奶香', src: 'inei' },
+    { id: 'c14', n: '干卡布', t: '卡布奇诺', pr: '水洗', vr: '拼配', rt: '中烘', o: '意大利', s: '奶少泡多，喝得到咖啡的骨。', c: '#966a48', lf: '#eed6b0', w: 55, d: '28s', l: '浓郁·奶泡', src: 'inei' },
+    { id: 'c15', n: '湿卡布', t: '卡布奇诺', pr: '水洗', vr: '拼配', rt: '中烘', o: '意大利', s: '奶多泡薄，顺口得像一句安慰。', c: '#996d4a', lf: '#e7c79c', w: 55, d: '28s', l: '柔滑·甜感', src: 'inei' },
+    { id: 'c16', n: '低因卡布', t: '卡布奇诺', pr: '脱因', vr: '拼配', rt: '中烘', o: '通用', s: '少一点刺激，不少一点仪式。', c: '#996d4a', lf: '#e0c298', w: 55, d: '28s', l: '低因·均衡', src: 'inei' },
+    { id: 'c17', n: '焦糖卡布', t: '卡布奇诺', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '焦糖在奶沫上画了一道边。', c: '#a67650', lf: '#e9c893', w: 55, d: '28s', l: '焦糖·牛奶', src: 'inei' },
+    { id: 'c18', n: '肉桂卡布', t: '卡布奇诺', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '一点肉桂，像冬天的窗。', c: '#a0714d', lf: '#dfbd90', w: 55, d: '28s', l: '肉桂·香料', src: 'inei' },
+    { id: 'c19', n: '拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '意大利', s: '牛奶把锋芒磨圆。', c: '#a97f5c', lf: '#e8cba5', w: 55, d: '30s', l: '柔滑·甜感', src: 'custom' },
+    { id: 'c20', n: '冰拿铁', t: '拿铁', pr: '水洗', vr: '拼配', rt: '中烘', o: '通用', s: '冰块化开时，甜也跟着醒。', c: '#b08460', lf: '#e5c79f', w: 55, d: '30s', l: '冰甜·奶香', src: 'custom' },
+    { id: 'c21', n: '榛果拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '坚果香一出来，心就软了。', c: '#ae835f', lf: '#e0bd94', w: 55, d: '30s', l: '榛果·奶香', src: 'custom' },
+    { id: 'c22', n: '香草拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '温柔得有点不像咖啡。', c: '#b08460', lf: '#e5c8a4', w: 55, d: '30s', l: '香草·甜感', src: 'custom' },
+    { id: 'c23', n: '桂花拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '中国', s: '桂花开在奶泡上。', c: '#ae835f', lf: '#e6c79b', w: 55, d: '30s', l: '桂花·奶香', src: 'custom' },
+    { id: 'c24', n: '抹茶拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '日本', s: '茶与咖啡，各退半步。', c: '#ac815e', lf: '#d2c99a', w: 55, d: '30s', l: '抹茶·奶香', src: 'custom' },
+    { id: 'c25', n: '燕麦拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '燕麦把奶香换成谷物的暖。', c: '#ae835f', lf: '#ddc19d', w: 55, d: '30s', l: '谷物·柔滑', src: 'custom' },
+    { id: 'c26', n: '低因拿铁', t: '拿铁', pr: '脱因', vr: '拼配', rt: '中烘', o: '通用', s: '睡前也能有一杯热的。', c: '#ac815e', lf: '#dfc19b', w: 55, d: '30s', l: '低因·奶香', src: 'custom' },
+    { id: 'c27', n: '澳白', t: '澳白', pr: '未标注', vr: '拼配', rt: '中烘', o: '新西兰', s: '薄奶与浓咖，彼此不让。', c: '#a07350', lf: '#d8b58c', w: 55, d: '26s', l: '醇厚·微甜', src: 'custom' },
+    { id: 'c28', n: '冰澳白', t: '澳白', pr: '未标注', vr: '拼配', rt: '中烘', o: '澳新', s: '微泡在冰里散成一层雾。', c: '#a67853', lf: '#d4b389', w: 55, d: '26s', l: '清爽·醇厚', src: 'custom' },
+    { id: 'c29', n: '燕麦澳白', t: '澳白', pr: '未标注', vr: '拼配', rt: '中烘', o: '澳新', s: '燕麦与短萃，都爱小而浓。', c: '#a57652', lf: '#d9bb94', w: 55, d: '26s', l: '谷物·醇厚', src: 'custom' },
+    { id: 'c30', n: '低因澳白', t: '澳白', pr: '脱因', vr: '拼配', rt: '中烘', o: '通用', s: '短奶，长夜，也可以。', c: '#a37552', lf: '#d6b48d', w: 55, d: '26s', l: '低因·醇厚', src: 'custom' },
+    { id: 'c31', n: '玛奇朵', t: '玛奇朵', pr: '未标注', vr: '拼配', rt: '深烘', o: '意大利', s: '一点奶，点上临界的好看。', c: '#3a1f11', lf: '#d6a268', w: 90, d: '25s', l: '浓烈·焦糖', src: 'custom' },
+    { id: 'c32', n: '焦糖玛奇朵', t: '玛奇朵', pr: '未标注', vr: '拼配', rt: '中烘', o: '星巴克式', s: '甜在表面，咖啡在下面。', c: '#502b18', lf: '#e3b77c', w: 55, d: '30s', l: '焦糖·牛奶', src: 'custom' },
+    { id: 'c33', n: '可塔朵', t: '玛奇朵', pr: '未标注', vr: '拼配', rt: '深烘', o: '西班牙', s: '西班牙来的小杯，奶与咖各半。', c: '#391e11', lf: '#dcb088', w: 90, d: '25s', l: '均衡·奶香', src: 'custom' },
+    { id: 'c34', n: '康宝蓝', t: '玛奇朵', pr: '未标注', vr: '拼配', rt: '深烘', o: '意大利', s: '一勺鲜奶油，浮在浓上。', c: '#381e10', lf: '#f0dcc0', w: 90, d: '25s', l: '奶油·可可', src: 'custom' },
+    { id: 'c35', n: '耶加雪菲', t: '手冲', pr: '水洗', vr: '未标注', rt: '浅烘', o: '埃塞俄比亚', s: '花香先到，柑橘随后。', c: '#774123', lf: '#d59a5a', w: 93, d: '2:30', l: '花香·柑橘', src: 'sca' },
+    { id: 'c36', n: '西达摩', t: '手冲', pr: '水洗', vr: '未标注', rt: '浅烘', o: '埃塞俄比亚', s: '莓果在杯里慢慢化开。', c: '#7d4424', lf: '#cf8f55', w: 93, d: '2:30', l: '莓果·红茶', src: 'sca' },
+    { id: 'c37', n: '古吉', t: '手冲', pr: '日晒', vr: '未标注', rt: '浅烘', o: '埃塞俄比亚', s: '日晒把花香烘成蜜。', c: '#713e21', lf: '#d9a566', w: 93, d: '2:35', l: '花香·蜜桃', src: 'sca' },
+    { id: 'c38', n: '慧兰', t: '手冲', pr: '水洗', vr: '卡杜拉', rt: '中烘', o: '哥伦比亚', s: '焦糖与坚果，最稳的陪伴。', c: '#6c3b20', lf: '#c98c52', w: 93, d: '2:40', l: '焦糖·坚果', src: 'sca' },
+    { id: 'c39', n: '蕙兰蜜处理', t: '手冲', pr: '蜜处理', vr: '卡杜拉', rt: '中烘', o: '哥伦比亚', s: '果胶留下的甜，比水洗厚。', c: '#6a3a1f', lf: '#d09a60', w: 93, d: '2:35', l: '蜜甜·柑橘', src: 'sca' },
+    { id: 'c40', n: '翡翠庄园', t: '手冲', pr: '日晒', vr: '瑰夏', rt: '浅烘', o: '巴拿马', s: '一杯里有一整座山的雾。', c: '#713e21', lf: '#d9a566', w: 93, d: '2:30', l: '茉莉·蜜桃', src: 'wcr' },
+    { id: 'c41', n: '肯尼亚AA', t: '手冲', pr: '水洗', vr: 'SL28', rt: '浅烘', o: '肯尼亚', s: '黑加仑的酸，亮得像清晨。', c: '#764022', lf: '#c47f46', w: 93, d: '2:20', l: '黑加仑·番茄', src: 'wcr' },
+    { id: 'c42', n: '涅里', t: '手冲', pr: '水洗', vr: 'SL28', rt: '浅烘', o: '肯尼亚', s: '酸质像线条，清楚到底。', c: '#774123', lf: '#c58148', w: 93, d: '2:25', l: '柑橘·黑加仑', src: 'wcr' },
+    { id: 'c43', n: '安提瓜', t: '手冲', pr: '水洗', vr: '波旁', rt: '中烘', o: '危地马拉', s: '巧克力收尾，稳妥而长。', c: '#6f3d21', lf: '#ca9157', w: 93, d: '2:40', l: '可可·香料', src: 'wcr' },
+    { id: 'c44', n: '薇薇特南果', t: '手冲', pr: '水洗', vr: '卡杜艾', rt: '中烘', o: '危地马拉', s: '高山的凉，留在尾韵里。', c: '#65371d', lf: '#c7965c', w: 93, d: '2:40', l: '可可·坚果', src: 'wcr' },
+    { id: 'c45', n: '塔拉珠', t: '手冲', pr: '蜜处理', vr: '卡杜拉', rt: '中烘', o: '哥斯达黎加', s: '蜜处理把甜铺成一层。', c: '#68391e', lf: '#d29c62', w: 93, d: '2:35', l: '蜜甜·苹果', src: 'sca' },
+    { id: 'c46', n: '喜拉多', t: '手冲', pr: '日晒', vr: '波旁', rt: '中烘', o: '巴西', s: '日晒的果香，落在坚果上。', c: '#66381e', lf: '#c9945c', w: 93, d: '2:40', l: '坚果·巧克力', src: 'wcr' },
+    { id: 'c47', n: '曼特宁', t: '手冲', pr: '湿刨', vr: '铁皮卡', rt: '深烘', o: '印度尼西亚', s: '湿刨的低酸，厚得像夜。', c: '#4b2916', lf: '#a87343', w: 93, d: '2:45', l: '草本·雪松', src: 'coe' },
+    { id: 'c48', n: '蓝山', t: '手冲', pr: '水洗', vr: '铁皮卡', rt: '浅烘', o: '牙买加', s: '干净、平衡，不抢话。', c: '#733f22', lf: '#d5a065', w: 93, d: '2:35', l: '坚果·奶油', src: 'wcr' },
+    { id: 'c49', n: '帕卡马拉', t: '手冲', pr: '蜜处理', vr: '帕卡马拉', rt: '浅烘', o: '萨尔瓦多', s: '大粒的甜，带着熟果。', c: '#7b4424', lf: '#d8a163', w: 93, d: '2:30', l: '荔枝·花香', src: 'wcr' },
+    { id: 'c50', n: '耶加雪菲厌氧', t: '手冲', pr: '厌氧', vr: '未标注', rt: '浅烘', o: '埃塞俄比亚', s: '厌氧把果香推到边上。', c: '#764022', lf: '#dc9f60', w: 93, d: '2:30', l: '发酵·莓果', src: 'coe' },
+    { id: 'c51', n: '法压壶', t: '浸泡', pr: '未标注', vr: '拼配', rt: '中烘', o: '法国', s: '粗一点，反而更坦白。', c: '#58321d', lf: '#b78355', w: 93, d: '4:00', l: '醇厚·油脂', src: 'sca' },
+    { id: 'c52', n: '爱乐压', t: '浸泡', pr: '未标注', vr: '拼配', rt: '中烘', o: '美国', s: '干净与浓厚之间的中间态。', c: '#5b331e', lf: '#c9945c', w: 93, d: '2:00', l: '干净·甜感', src: 'custom' },
+    { id: 'c53', n: '摩卡壶', t: '浸泡', pr: '未标注', vr: '拼配', rt: '深烘', o: '意大利', s: '灶上的小壶，煮出家常的浓。', c: '#442716', lf: '#b87a3f', w: 93, d: '5:00', l: '浓烈·焦香', src: 'custom' },
+    { id: 'c54', n: '土耳其咖啡', t: '浸泡', pr: '未标注', vr: '未标注', rt: '深烘', o: '土耳其', s: '粉不滤，喝到最后才懂。', c: '#442716', lf: '#a96e3b', w: 92, d: '6:00', l: '浓郁·香料', src: 'custom' },
+    { id: 'c55', n: '虹吸壶', t: '浸泡', pr: '未标注', vr: '拼配', rt: '浅烘', o: '日本', s: '看它上升，也看它落下。', c: '#683b22', lf: '#d09a60', w: 93, d: '2:30', l: '清亮·层次', src: 'custom' },
+    { id: 'c57', n: '冷泡法压', t: '浸泡', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '冷一点，慢一点，柔一点。', c: '#5c341e', lf: '#b88758', w: 20, d: '12h', l: '低酸·醇厚', src: 'custom' },
+    { id: 'c58', n: '越南滴滤', t: '浸泡', pr: '未标注', vr: '罗布斯塔', rt: '深烘', o: '越南', s: '滴得慢，浓得扎实。', c: '#432616', lf: '#a86d3a', w: 93, d: '5:00', l: '浓烈·巧克力', src: 'wcr' },
+    { id: 'c59', n: '冷萃', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '美国', s: '慢冷十二小时，苦味变温柔。', c: '#673b22', lf: '#b98657', w: 20, d: '12h', l: '低酸·甜感', src: 'custom' },
+    { id: 'c60', n: '氮气冷萃', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '美国', s: '细泡像雾，入口像奶油。', c: '#673b22', lf: '#d8b690', w: 20, d: '12h', l: '绵密·低酸', src: 'custom' },
+    { id: 'c61', n: '冰滴', t: '冷萃', pr: '未标注', vr: '拼配', rt: '浅烘', o: '荷兰', s: '一滴一滴，把时间滤进去。', c: '#693d23', lf: '#c4935f', w: 20, d: '8h', l: '清甜·干净', src: 'custom' },
+    { id: 'c62', n: '冰酿拿铁', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '冰块化开时，甜也跟着醒。', c: '#663b22', lf: '#e0bd94', w: 20, d: '12h', l: '冰甜·奶香', src: 'custom' },
+    { id: 'c64', n: '海盐奶盖冷萃', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '台湾', s: '一口咸，后面的甜更清楚。', c: '#603720', lf: '#e7c99f', w: 20, d: '12h', l: '海盐·奶盖', src: 'custom' },
+    { id: 'c65', n: '低因冷萃', t: '冷萃', pr: '脱因', vr: '拼配', rt: '中烘', o: '美国', s: '冰过之后，更温顺。', c: '#5e361f', lf: '#bd8f61', w: 20, d: '12h', l: '低因·低酸', src: 'custom' },
+    { id: 'c66', n: '冷萃咖啡液', t: '冷萃', pr: '未标注', vr: '拼配', rt: '中烘', o: '家庭', s: '兑什么，都像一杯正经咖啡。', c: '#613820', lf: '#bd8d5e', w: 20, d: '12h', l: '浓缩·低酸', src: 'custom' },
+    { id: 'c67', n: '罐装黑咖', t: '即饮', pr: '未标注', vr: '拼配', rt: '中烘', o: '便利店', s: '赶时间时，也算认真喝了。', c: '#845e3f', lf: '#b88758', w: 20, d: '即饮', l: '便利·清爽', src: 'custom' },
+    { id: 'c68', n: '瓶装拿铁', t: '即饮', pr: '未标注', vr: '拼配', rt: '中烘', o: '便利店', s: '甜得直接，不装复杂。', c: '#845e3f', lf: '#dec09b', w: 20, d: '即饮', l: '奶香·甜感', src: 'custom' },
+    { id: 'c69', n: '冻干美式', t: '即饮', pr: '未标注', vr: '拼配', rt: '中烘', o: '便携', s: '热水一冲，旅途也有底。', c: '#8a6242', lf: '#bb8c5f', w: 85, d: '15s', l: '便携·烘焙', src: 'custom' },
+    { id: 'c70', n: '即饮燕麦拿铁', t: '即饮', pr: '未标注', vr: '拼配', rt: '中烘', o: '便利店', s: '燕麦味先到，咖啡随后。', c: '#865f40', lf: '#ddc19d', w: 20, d: '即饮', l: '谷物·奶香', src: 'custom' },
+    { id: 'c71', n: '浓缩咖啡液', t: '即饮', pr: '未标注', vr: '拼配', rt: '深烘', o: '家庭', s: '一小瓶，把早晨随身带着。', c: '#62462f', lf: '#a86d3a', w: 20, d: '开瓶即饮', l: '浓烈·便携', src: 'custom' },
+    { id: 'c72', n: '挂耳咖啡', t: '即饮', pr: '未标注', vr: '拼配', rt: '中烘', o: '家庭', s: '撕开挂上，手冲就少了一步。', c: '#8d6443', lf: '#c9945c', w: 93, d: '2:00', l: '便利·坚果', src: 'custom' },
+    { id: 'c73', n: '胶囊咖啡', t: '即饮', pr: '未标注', vr: '拼配', rt: '深烘', o: '家庭', s: '一按就出，浓得很有分寸。', c: '#5e432d', lf: '#b98048', w: 90, d: '25s', l: '便利·烘焙', src: 'custom' },
+    { id: 'c74', n: '橙汁美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '鲜橙的甜，把苦味照亮。', c: '#3d2113', lf: '#c68a4a', w: 20, d: '30s', l: '柑橘·甜感', src: 'custom' },
+    { id: 'c75', n: '葡萄美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '葡萄的果香，绕着咖啡走。', c: '#3d2113', lf: '#a97870', w: 20, d: '30s', l: '葡萄·莓果', src: 'custom' },
+    { id: 'c76', n: '柠檬美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '酸与苦在冰里和解。', c: '#3d2113', lf: '#d4bc72', w: 20, d: '30s', l: '柠檬·清爽', src: 'custom' },
+    { id: 'c77', n: '西柚美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '西柚的微苦，和咖啡对上暗号。', c: '#3d2113', lf: '#d9a07c', w: 20, d: '30s', l: '西柚·苦甜', src: 'custom' },
+    { id: 'c78', n: '苹果美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '苹果的清甜，接住咖啡的尾韵。', c: '#3d2113', lf: '#cba273', w: 20, d: '30s', l: '苹果·蜜甜', src: 'custom' },
+    { id: 'c79', n: '椰青美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '椰青水兑咖啡，清得像海风。', c: '#3d2113', lf: '#d8c9a8', w: 20, d: '30s', l: '椰子水·清爽', src: 'custom' },
+    { id: 'c80', n: '蜜桃美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '桃子的甜，盖不住一点回甘。', c: '#3d2113', lf: '#e0b48f', w: 20, d: '30s', l: '蜜桃·茶感', src: 'custom' },
+    { id: 'c81', n: '百香果美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '百香果一冲，酸甜都醒了。', c: '#3d2113', lf: '#e0ac6a', w: 20, d: '30s', l: '百香果·热带', src: 'custom' },
+    { id: 'c82', n: '凤梨美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '凤梨的酸，被冰镇成清爽。', c: '#3d2113', lf: '#e0c078', w: 20, d: '30s', l: '凤梨·甜感', src: 'custom' },
+    { id: 'c83', n: '荔枝美式', t: '美式', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '荔枝的香，浮在咖啡上面。', c: '#3d2113', lf: '#dfb897', w: 20, d: '30s', l: '荔枝·花香', src: 'custom' },
+    { id: 'c84', n: '生椰拿铁', t: '拿铁', pr: '未标注', vr: '拼配', rt: '中烘', o: '通用', s: '厚椰乳与浓缩，椰香把苦味裹住。', c: '#b08a64', lf: '#e8d5b8', w: 55, d: '30s', l: '椰香·奶香', src: 'custom' }
   ];
-
   var PATTERNS = ['none', 'crackle'];
   var PATTERN_NAMES = { none: '素瓷', crackle: '冰裂' };
   var MAT_NAMES = { porcelain: '白瓷', jade: '青玉' };
   var SPIN_NAMES = { off: '自转已关', yaw: '原地自转', orbit: '环绕自转' };
-
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
-
   /* 阿拉伯数字转中文（0~999），供「录豆七十三」这类竖排题字用 */
   function cnNum(n) {
     var d = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
@@ -1363,7 +1313,6 @@
     }
     return String(n);
   }
-
   /* 夜色效果上限：强度滑杆 × 上限。玻璃没有裂纹，只留周身微光与器身压暗。 */
   var GLOW_MAX = 0.18;
   var DIM_MAX = 0.30;
@@ -1375,7 +1324,6 @@
   var PORC_SAT = 55;
   var PORC_L = 80;
   var GEAR_GAP = 14;      // 数量列底边到设置按钮顶边的间距
-
   /** h∈[0,360) s,l∈[0,100] → #rrggbb */
   function hslToHex(h, s, l) {
     h = ((h % 360) + 360) % 360;
@@ -1390,7 +1338,6 @@
     function q(v) { return Math.round(clamp((v + m) * 255, 0, 255)); }
     return '#' + ((1 << 24) + (q(r) << 16) + (q(g) << 8) + q(b)).toString(16).slice(1);
   }
-
   /* 注意：这里不能用 mount() 内部的 THEME —— 本函数在模块顶层，够不着。
      按参数取色，调用方把当前主题传进来。 */
   function mixHue(a, b, t) {
@@ -1426,17 +1373,12 @@
     /* 暗色下略提饱和：瓷面本身压深一点，才有「自己发光」的对比 */
     return hslToHex(hue, PORC_SAT + (isDark ? 5 : 0), clamp(l, 68, 92));
   }
-
-
-
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-
   /* ══════════════════════ 模块 ══════════════════════ */
   var instance = null;
-
   function mount(root, api) {
     if (instance) instance.destroy();
     api = api || {};
@@ -1444,7 +1386,6 @@
     var LOG = api.LOG || { warn: function () {} };
     var reduceMotion = false;
     try { reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { /* 无 matchMedia */ }
-
     /* 渲染器与 placeVerse 共享的取景偏移（NDC）：盖碗居中校正写这里，三处 ortho 读它 */
     var _tyRef = { v: 0 };
     /* 默认外观三件套：冰裂纹样 + 白瓷釉色 + 裂纹夜色（裂纹只在暗色主题下点亮，强度 50%）。
@@ -1476,10 +1417,8 @@
     var _drag = { active: false, y0: 0, base: 0, moved: 0, pid: null };
     var M = { pxPerWorldY: 1, lid: null };
     var THEME = { hue: 120, lo: 0, isDark: false };
-
     root.innerHTML = '';
     ensureStyle(root);
-
     var wrap = document.createElement('div');
     wrap.className = 'coffee-wrap' + (reduceMotion ? ' coffee-reduce' : '');
     wrap.innerHTML =
@@ -1495,7 +1434,7 @@
         '</svg>' +
         '<button type="button" class="coffee-kbd" aria-label="拔出或塞回瓶塞；按 P 切换瓶身纹样"></button>' +
         '<div class="coffee-verse v-top"><span>告别是非</span></div>' +
-        '<div class="coffee-verse v-bot"><span>咖啡时刻</span></div>' +
+        '<div class="coffee-verse v-bot"><span>来杯咖啡</span></div>' +
         '<div class="coffee-count"><span class="t-num"></span><span class="t-cab">我的咖啡柜</span></div>' +
 '<div class="coffee-tools">' +
                 '<button class="coffee-gear" type="button" aria-label="咖啡设置">' +
@@ -1517,7 +1456,7 @@
             '<div class="coffee-title coffee-cab-title">咖啡柜</div>' +
             '<button type="button" class="coffee-x" data-act="cab-close" aria-label="关闭">×</button>' +
           '</div>' +
-          '<input type="search" class="coffee-find" placeholder="搜咖啡名 · 杯型 · 豆性" aria-label="搜索咖啡" />' +
+          '<input type="search" class="coffee-find" placeholder="搜咖啡名 · 制法 · 豆性" aria-label="搜索咖啡" />' +
           '<div class="coffee-seg">' +
             '<button type="button" class="coffee-seg-btn" data-seg="all">全部</button>' +
             '<button type="button" class="coffee-seg-btn" data-seg="cab">我的咖啡柜</button>' +
@@ -1551,7 +1490,7 @@
                一次只显示一行的选项，避免 20+ 个 chip 同时铺开造成信息压力。
                已选维度在 seg 上留一个小圆点，切走也看得见。 */
             '<div class="coffee-seg coffee-seg-facet">' +
-              '<button type="button" class="coffee-seg-btn" data-facet="t">杯型</button>' +
+              '<button type="button" class="coffee-seg-btn" data-facet="t">制法</button>' +
               '<button type="button" class="coffee-seg-btn" data-facet="pr">处理法</button>' +
               '<button type="button" class="coffee-seg-btn" data-facet="vr">品种</button>' +
               '<button type="button" class="coffee-seg-btn" data-facet="rt">烘焙度</button>' +
@@ -1621,7 +1560,6 @@
         '</div>' +
       '</div>';
     root.appendChild(wrap);
-
     el.wrap = wrap;
     el.stage = wrap.querySelector('.coffee-stage');
     el.kbd = wrap.querySelector('.coffee-kbd');
@@ -1641,7 +1579,6 @@
     el.find = wrap.querySelector('.coffee-find');
     var countStr = wrap.querySelector('.coffee-count .t-num');
     paintCount();
-
     /* 详情卡是开盖后才填内容的，而它在竖向 flex 里与舞台抢高度：
        空卡 20px、满卡可达 127px（380×720 实测），一开盖舞台就矮 107px，
        画布随之重新取景，整只盖碗会跳一下——这就是「第一次开盖位置变化」的根因。
@@ -1686,9 +1623,7 @@
     el.enhanceInput = wrap.querySelector('.coffee-enhance-input');
     el.steamInput = wrap.querySelector('.coffee-steam-input');
     el.spinChips = wrap.querySelector('.coffee-chips[data-row="spin"]');
-
     loadConfig();
-
     /* ── 渲染器 ── */
     try {
       gl = GaiwanMount(el.stage, { spinMode: state.spinMode, tyRef: _tyRef, mat: state.mat, jadeGain: JADE_GAIN, enhance: state.enhance,
@@ -1706,7 +1641,6 @@
     }
     wrap.classList.add('coffee-gl');
     setEnhance(state.enhance);   // 质感档初值：写入热气浓度变量
-
     /* ── P0 质感档 ──
        一处开关同时收拢两处增强：WebGL 液面增益（uFx）、热气浓度/脉冲。
        关掉时全部退回 v0.9.2 的形态，合盖逐像素与 three 原稿一致（茶汤本来只在开盖出现）。
@@ -1725,7 +1659,6 @@
       if (el.enhanceInput) el.enhanceInput.checked = state.enhance;
       if (gl && gl.setEnhance) gl.setEnhance(state.enhance);
     }
-
     function syncMetrics() {
       if (!gl) return;
       try { var m = gl.metrics(); if (m) M = m; } catch (e) { return; }
@@ -1740,7 +1673,7 @@
       if (narrow === _narrow) return;
       _narrow = narrow;
       wrap.classList.toggle('coffee-narrow', narrow);
-      if (el.find) el.find.setAttribute('placeholder', narrow ? '搜咖啡名' : '搜咖啡名 · 杯型 · 豆性');
+      if (el.find) el.find.setAttribute('placeholder', narrow ? '搜咖啡名' : '搜咖啡名 · 制法 · 豆性');
     }
     syncMetrics();
     setPattern(state.pattern, false);
@@ -1756,7 +1689,6 @@
         _io.observe(el.stage);
       }
     } catch (e) { /* 忽略 */ }
-
     var _ro = null;
     try {
       if (typeof ResizeObserver !== 'undefined') {
@@ -1764,7 +1696,6 @@
         _ro.observe(el.stage);
       }
     } catch (e) { /* 忽略 */ }
-
     /* ── 主题 ── */
     function readVar(name) {
       var v = getComputedStyle(document.documentElement).getPropertyValue(name);
@@ -1808,7 +1739,6 @@
       readDocClass();
       applyTheme();
     })();
-
     function scheduleTheme() {
       if (_themeRaf) return;
       _themeRaf = requestAnimationFrame(function () { _themeRaf = 0; applyTheme(); });
@@ -1830,7 +1760,6 @@
       if (document.documentElement) _darkObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
       if (document.body) _darkObs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     } catch (e) { LOG.warn('[' + ID + '] 明暗监听不可用', e); }
-
     /* ── 可见性：不可见就停 rAF（侧栏常驻也不能一直算） ── */
     var _visObs = null;
     var _visible = true;
@@ -1853,7 +1782,6 @@
         _visObs.observe(wrap);
       }
     } catch (e) { /* 老内核忽略 */ }
-
     /* ── 配置 ── */
     /* api.loadData 是异步 RPC：桥的 loadModuleData 返回 Promise（curtain/blog 均按 await 用）。
        旧实现同步调用，拿到的是 Promise 本体——truthy 但所有字段 undefined，
@@ -1865,7 +1793,7 @@
         .catch(function (e) { LOG.warn('[' + ID + '] 读取设置失败', e); });
     }
     function applyConfig(raw) {
-      /* 四维筛选：杯型为旧字段 types（沿用老存档），其余三维新增并各自校验合法性。
+      /* 四维筛选：制法为旧字段 types（沿用老存档），其余三维新增并各自校验合法性。
          空数组=全选；旧存档缺字段时保持全选，不会突然收窄抽选池。 */
       var types = (raw && raw.types) || [];
       state.types = types.filter(function (t) { return TYPES.indexOf(t) >= 0; });
@@ -1916,7 +1844,6 @@
         if (api.saveData) api.saveData({ types: state.types.slice(), procs: state.procs.slice(), vars: state.vars.slice(), roasts: state.roasts.slice(), steam: !!state.steam, spinMode: state.spinMode, mat: state.mat, pattern: state.pattern, night: state.night, nightFx: { body: state.nightFx.body, crackle: state.nightFx.crackle }, cabinet: state.cabinet.slice(), enhance: !!state.enhance, cabOnly: !!state.cabOnly });
       } catch (e) { LOG.warn('[' + ID + '] 保存设置失败', e); }
     }
-
     /* ── 抽豆 ── */
     /* 抽豆池：咖啡柜默认只是收藏，不缩小随机范围；cabOnly 显式开启时才只喝柜内。
        类型筛选是强意图：柜内没有选中类型 → 放宽到全库该类型，并记一句提示。 */
@@ -1930,7 +1857,7 @@
         if (inCab.length) base = inCab;
         else _poolNote = '咖啡柜还是空的，已从全库抽';
       }
-      /* 四维交集：杯型 ∩ 处理法 ∩ 品种 ∩ 烘焙度；任一维留空即该维不限。
+      /* 四维交集：制法 ∩ 处理法 ∩ 品种 ∩ 烘焙度；任一维留空即该维不限。
          放宽顺序与单维时一致：先在柜内求交集，柜内没有就到全库求交集，
          再没有才退回 range 的池（不静默抽到全库而不说明）。 */
       function match(t) {
@@ -2001,7 +1928,7 @@
       if (cabQ) {
         var q = cabQ.toLowerCase();
         items = items.filter(function (t) {
-          /* 四维都可搜：名称/杯型/处理法/品种/烘焙度/产区/风味词/来源名 */
+          /* 四维都可搜：名称/制法/处理法/品种/烘焙度/产区/风味词/来源名 */
           return (t.n + ' ' + t.t + ' ' + t.pr + ' ' + t.vr + ' ' + t.rt + ' ' +
                   t.o + ' ' + t.l + ' ' + (SOURCES[t.src] || '')).toLowerCase().indexOf(q) >= 0;
         });
@@ -2018,7 +1945,6 @@
         if (b.hasAttribute('data-seg')) b.classList.toggle('on', b.getAttribute('data-seg') === cabMode);
         else b.classList.toggle('on', (b.getAttribute('data-type') || '') === cabType);
       }
-
       if (!items.length) {
         var pg0 = el.cabPanel.querySelector('.coffee-pager');
         if (pg0) pg0.classList.remove('show');
@@ -2122,7 +2048,20 @@
       }
     }
     function paintTea(t) {
-      if (gl) { gl.setCoffeeColor(t.c); if (t.lf) gl.setBubbleColor(t.lf); }
+      if (gl) {
+        /* 奶咖判定：制法为拿铁/卡布/澳白，或名称含奶/燕麦的即饮。
+           crema 强度按制法分级：浓缩/玛奇朵厚（1.0）、美式薄（0.15）、
+           手冲/浸泡/冷萃几乎无（0）、奶咖的奶泡压到 0.25（shader 内上限）。 */
+        var milky = (t.t === '拿铁' || t.t === '卡布奇诺' || t.t === '澳白' ||
+                     /拿铁|奶盖|燕麦/.test(t.n));
+        /* 果美式（橙汁/葡萄/柠檬等）是果汁+浓缩，无奶无 crema，泡沫 0；
+           普通美式才有薄薄一层易散 crema（0.15）。 */
+        var fruitAmericano = t.t === '美式' && /汁|葡萄|柠檬|西柚|苹果|椰子|蜜桃|百香果|凤梨|荔枝/.test(t.n);
+        var foam = (t.t === '浓缩' || t.t === '玛奇朵') ? 1.0 :
+                   (t.t === '美式' && !fruitAmericano) ? 0.15 : 0.0;
+        gl.setCoffeeColor(t.c, milky, foam);
+        if (t.lf) gl.setBubbleColor(t.lf);
+      }
       /* 热气跟水温走，但只做「有没有」的细微差别（3%vol≈.86 / 53%vol≈1.07）：
          一缕本身已经够轻，若再按度数放大浓度，高水温又会糊回一片。
          只改 --coffee-aroma-k（乘颜色 alpha），形态与节奏不动。 */
@@ -2137,7 +2076,6 @@
       if (el.stage) el.stage._vKey = '';
       if (gl) gl.render();
     }
-
     /* ── 揭盖 ── */
     /* 声像：按指针在画布里的横向位置摆，器物在左就声在左 —— 一毫米的定位感，成本为零 */
     function panOf(e) {
@@ -2155,7 +2093,6 @@
       state.lift = clamp(v, 0, 1);
       if (gl) gl.setLift(state.lift);
     }
-
     function applyLift(v, animate) {
       var target = clamp(v, 0, 1);
       if (_liftRaf) { cancelAnimationFrame(_liftRaf); _liftRaf = 0; }
@@ -2184,7 +2121,6 @@
         if (el.tip) el.tip.textContent = state.open ? '再点一次，换一杯' : '点杯换咖啡 · 拖动可转';
       }, 1000);
     }
-
     function renderPatChips() {
       if (!el.patChips) return;
       var list = el.patChips.querySelectorAll('.coffee-chip');
@@ -2271,7 +2207,6 @@
       setPattern(PATTERNS[(i + 1) % PATTERNS.length], true);
       saveConfig();
     }
-
     /* J3 核心流程：从面板指定泡哪款。收/移改柜子，泡改器物——动作不共用（原则 P2）。 */
     function brewFromList(id) {
       var t = null;
@@ -2321,14 +2256,12 @@
       if (_revealTimer) { clearTimeout(_revealTimer); _revealTimer = null; }
     }
     function toggle() { if (state.open) close(); else open(); }
-
     /* ── 手势 ──
        按下时先拾取部件（1×1 离屏渲染，逐像素准确）：
          葫芦塞 → 点杯/塞回（点按）/ 起塞（拖动）
          其余 → 轨道绕转（拖动）；**葫芦身点按不再绑定动作**（纹样只在设置面板切）
        这样不再需要一块 DOM 命中区跟着相机跑。 */
     var _g = { active: false, kind: 'orbit', x: 0, y: 0, moved: 0 };
-
     /* 必须用画布的 rect，不是 stage 的：stage 有内边距，画布是内缩的 */
     function stagePoint(e) {
       var r = (gl && gl.canvas ? gl.canvas : el.stage).getBoundingClientRect();
@@ -2387,7 +2320,6 @@
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointercancel', onPointerUp);
-
     /* 键盘：Enter/空格 开合，P 换纹样 */
     if (el.kbd) {
       el.kbd.addEventListener('keydown', function (e) {
@@ -2396,12 +2328,11 @@
       });
       el.kbd.addEventListener('click', function () { toggle(); });
     }
-
     /* ── 设置 ── */
     /* 四维切换：定义表把维度名、取值、状态键、来源说明收在一起，
-       渲染只按当前维度重画一组 chips，风格与杯型原本的轻量文本完全一致。 */
+       渲染只按当前维度重画一组 chips，风格与制法原本的轻量文本完全一致。 */
     var FACETS = [
-      { key: 't',  label: '杯型',   vals: TYPES,         field: 'types',  src: '浓缩·卡布依 INEI 规范，余为行业惯例' },
+      { key: 't',  label: '制法',   vals: TYPES,         field: 'types',  src: '浓缩·卡布依 INEI 规范，余为行业惯例' },
       { key: 'pr', label: '处理法', vals: PROCESS_TYPES, field: 'procs',  src: '依 COE 分组与行业通用大类' },
       { key: 'vr', label: '品种',   vals: VARIETY_TYPES, field: 'vars',   src: '依 WCR 品种目录，拼配单列' },
       { key: 'rt', label: '烘焙度', vals: ROAST_TYPES,   field: 'roasts', src: '依 Agtron/SCA 八色卡归档' }
@@ -2670,7 +2601,6 @@
       });
     }
     if (el.maskEl) el.maskEl.addEventListener('click', function (e) { if (e.target === el.maskEl) closeSettings(); });
-
     /* ── 卸载 ── */
     function destroy() {
       if (_revealTimer) { clearTimeout(_revealTimer); _revealTimer = null; }
@@ -2696,14 +2626,12 @@
     var self = { destroy: destroy, version: VERSION };
     instance = self;
     return self;
-
     function makeApi() {
       var s = { destroy: function () { if (el.wrap && el.wrap.parentNode) el.wrap.parentNode.removeChild(el.wrap); el = {}; if (instance === s) instance = null; }, version: VERSION };
       instance = s;
       return s;
     }
   }
-
   /* ══════════════════════ 样式 ══════════════════════ */
   /* 尺寸 / 圆角 / 字号 / 时长 / 缓动 一律走 webapp 的 variables.css；
      只有器物自身的配光（色相派生）与茶汤是本地量。 */
@@ -2763,7 +2691,6 @@
          min() 封顶：明度滑块拉到 +15% 时若跟着提亮到 49%，白字对比会掉到 3.4:1。 */
       '--bm-primary:hsl(var(--th),32%,min(34%,calc(34% + var(--lo,0%))));' +
     '}' +
-
     /* z-index:0 让舞台自成层叠上下文：热气才能用负层压到画布（器物）后面，
        同时不影响工具行、命中区这些 z-index:auto 的定位子元素（它们仍在画布之上） */
     '.coffee-stage{position:relative;z-index:0;flex:1 1 auto;min-height:0;touch-action:none;}' +
@@ -2899,7 +2826,6 @@
     '.gaiwan-canvas{position:absolute;inset:0;pointer-events:none;}' +
     '.coffee-wrap.is-orbiting .coffee-stage{cursor:grabbing;}' +
     '.coffee-wrap.coffee-nogl .coffee-stage{display:none;}' +
-
     /* 文案整体上提：用 relative+top 而不是 margin/transform ——
        margin 会改变舞台高度（器物跟着缩放），transform 与 is-live 的淡入位移冲突。 */
     '.coffee-card{position:relative;padding:0 var(--space-20) var(--space-8);text-align:center;opacity:0;' +
@@ -2923,7 +2849,6 @@
       'opacity:0;padding:0 var(--space-8) 0;transition:opacity var(--duration-slow) var(--ease-cn);}' +
     '.coffee-wrap:hover .coffee-tip,.coffee-wrap:focus-within .coffee-tip{opacity:.34;}' +
     '@media (hover:none){.coffee-tip{opacity:.34;}}' +
-
     /* 设置按钮放到底部居中、提示行上方：原来在右上角，侧栏里离器物太远，
        且和「录豆七十三 / 吃茶去。」那几列字抢右上角的空白。 */
     /* z-index 必须高于画布：齿轮在 .coffee-stage 里，而画布由渲染器后插入 stage，会盖住它 */
@@ -2939,7 +2864,6 @@
     '.coffee-tools button:focus-visible{outline:2px solid hsl(var(--th),32%,52%);outline-offset:2px;}' +
     '.coffee-gear:hover{transform:rotate(30deg);}' +
     '@media (hover:none){.coffee-tools button{opacity:.42;}}' +
-
     /* 面板贴底：居中会正好盖住盖碗，调参时看不到器物 */
     '.coffee-mask{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;' +
       'background:transparent;padding:12px;z-index:var(--z-layer-overlay,10000);pointer-events:auto;}' +
@@ -3081,7 +3005,7 @@
     '.coffee-chips-types{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:2px;}' +
     '.coffee-chips-types .coffee-chip{text-align:center;}' +
     /* 四维分类：seg 切换维度（复用咖啡柜面板已有一套 seg 语言），下方 chips 沿用
-       杯型原本的轻量文本风格（颜色+字重选中），一次只显示一行的选项。
+       制法原本的轻量文本风格（颜色+字重选中），一次只显示一行的选项。
        已选维度在 seg 上留一个小圆点，切走也看得见。 */
     '.coffee-seg-facet{display:flex;justify-content:space-between;gap:0;' +
       'margin-top:9px;overflow:visible;}' +
@@ -3143,7 +3067,6 @@
       'color:var(--text-on-accent,#fff);}' +
     '.coffee-btn.ghost:hover{opacity:.8;}' +
     '.coffee-btn.primary:hover{opacity:.9;}' +
-
     /* 减弱动效：模块标记与系统偏好都关掉热气动画，卡片/题字不再缓动；JS 自转在 mount 时已关。 */
     '.coffee-wrap.coffee-reduce .coffee-wisp,' +
     '.coffee-wrap.coffee-reduce .coffee-steam,' +
@@ -3155,7 +3078,6 @@
       '.coffee-card,.coffee-verse,.coffee-count{transition-duration:.01ms !important;}' +
     '}';
   }
-
   var _styleReady = false;
   function ensureStyle(root) {
     if (_styleReady || document.getElementById('coffee-module-style')) return;
@@ -3165,7 +3087,6 @@
     (document.head || root).appendChild(s);
     _styleReady = true;
   }
-
   window.__bamboo_module_coffee = {
     id: ID,
     name: TITLE,
