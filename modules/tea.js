@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.11.6","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
+/* __bamboo_module_ {"id":"tea","name":"不如吃茶去","version":"0.11.7","fab":{"icon":"coffee","label":"吃茶"},"location":"left"} */
 /**
  * 不如吃茶去 · 竹林模块（单文件自包含 · 手写 WebGL · 零依赖）
  *
@@ -17,7 +17,7 @@
 
   var ID = 'tea';
   var TITLE = '不如吃茶去';
-  var VERSION = '0.11.6';
+  var VERSION = '0.11.7';
 
   /* ══════════════════════ 渲染器（原稿数值 · 手写 WebGL） ══════════════════════ */
 
@@ -454,8 +454,11 @@
        ④ 宽高光 + 窄高光两道（峰太尖像塑料，没有则像陶）；
        ⑤ 只在轮廓最后一圈起亮的边缘光（参考稿口沿、托沿那条亮边）。
        器物是回转体：绕竖轴自转不改变这条光在屏幕上的位置。 */
-    'vec3 jadeBody(vec3 n, vec3 V, vec3 wp){',
-    '  vec3 L = normalize(vec3(-0.28, 0.57, 0.77));',
+    /* 主光由调用方传入相机锁定方向 camL：原先写死的世界固定 L 是方位性主光，
+       盖碗法线连续时尚可读成渐变，细长器物上则会切出明暗色块（见咖啡/酒模块）。
+       五层碧玉结构（水头/冷青/双高光/边缘光）全部保留，只换光源方向。 */
+    'vec3 jadeBody(vec3 n, vec3 V, vec3 wp, vec3 L){',
+    '  L = normalize(L);',
     '  float ndl = sat(dot(n, L));',
     '  float nv = sat(dot(n, V));',
     '  float ny = sat(n.y);',
@@ -489,6 +492,12 @@
     '  vec3 V = normalize(uEye - vW);',
     // 三组剖面绕向不一致，闭合壳体上按视线翻正法线（等价 three 的 DoubleSide）
     '  if (dot(n, V) < 0.0) n = -n;',
+    /* 相机锁定光源基：高光固定在画面左上前方，不随环绕视角漂移。
+       与咖啡/酒同一套；三窗世界反射仍按 reflect(-V,n) 采样，流光照旧。 */
+    '  vec3 camC = normalize(uEye);',
+    '  vec3 camRx = normalize(cross(vec3(0.0,1.0,0.0), camC));',
+    '  vec3 camUy = normalize(cross(camC, camRx));',
+    '  vec3 camL = normalize(-0.45*camRx + 0.65*camUy + 0.85*camC);',
     '  float alpha = pow2(uRough);',
     '  vec3 dc = uAlbedo;',
     '  float cov = 0.0;',
@@ -506,16 +515,25 @@
     '  vec3 irr = vec3(uAmbient) + mix(uGround, uSky, 0.5 + 0.5*n.y);',
     '  vec3 col;',
     '  if (uJade > 0.5) {',
-    '    col = jadeBody(n, V, vW) * uJadeGain;',
+    '    col = jadeBody(n, V, vW, camL) * uJadeGain;',
     /* 冰裂在玉上读作「深脉」而不是「印上去的白线」：直接压暗，不参与反照率混合 */
     '    col *= mix(1.0, 0.30, cov);',
     '    dc = mix(uJadeMid, uJadeLite, 0.25);',
     '  } else {',
-    '    col = irr * dc * RPI;',
-    /* 弱主光：只为一件事——让形体可读。纯半球光在可见面（n.y 0.3~1）里只差 15%，
-       经 ACES 压缩后几乎为零，盖碗会糊成剪影。0.35 只有原来的 1/4，
-       产生的是连续渐变，没有交界线；配 sh=1 与无镜面，也就没有任何投影与亮斑。 */
-    '    col += sat(dot(n, uKeyDir)) * uKeyK * dc * RPI;',
+    /* 白瓷档改环绕对称（与咖啡/酒一致）：去掉方位性弱主光 sat(dot(n,uKeyDir))，
+       只留高度渐变 + 天光 + 中心柔釉 + 双层轮廓。原先那条 uKeyDir 主光在盖碗上
+       尚是平滑渐变，但属同类隐患；立体感由 P2 的相机锁定高光与三窗反射读出来。 */
+    '    float nyw = sat(n.y);',
+    '    float nvw = sat(dot(n, V));',
+    '    float vertical = 0.92 + 0.16*(0.5+0.5*nyw);',
+    '    col = dc * vertical * 0.75;',
+    '    col += mix(dc, vec3(1.0), 0.50) * pow(nyw, 6.0) * 0.10;',
+    '    col += mix(dc, vec3(1.0), 0.65) * pow(nvw, 5.0) * 0.12;',
+    '    float rimK = mix(1.0,0.55,smoothstep(0.90,1.0,uBodyDim));',
+    '    float rimUp = 0.85 + 0.25*dot(n, camUy);',
+    '    col += mix(dc, vec3(1.0), 0.40) * pow(1.0-nvw, 2.6) * 0.18 * rimK * rimUp;',
+    '    col += mix(dc, vec3(1.0), 0.78) * pow(1.0-nvw, 8.0) * 0.55 * rimK * rimUp;',
+    '    col *= mix(1.0, 0.62, smoothstep(0.90,1.0,uBodyDim));',
     '  }',
     /* 夜色效果两种：
        ① 周身微光（uBodyDim=1、uGlow>0）：整体发光，边缘更亮；
@@ -555,7 +573,8 @@
        ④ 掠射角亮边：釉口那一圈；青玉原本有 rim，白瓷此前完全没有。
        青玉自带两道经验高光，全部乘 jadeK=0.45 压半档，避免叠成塑料。 */
     '  if (uFxKind < 0.5 && uFx > 0.0) {',
-    '    vec3 L = normalize(uKeyDir);',
+    /* 相机锁定主光：P2 只加高光不刮暗面，方位性明暗交给三窗反射处理。 */
+    '    vec3 L = camL;',
     '    vec3 H = normalize(L + V);',
     '    float dnl = sat(dot(n, L));',
     '    float dnv = sat(dot(n, V));',
