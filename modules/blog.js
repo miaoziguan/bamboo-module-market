@@ -1,4 +1,4 @@
-/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.35","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
+/* __bamboo_module_ {"id":"blog","name":"博客写立得","version":"0.7.36","fab":{"icon":"bookOpen","label":"博客"},"location":"left"} */
 /**
  * 竹林模块 · 博客写立得 v0.7
  *
@@ -41,6 +41,9 @@ var __bamboo_module_blog = (function () {
     rootFolder: '博客',
     /* 选区分享卡底部页脚文案（默认「竹林修仙传 · 读书札记」；空串不渲染） */
     shareCardFooter: '竹林修仙传 · 读书札记',
+    /* 分享卡顶部日期：开关 + 格式模板（YYYY MM DD HH mm ss M D） */
+    shareCardDateEnabled: true,
+    shareCardDateFormat: 'YYYY年M月D日 HH:mm',
     files: [],
     searchQuery: '',
     searchFull: false,
@@ -746,6 +749,12 @@ var __bamboo_module_blog = (function () {
         formField('nickname', '昵称', '显示在机身品牌位', state.profile.nickname, '博客作者名') +
         formField('avatar', '头像', '留空则显示昵称首字', state.profile.avatar, '图片路径或链接，如 avatar.png') +
         formField('shareCardFooter', '分享卡页脚', '选中文字导出图片时显示在底部，留空则不显示', state.shareCardFooter, '竹林修仙传 · 读书札记') +
+        formField('shareCardDate', '分享卡日期格式', '顶部显示日期；留空则不显示。可用 YYYY MM DD HH mm ss M D 自由组合', state.shareCardDateFormat, 'YYYY年M月D日 HH:mm') +
+        '<label class="bm-fx-row">' +
+          '<span class="bm-fx-label">显示日期</span>' +
+          '<input type="checkbox" class="bm-fx-input" data-field="shareCardDateEnabled"' + (state.shareCardDateEnabled ? ' checked' : '') + '>' +
+          '<span class="bm-fx-track" aria-hidden="true"></span>' +
+        '</label>' +
       '</div>' +
       '<div class="bm-group">' +
         '<div class="bm-group-title">外观质感</div>' +
@@ -972,6 +981,10 @@ var __bamboo_module_blog = (function () {
     }
     var sf = root.querySelector('[data-field="shareCardFooter"]');
     if (sf) sf.addEventListener('input', function (e) { state.shareCardFooter = e.target.value.trim(); schedulePersist(); });
+    var sdf = root.querySelector('[data-field="shareCardDate"]');
+    if (sdf) sdf.addEventListener('input', function (e) { state.shareCardDateFormat = e.target.value.trim(); schedulePersist(); });
+    var sde = root.querySelector('[data-field="shareCardDateEnabled"]');
+    if (sde) sde.addEventListener('change', function (e) { state.shareCardDateEnabled = !!e.target.checked; schedulePersist(); });
     var rf = root.querySelector('[data-field="rootFolder"]');
     if (rf) {
       rf.addEventListener('input', function (e) { state.rootFolder = e.target.value; schedulePersist(); });
@@ -1153,6 +1166,10 @@ var __bamboo_module_blog = (function () {
     if (nick) state.profile.nickname = nick.value.trim();
     if (av) state.profile.avatar = av.value.trim();
     if (sf) state.shareCardFooter = sf.value.trim();
+    var sdf = root.querySelector('[data-field="shareCardDate"]');
+    if (sdf) state.shareCardDateFormat = sdf.value.trim();
+    var sde = root.querySelector('[data-field="shareCardDateEnabled"]');
+    if (sde) state.shareCardDateEnabled = !!sde.checked;
     var fx = root.querySelector('[data-field="enhance"]');
     if (fx) state.enhance = !!fx.checked;
     var mo = root.querySelector('[data-field="motion"]');
@@ -1182,6 +1199,8 @@ var __bamboo_module_blog = (function () {
       profile: state.profile,
       rootFolder: state.rootFolder,
       shareCardFooter: state.shareCardFooter,
+      shareCardDateEnabled: state.shareCardDateEnabled,
+      shareCardDateFormat: state.shareCardDateFormat,
       enhance: state.enhance,
       motion: state.motion,
       reed: state.reed,
@@ -1261,6 +1280,9 @@ var __bamboo_module_blog = (function () {
         if (d.rootFolder) state.rootFolder = d.rootFolder;
         // 分享卡页脚：空串是用户主动清空（不渲染），只有字段缺失才回默认
         if (d.shareCardFooter !== undefined) state.shareCardFooter = String(d.shareCardFooter || '').trim();
+        // 日期开关：显式 false 才是关；格式空串是用户主动清空（不渲染），字段缺失才回默认
+        if (d.shareCardDateEnabled !== undefined) state.shareCardDateEnabled = !!d.shareCardDateEnabled;
+        if (d.shareCardDateFormat !== undefined) state.shareCardDateFormat = String(d.shareCardDateFormat || '').trim();
         // 老配置没有 enhance 字段 → 保持默认开；只有显式 false 才是用户主动关掉
         state.enhance = !(d.enhance === false);
         state.motion = !!(d.motion); // 默认关，无需「保持默认开」逻辑
